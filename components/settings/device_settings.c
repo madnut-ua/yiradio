@@ -5,6 +5,7 @@
 #include "device_timezone.h"
 
 #ifdef ESP_PLATFORM
+#include "esp_log.h"
 #include "esp_mac.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -311,13 +312,17 @@ bool device_settings_init_at(device_settings_t *settings, const char *path)
     if (read_value(&csv, "files_end", value, sizeof(value)) && strcmp(value, "repeat") == 0) {
         settings->files_end = DEVICE_FILES_END_REPEAT;
     }
-    /* A zone this build does not have leaves the default standing rather than
-     * an empty string: an unset TZ is UTC, and a clock three hours out with no
-     * explanation is worse than one that ignored a line in a file. */
     char zone[DEVICE_TIMEZONE_ID_MAX];
-    if (settings_csv_snapshot_get(&csv, "timezone", zone, sizeof(zone)) &&
-        device_timezone_find(zone) != NULL) {
-        memcpy(settings->timezone, zone, strlen(zone) + 1U);
+    if (settings_csv_snapshot_get(&csv, "timezone", zone, sizeof(zone))) {
+        if (device_timezone_find(zone) != NULL) {
+            memcpy(settings->timezone, zone, strlen(zone) + 1U);
+        }
+#ifdef ESP_PLATFORM
+        else {
+            ESP_LOGW("device_settings", "Unknown timezone in settings.csv; using %s",
+                     DEVICE_TIMEZONE_DEFAULT_ID);
+        }
+#endif
     }
     char server[DEVICE_NTP_SERVER_MAX];
     if (settings_csv_snapshot_get(&csv, "ntp_server", server, sizeof(server)) && server[0] != '\0') {
@@ -1138,10 +1143,12 @@ bool device_settings_set_soft_start(device_settings_t *settings, bool enabled)
 
 bool device_settings_set_timezone(device_settings_t *settings, const char *id)
 {
-    if (settings == NULL || device_timezone_find(id) == NULL) return false;
-    if (strcmp(settings->timezone, id) == 0) return true;
-    if (!save_value(settings, "timezone", id)) return false;
-    memcpy(settings->timezone, id, strlen(id) + 1U);
+    if (settings == NULL) return false;
+    const device_timezone_t *zone = device_timezone_at(device_timezone_index_of(id));
+    if (zone == NULL) return false;
+    if (strcmp(settings->timezone, zone->id) == 0) return true;
+    if (!save_value(settings, "timezone", zone->id)) return false;
+    memcpy(settings->timezone, zone->id, strlen(zone->id) + 1U);
     return true;
 }
 

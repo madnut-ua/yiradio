@@ -410,7 +410,7 @@ static void test_the_clock_settings_persist_and_are_checked(void)
     assert(device_settings_init_at(&settings, test_path));
     /* What the device had before either was a setting, so a card that has
      * never seen this page still keeps Moscow time off pool.ntp.org. */
-    assert(strcmp(settings.timezone, "europe/moscow") == 0);
+    assert(strcmp(settings.timezone, "Europe/Kyiv") == 0);
     assert(strcmp(settings.ntp_server, "pool.ntp.org") == 0);
 
     assert(device_settings_set_timezone(&settings, "asia/yekaterinburg"));
@@ -418,7 +418,7 @@ static void test_the_clock_settings_persist_and_are_checked(void)
 
     device_settings_t reloaded;
     assert(device_settings_init_at(&reloaded, test_path));
-    assert(strcmp(reloaded.timezone, "asia/yekaterinburg") == 0);
+    assert(strcmp(reloaded.timezone, "Asia/Yekaterinburg") == 0);
     assert(strcmp(reloaded.ntp_server, "ntp.example.lan") == 0);
 
     /* A zone this build does not have is refused rather than stored: a zone
@@ -427,7 +427,7 @@ static void test_the_clock_settings_persist_and_are_checked(void)
     assert(!device_settings_set_timezone(&settings, "mars/olympus"));
     assert(!device_settings_set_timezone(&settings, ""));
     assert(!device_settings_set_timezone(&settings, NULL));
-    assert(strcmp(settings.timezone, "asia/yekaterinburg") == 0);
+    assert(strcmp(settings.timezone, "Asia/Yekaterinburg") == 0);
 
     /* An empty field on the page means "whatever the device came with": a
      * device with no time server at all is worse than one on the pool. */
@@ -492,6 +492,9 @@ static void test_the_clock_settings_persist_and_are_checked(void)
      * newer page - leaves the default standing rather than an empty string,
      * which would read as UTC. */
     assert(settings_csv_set(test_path, "timezone", "mars/olympus"));
+    assert(device_settings_init_at(&reloaded, test_path));
+    assert(strcmp(reloaded.timezone, "Europe/Kyiv") == 0);
+    assert(settings_csv_set(test_path, "timezone", "europe/moscow"));
     assert(device_settings_init_at(&reloaded, test_path));
     assert(strcmp(reloaded.timezone, "europe/moscow") == 0);
 }

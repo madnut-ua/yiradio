@@ -123,6 +123,22 @@ the device says so on its About screen - then also write
 `jradio-<version>-littlefs.bin` at offset `0x820000`, after taking a backup
 (see [The data on the device](#the-data-on-the-device)).
 
+## Updating the time zone database
+
+The firmware and web catalog use checked-in data from the same IANA tzdb
+release. Ordinary builds need neither `zic` nor network access for this data.
+To update it, change `VERSION` and `SHA256` in
+[`tools/gen_timezones.py`](../tools/gen_timezones.py), download the corresponding
+public-domain `tzdata` and `tzcode` archives from
+[IANA](https://data.iana.org/time-zones/releases/), unpack both into a temporary
+directory, and run `make zic` there. From the repository run
+`python3 tools/gen_timezones.py tzdata2026f.tar.gz --zic /path/to/compiled/zic`
+(substitute the new version and actual paths). Use the matching `zic`: older
+compilers can silently omit future explicit transitions in slim TZif output.
+The generator uses a 2020 cutoff,
+before the device considers its clock synchronized. Include both generated
+files in the change and rebuild the firmware and web package together.
+
 ## The full way: a build from source
 
 ### 1. Install the toolchain

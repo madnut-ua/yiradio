@@ -4,75 +4,44 @@
 
 #include "device_timezone.h"
 
-static void test_every_zone_is_usable_as_written(void)
+static void check(const char *id, time_t utc, int day, int hour, int minute, int dst)
 {
-    assert(device_timezone_count() > 0U);
-    for (size_t index = 0U; index < device_timezone_count(); ++index) {
-        const device_timezone_t *const zone = device_timezone_at(index);
-        assert(zone != NULL);
-        assert(zone->id != NULL && zone->posix != NULL);
-        assert(zone->label_ru != NULL && zone->label_en != NULL);
-        assert(zone->id[0] != '\0' && zone->posix[0] != '\0');
-        /* Both halves, because a zone added with only one filled in shows the
-           page a blank row rather than failing anywhere. */
-        assert(zone->label_ru[0] != '\0' && zone->label_en[0] != '\0');
-        assert(strlen(zone->id) < DEVICE_TIMEZONE_ID_MAX);
-        assert(strlen(zone->label_ru) < DEVICE_TIMEZONE_LABEL_MAX);
-        assert(strlen(zone->label_en) < DEVICE_TIMEZONE_LABEL_MAX);
-        assert(strcmp(device_timezone_label(zone, DEVICE_LANGUAGE_RU), zone->label_ru) == 0);
-        assert(strcmp(device_timezone_label(zone, DEVICE_LANGUAGE_EN), zone->label_en) == 0);
-        /* An id is what settings.csv stores and what travels in a URL-shaped
-         * JSON field, so it may hold neither the file's separator nor a tab
-         * nor a space. The POSIX rule beside it is free to hold commas -
-         * that is exactly why it never reaches the file. */
-        assert(strchr(zone->id, ',') == NULL);
-        assert(strchr(zone->id, '\t') == NULL);
-        assert(strchr(zone->id, ' ') == NULL);
-        for (const char *cursor = zone->id; *cursor != '\0'; ++cursor) {
-            const unsigned char character = (unsigned char)*cursor;
-            assert(character > ' ' && character < 0x7FU);
-            assert(character != '"' && character != '\\');
-        }
-        // Two zones sharing an id would make one of them unreachable.
-        for (size_t other = 0U; other < index; ++other) {
-            assert(strcmp(device_timezone_at(other)->id, zone->id) != 0);
-        }
-    }
-    assert(device_timezone_at(device_timezone_count()) == NULL);
-}
-
-static void test_the_default_is_in_the_list(void)
-{
-    /* The one id the firmware falls back to. Out of the list, every fallback
-     * would land on an unset TZ, which is UTC - a device three hours out with
-     * nothing on screen to say why. */
-    const device_timezone_t *const zone = device_timezone_find(DEVICE_TIMEZONE_DEFAULT_ID);
-    assert(zone != NULL);
-    assert(strcmp(zone->posix, "MSK-3") == 0);
-}
-
-static void test_lookup_by_id(void)
-{
-    const device_timezone_t *const zone = device_timezone_find("europe/berlin");
-    assert(zone != NULL);
-    // A rule that shifts twice a year, which is the shape the file cannot hold.
-    assert(strchr(zone->posix, ',') != NULL);
-    assert(device_timezone_index_of("europe/berlin") < device_timezone_count());
-    assert(device_timezone_at(device_timezone_index_of("europe/berlin")) == zone);
-
-    assert(device_timezone_find("mars/olympus") == NULL);
-    assert(device_timezone_find("") == NULL);
-    assert(device_timezone_find(NULL) == NULL);
-    // Past the end, which is what the web view carries for an unknown zone.
-    assert(device_timezone_index_of("mars/olympus") == device_timezone_count());
-    assert(device_timezone_index_of(NULL) == device_timezone_count());
+    struct tm local;
+    assert(device_timezone_localtime(device_timezone_find(id), utc, &local));
+    assert(local.tm_mday == day && local.tm_hour == hour && local.tm_min == minute);
+    assert(local.tm_isdst == dst);
 }
 
 int main(void)
 {
-    test_every_zone_is_usable_as_written();
-    test_the_default_is_in_the_list();
-    test_lookup_by_id();
+    assert(device_timezone_count() > 255U);
+    for (size_t index = 0; index < device_timezone_count(); ++index) {
+        const char *id = device_timezone_at(index)->id;
+        assert(strlen(id) < DEVICE_TIMEZONE_ID_MAX);
+        assert(device_timezone_index_of(id) == index);
+        struct tm local;
+        assert(device_timezone_localtime(device_timezone_at(index), 1774746000, &local));
+    }
+    assert(device_timezone_at(device_timezone_count()) == NULL);
+    assert(device_timezone_find("mars/olympus") == NULL);
+    assert(device_timezone_index_of("mars/olympus") == device_timezone_count());
+    assert(device_timezone_find("Europe/Kiev") == device_timezone_find("Europe/Kyiv"));
+    assert(device_timezone_index_of("europe/moscow") == device_timezone_index_of("Europe/Moscow"));
+    assert(device_timezone_index_of("utc") == device_timezone_index_of("Etc/UTC"));
+
+    check("Europe/Kyiv", 1774745999, 29, 2, 59, 0);
+    check("Europe/Kyiv", 1774746000, 29, 4, 0, 1);
+    check("Asia/Kathmandu", 1767297600, 2, 1, 45, 0);
+    check("Australia/Lord_Howe", 1775314799, 5, 1, 59, 1);
+    check("Australia/Lord_Howe", 1775314800, 5, 1, 30, 0);
+    check("Africa/Casablanca", 1771588800, 20, 12, 0, 1);
+    check("Africa/Casablanca", 1775044800, 1, 13, 0, 0);
+    check("America/Ojinaga", 1667116801, 30, 2, 0, 0);
+    check("Asia/Gaza", (time_t)INT64_C(3550953599), 11, 1, 59, 0);
+    check("Europe/Kyiv", (time_t)INT64_C(4109878800), 28, 4, 0, 1);
+    check("europe/berlin", 1774746000, 29, 3, 0, 1);
+    struct tm local;
+    assert(!device_timezone_localtime(device_timezone_find("Etc/UTC"), 0, &local));
     puts("device_timezone tests passed");
     return 0;
 }

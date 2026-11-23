@@ -220,8 +220,15 @@
                 <h3 data-i18n="settings.group_time">Время</h3>
                 <div class="device-row">
                   <label for="device-timezone" data-i18n="settings.timezone">Часовой пояс</label>
-                  <select id="device-timezone" data-field="timezone"></select>
+                  <select id="device-timezone" data-field="timezone" disabled></select>
                 </div>
+                <div id="device-timezone-filter" class="device-row" hidden>
+                  <label for="device-timezone-search" data-i18n="settings.timezone_search">Поиск часового пояса</label>
+                  <input id="device-timezone-search" type="search" autocomplete="off" spellcheck="false">
+                </div>
+                <p id="device-timezone-error" role="status" data-i18n="settings.timezone_unavailable" hidden>
+                  Список часовых поясов недоступен.
+                </p>
                 <div class="device-row">
                   <label for="device-ntp" data-i18n="settings.ntp">Сервер времени</label>
                   <input id="device-ntp" type="text" inputmode="url" spellcheck="false"

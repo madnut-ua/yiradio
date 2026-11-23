@@ -418,6 +418,11 @@ static esp_err_t web_server_settings_js_get(httpd_req_t *request)
                                 "application/javascript; charset=utf-8");
 }
 
+static esp_err_t web_server_timezones_get(httpd_req_t *request)
+{
+    return web_server_send_file(request, WEB_SERVER_WEB_ROOT "/timezones.json", "application/json");
+}
+
 static esp_err_t web_server_update_js_get(httpd_req_t *request)
 {
     return web_server_send_file(request, WEB_SERVER_WEB_ROOT "/update.js",
@@ -2501,6 +2506,7 @@ esp_err_t web_server_start(void)
             {.uri = "/style.css", .method = HTTP_GET, .handler = web_server_style_get},
             {.uri = "/settings", .method = HTTP_GET, .handler = web_server_settings_get},
             {.uri = "/settings.js", .method = HTTP_GET, .handler = web_server_settings_js_get},
+            {.uri = "/timezones.json", .method = HTTP_GET, .handler = web_server_timezones_get},
             {.uri = "/update.js", .method = HTTP_GET, .handler = web_server_update_js_get},
             {.uri = "/remote", .method = HTTP_GET, .handler = web_server_remote_page_get},
             {.uri = "/remote.js", .method = HTTP_GET, .handler = web_server_remote_js_get},

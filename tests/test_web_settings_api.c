@@ -421,9 +421,7 @@ static void test_document_names_what_the_build_has(void)
 
     web_settings_view_t view;
     web_settings_make_view(&view, &settings, true, false, false, false);
-    /* Room for the zone list as well: the document carries every zone the
-       firmware knows, which the page builds its menu from. The device's
-       buffer for it, WEB_SERVER_FILE_CHUNK_SIZE in web_server.c. */
+    /* Match the device's WEB_SERVER_FILE_CHUNK_SIZE. */
     char document[4096];
     const web_settings_document_t extras = {
         .ntp_server = settings.ntp_server,
@@ -506,20 +504,14 @@ static void test_document_names_what_the_build_has(void)
     assert(strstr(document, "\"tone_min\":-12") != NULL);
     assert(strstr(document, "\"tone_max\":12") != NULL);
 
-    /* The clock: the zone as an id and the server as it stands, plus the list
-       to choose from - which is sent rather than written into the page, so
-       that adding a zone is one line of firmware. */
-    assert(strstr(document, "\"timezone\":\"europe/moscow\"") != NULL);
+    assert(strstr(document, "\"timezone\":\"Europe/Kyiv\"") != NULL);
     assert(strstr(document, "\"ntp_server\":\"pool.ntp.org\"") != NULL);
     /* The name as stored - empty here - beside the built-in one the page
        shows in its place. */
     assert(strstr(document, "\"device_name\":\"\"") != NULL);
     assert(strstr(document, "\"device_name_default\":\"jradio-B670\"") != NULL);
-    assert(strstr(document, "\"timezones\":[{\"id\":") != NULL);
-    /* The document was built for an English device above, so the zone names
-       are English too: a page that said "Москва" beside "Brightness" would be
-       the half-translated state this pass exists to end. */
-    assert(strstr(document, "\"id\":\"europe/moscow\",\"label\":\"Moscow (UTC+3)\"") != NULL);
+    assert(strstr(document, "\"tzdb\":\"") != NULL);
+    assert(strstr(document, "\"timezones\":[{\"id\":\"Europe/Kyiv\"}]") != NULL);
 
     /* The weather: the service in the live part, the rest only here. The
        key is reported as set or not and never as itself. */
@@ -547,6 +539,12 @@ static void test_document_names_what_the_build_has(void)
     assert(strstr(document, "\"openweathermap_key_set\":false") != NULL);
     assert(strstr(document, "\"weather_state\":\"no_key\"") != NULL);
     assert(strstr(document, "\"weather_report\":null") != NULL);
+
+    assert(device_settings_set_timezone(&settings, "Etc/GMT-1"));
+    web_settings_make_view(&view, &settings, true, false, false, false);
+    assert(view.timezone > UINT8_MAX);
+    assert(web_settings_serialize(document, sizeof(document), &view, &extras) > 0U);
+    assert(strstr(document, "\"timezone\":\"Etc/GMT-1\"") != NULL);
 
     // Truncation is never handed back as a short document.
     char tight[32];

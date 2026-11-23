@@ -13,10 +13,8 @@
    in the markup, so a page that somehow runs before this script has loaded
    still reads correctly rather than showing bare keys.
 
-   Strings the device sends - source labels, playback states, its error lines,
-   the time-zone names - are not here. They arrive already translated, out of
-   the same table the panel reads, so the two faces cannot word the same thing
-   differently. */
+   Strings the device sends - source labels, playback states and error lines -
+   arrive already translated. Time zone IDs are the same in every language. */
 (() => {
   'use strict';
 
@@ -764,6 +762,8 @@
     'settings.files_end_repeat': ['Сначала', 'Start over'],
     'settings.yandex': ['Яндекс Музыка', 'Yandex Music'],
     'settings.timezone': ['Часовой пояс', 'Time zone'],
+    'settings.timezone_search': ['Поиск часового пояса', 'Search time zones'],
+    'settings.timezone_unavailable': ['Список часовых поясов недоступен.', 'The time zone catalog is unavailable.'],
     'settings.ntp': ['Сервер времени', 'Time server'],
     'settings.device_name': ['Имя устройства', 'Device name'],
     'settings.device_name_note_wifi': [

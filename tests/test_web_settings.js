@@ -109,7 +109,8 @@ const ids = [
   'device-idle-brightness-value', 'device-screensaver-after-row', 'device-screensaver-when',
   'device-screensaver-when-row',
   'device-idle-brightness-row',
-  'device-timezone', 'device-ntp', 'sleep-select', 'device-name', 'device-name-note',
+  'device-timezone', 'device-timezone-filter', 'device-timezone-search',
+  'device-timezone-error', 'device-ntp', 'sleep-select', 'device-name', 'device-name-note',
   'device-alarm', 'device-alarm-time', 'device-alarm-station', 'device-alarm-volume',
   'device-alarm-volume-value', 'device-alarm-time-row', 'device-alarm-days-row',
   'device-alarm-station-row', 'device-alarm-volume-row',
@@ -236,6 +237,7 @@ let stationsReply = {
           {index: 2, label: 'Nightwave Plaza'}],
 };
 let settingsPostFails = false;
+let timezoneCatalogReply;
 // GET /api/about. The versions differ on purpose: a page that ignored the
 // answer and printed the same string twice would still look right if they
 // matched.
@@ -369,6 +371,11 @@ const context = {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve(settingsReply),
+        });
+      }
+      if (url === '/timezones.json') {
+        return Promise.resolve({
+          ok: Boolean(timezoneCatalogReply), json: () => Promise.resolve(timezoneCatalogReply),
         });
       }
       if (String(url).startsWith('/api/restore')) {
@@ -1784,6 +1791,40 @@ function lastYandexTimer() {
   assert.equal(remoteCard.hidden, true);
   assert.equal(remoteLearns.length, 0);
 
+  settingsReply = {...settingsReply, timezone: 'Europe/Kyiv', tzdb: 'test'};
+  timezoneCatalogReply = {version: 'test', zones: ['Asia/Tokyo', 'Europe/Berlin', 'Europe/Kyiv']};
+  await refreshSettings();
+  await settle();
+  const zonePicker = elements['#device-timezone'];
+  const zoneFilter = elements['#device-timezone-search'];
+  assert.equal(zonePicker.disabled, false);
+  assert.equal(zonePicker.value, 'Europe/Kyiv');
+  assert.deepEqual(zonePicker.children.map((group) => group.label), ['Asia', 'Europe']);
+  zoneFilter.value = 'tokyo';
+  zoneFilter.emit('input');
+  assert.deepEqual(zonePicker.children.flatMap((group) => group.children.map((option) => option.value)),
+                   ['Asia/Tokyo', 'Europe/Kyiv']);
+  const catalogRequests = fetchCalls.filter((call) => call.url === '/timezones.json').length;
+  assert.ok(catalogRequests > 0);
+  settingsReply = {...settingsReply, timezone: 'Asia/Tokyo'};
+  zonePicker.value = 'Asia/Tokyo';
+  zonePicker.emit('change');
+  await settle();
+  assert.equal(fetchCalls.filter((call) => call.url === '/timezones.json').length, catalogRequests);
+  const lastChange = fetchCalls.filter(({url, options}) => url === '/api/settings' &&
+    options?.method === 'POST').at(-1);
+  assert.deepEqual(JSON.parse(lastChange.options.body), {field: 'timezone', value: 'Asia/Tokyo'});
+  assert.equal(zonePicker.value, 'Asia/Tokyo');
+
+  settingsReply = {...settingsReply, tzdb: 'missing'};
+  timezoneCatalogReply = undefined;
+  await refreshSettings();
+  await settle();
+  assert.equal(zonePicker.disabled, true);
+  assert.equal(zonePicker.value, 'Asia/Tokyo');
+  assert.equal(elements['#device-timezone-error'].hidden, false);
+  assert.equal(elements['#device-ntp'].disabled, false);
+
   /* And the choice outlives the load, so a device that reboots after a restore
      comes back with the section that was being worked in. */
   section.yandex.toggle.emit('click');
@@ -1796,7 +1837,6 @@ function lastYandexTimer() {
   vm.runInContext(fs.readFileSync('data/www/settings.js', 'utf8'), context);
   assert.equal(section.yandex.body.hidden, false);
   assert.equal(section.device.body.hidden, true);
-
   console.log('web settings tests passed');
 })().catch((error) => {
   console.error(error);
