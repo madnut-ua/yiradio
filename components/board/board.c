@@ -1882,7 +1882,7 @@ esp_err_t board_audio_set_sample_rate(uint32_t sample_rate)
     max98357a_rate_t max_rate = {0};
     if (board_dac_is_max98357a() &&
         (!max98357a_rate_plan(sample_rate, &max_rate) ||
-         (was_capturing && board_fm_chip_i2s() && sample_rate != 44100U))) {
+         (was_capturing && !s_capture_from_bt && board_fm_chip_i2s() && sample_rate != 44100U))) {
         xSemaphoreGive(s_audio_mutex);
         ESP_LOGE(TAG, "MAX98357A refuses source rate %lu Hz", (unsigned long)sample_rate);
         return ESP_ERR_NOT_SUPPORTED;
@@ -2136,7 +2136,7 @@ esp_err_t board_audio_capture_set_enabled(bool enabled)
     if (!board_audio_capture_available()) return ESP_ERR_NOT_SUPPORTED;
     xSemaphoreTake(s_audio_mutex, portMAX_DELAY);
     esp_err_t result = ESP_OK;
-    if (enabled && board_dac_is_max98357a() && board_fm_chip_i2s() &&
+    if (enabled && board_dac_is_max98357a() && !s_capture_from_bt && board_fm_chip_i2s() &&
         s_audio_sample_rate != 44100U) result = ESP_ERR_NOT_SUPPORTED;
     if (result == ESP_OK && enabled && s_i2s_rx == NULL) result = board_audio_rebuild_channel(true);
     if (result == ESP_OK && s_i2s_rx != NULL && enabled != s_capture_enabled) {
