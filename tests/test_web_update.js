@@ -488,7 +488,16 @@ async function test_check_now_and_the_switch() {
   assert.strictEqual(elements['#update-auto'].checked, false);
 }
 
+async function test_auto_check_requires_opt_in() {
+  for (const enabled of [false, undefined]) {
+    const page = load([{...idle, check: {...quiet, enabled}}]);
+    await settle();
+    assert.strictEqual(page.elements['#update-auto'].checked, false);
+  }
+}
+
 (async () => {
+  await test_auto_check_requires_opt_in();
   await test_a_good_upload_waits_for_the_press_and_sees_the_new_version();
   await test_the_web_files_go_first_and_say_a_firmware_follows();
   await test_web_files_alone_are_asked_about_alone();

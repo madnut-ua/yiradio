@@ -12,7 +12,8 @@ extern "C" {
 
 /* Asking the release whether there is something new, and installing it.
  *
- * The radio reads ota.json from the latest GitHub release five minutes after
+ * Automatic checks are off by default. When enabled, the radio reads ota.json
+ * from the latest madnut-ua/yiradio GitHub release five minutes after
  * it starts and then once a day - only what it needs to know whether to say
  * anything, and nothing about itself goes with the request. The answer is
  * shown on the web page; nothing appears on the panel until somebody presses

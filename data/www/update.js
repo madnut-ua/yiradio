@@ -274,7 +274,7 @@
     } else {
       latestLine.textContent = '—';
     }
-    autoCheck.checked = check.enabled !== false;
+    autoCheck.checked = check.enabled === true;
     checkButton.disabled = checking;
     /* Nine firmwares in a release, one per display, and nothing on the radio
        says which display it has: the names are spelled out. The version is
