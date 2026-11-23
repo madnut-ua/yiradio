@@ -328,6 +328,14 @@ notes; the `tools/release.sh` files are added afterwards with
 `gh release upload`. How many radios updated themselves:
 `bash tools/ota_stats.sh`.
 
+A release publishes one feature profile, taken from `board_options.h`. The
+web flasher installs that profile; a hardware draft cannot change which
+optional services are compiled into a ready-made binary. Network updates
+keep the current profile. For the first update from a release without profile
+metadata, or to change profiles, use the manual update with the matching
+firmware and `www.tar`. Uploading `www.tar` updates the dashboard without
+reformatting LittleFS.
+
 ## Tests
 
 ```bash
@@ -350,5 +358,5 @@ runs by its own line from the script, or directly:
 | `Could not find a version that satisfies the requirement littlefs-python` | the network blinked while building the data image | run `idf.py build` again |
 | Blank screen, no web interface, yet the device boots | only the app was flashed | `idf.py littlefs-flash` or the "First flash" task |
 | Black screen or garbage | the wrong panel or orientation in `board_options.h` | check `DISPLAY` and the TFT pins |
-| The About screen says the versions differ | the app was updated, the data was not | backup → `littlefs-flash` → restore |
+| The About screen says the versions differ | the app was updated but the web dashboard is from another build | install the matching `www.tar` from Settings → Update |
 | `idf.py: command not found` | the toolchain is not activated in this terminal | `source <idf>/export.sh` or the VS Code tasks - see [Installing](toolchain.en.md) |

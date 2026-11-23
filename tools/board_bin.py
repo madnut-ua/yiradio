@@ -33,7 +33,7 @@ VERSION = 1
 PARTITION_SIZE = 4096
 HEADER_SIZE = 16
 
-PROBE = '#include "board_parts.h"\n#include "board_options.h"\n#include "board_input.h"\n'
+PROBE = '#include "board_features.h"\n#include "board_input.h"\n'
 
 # In board_config.c's order; the choices are the ones it offers.
 DISPLAYS = [
@@ -195,8 +195,7 @@ def board_csv(macros):
         ("touch", touch),
         ("touch_i2c", "0"),
         ("touch_int", pin(macros, "TOUCH_INT_GPIO") if touch != "none" else "none"),
-        ("yandex_music", "1" if defined("YANDEX_MUSIC") and
-         value(macros, "YANDEX_MUSIC") == feature_on else "0"),
+        ("yandex_music", str(value(macros, "BOARD_HAS_YANDEX_MUSIC"))),
         ("dlna", "1" if defined("DLNA") and value(macros, "DLNA") == feature_on else "0"),
     ]
     return "# key,value\n" + "".join(f"{key},{text}\n" for key, text in rows)

@@ -25,7 +25,7 @@ extern "C" {
 typedef struct {
     uint32_t magic;
     uint16_t display;   /* DISPLAY_* from board_parts.h */
-    uint16_t reserved;
+    uint16_t profile;   /* version_info_profile_t; 0 in legacy images */
 } ota_image_mark_t;
 
 typedef enum {
@@ -46,6 +46,7 @@ typedef enum {
 typedef struct {
     char version[32];
     unsigned display;
+    unsigned profile;
 } ota_image_info_t;
 
 ota_image_result_t ota_image_check(const uint8_t *head, size_t length,

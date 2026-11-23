@@ -21,10 +21,12 @@ static const ui_menu_item_config_t s_items[UI_MENU_ITEM_COUNT] = {
                                 .source = AUDIO_SOURCE_BLUETOOTH},
     [UI_MENU_ITEM_FM_RADIO] = {.label = DEVICE_TEXT_SOURCE_FM, .source = AUDIO_SOURCE_FM},
     [UI_MENU_ITEM_DLNA] = {.label = DEVICE_TEXT_SOURCE_DLNA, .source = AUDIO_SOURCE_DLNA},
+#if BOARD_HAS_YANDEX_MUSIC
     /* The long name here, where the row has the width for it: the player block
      * shows the short one. */
     [UI_MENU_ITEM_YANDEX_MUSIC] = {.label = DEVICE_TEXT_YANDEX_LONG,
                                    .source = AUDIO_SOURCE_YANDEX},
+#endif
     [UI_MENU_ITEM_SETTINGS] = {.label = DEVICE_TEXT_SETTINGS, .source = AUDIO_SOURCE_NONE},
 };
 
@@ -243,6 +245,9 @@ uint8_t ui_menu_selected_index(const ui_menu_state_t *state)
 
 const char *ui_menu_item_label(ui_menu_item_t item, device_language_t language)
 {
+#if !BOARD_HAS_YANDEX_MUSIC
+    if (item == UI_MENU_ITEM_YANDEX_MUSIC) return "";
+#endif
     return item < UI_MENU_ITEM_COUNT ? device_text(s_items[item].label, language) : "";
 }
 

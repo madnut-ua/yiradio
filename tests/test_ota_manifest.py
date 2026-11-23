@@ -1,8 +1,10 @@
 """tools/ota_manifest.py against a fake set of builds and changelogs."""
 
 import json
+import io
 import os
 import sys
+import tarfile
 import tempfile
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))
@@ -31,22 +33,26 @@ CHANGELOG_RU = """# История изменений
 CHANGELOG_EN = CHANGELOG_RU.replace("Новое", "New").replace("Обновление по сети", "Updates")
 
 
-def image(marked=True):
+def image(marked=True, profile=1):
     head = bytearray(1024)
     head[0] = 0xE9
     if marked:
         head[ota_manifest.MARK_OFFSET:ota_manifest.MARK_OFFSET + 4] = ota_manifest.MARK_MAGIC
+        head[ota_manifest.MARK_OFFSET + 6] = profile
     return bytes(head)
 
 
-def lay_out(root, marked=True):
+def lay_out(root, marked=True, web_profile=1):
     for display in ("st7789_320_240", "ili9341_320_240"):
         build = os.path.join(root, "builds", "firmware-" + display)
         os.makedirs(build)
         with open(os.path.join(build, "jradio.bin"), "wb") as handle:
             handle.write(image(marked) + display.encode())
-        with open(os.path.join(build, "www.tar"), "wb") as handle:
-            handle.write(b"tar")
+        with tarfile.open(os.path.join(build, "www.tar"), "w:") as archive:
+            stamp = json.dumps({"profile": str(web_profile)}).encode()
+            entry = tarfile.TarInfo("version.json")
+            entry.size = len(stamp)
+            archive.addfile(entry, io.BytesIO(stamp))
     for name, text in (("ru.md", CHANGELOG_RU), ("en.md", CHANGELOG_EN)):
         with open(os.path.join(root, name), "w", encoding="utf-8") as handle:
             handle.write(text)
@@ -80,6 +86,7 @@ def test_every_display_gets_its_two_names_and_one_manifest():
         with open(os.path.join(out, "ota.json"), encoding="utf-8") as handle:
             manifest = json.load(handle)
         assert manifest["version"] == "v1.6.0"
+        assert manifest["format"] == 2 and manifest["profile"] == 1
         # This version and the released ones before it, newest first, without
         # their headings; nothing unreleased. The wrapped item is one line.
         history = manifest["history"]
@@ -113,6 +120,12 @@ def test_a_build_without_the_display_mark_is_not_released():
     with tempfile.TemporaryDirectory() as root:
         lay_out(root, marked=False)
         assert "no display mark" in refused(root)
+
+
+def test_wrong_web_profile_is_not_released():
+    with tempfile.TemporaryDirectory() as root:
+        lay_out(root, web_profile=2)
+        assert "does not match the firmware profile" in refused(root)
 
 
 def test_the_history_stops_at_its_limit_and_skips_later_sections():
@@ -165,6 +178,7 @@ if __name__ == "__main__":
     test_a_tag_without_a_changelog_section_is_not_released()
     test_only_a_release_version_goes_out()
     test_a_build_without_the_display_mark_is_not_released()
+    test_wrong_web_profile_is_not_released()
     test_the_history_stops_at_its_limit_and_skips_later_sections()
     test_the_oldest_sections_go_when_the_manifest_would_not_fit()
     test_a_version_too_long_to_fit_alone_is_not_released()

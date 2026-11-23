@@ -1,4 +1,5 @@
 #include "web_view_model.h"
+#include "board_features.h"
 
 #include <string.h>
 
@@ -38,7 +39,12 @@ const char *web_view_source_name(audio_source_t source)
     case AUDIO_SOURCE_USB: return "usb";
     case AUDIO_SOURCE_SD: return "sd";
     case AUDIO_SOURCE_INTERNET_RADIO: return "internet_radio";
-    case AUDIO_SOURCE_YANDEX: return "yandex";
+    case AUDIO_SOURCE_YANDEX:
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
+        return "yandex";
+#else
+        return NULL;
+#endif
     case AUDIO_SOURCE_DLNA: return "dlna";
     case AUDIO_SOURCE_FM: return "fm";
     case AUDIO_SOURCE_BLUETOOTH: return "bluetooth";
@@ -54,7 +60,13 @@ const char *web_view_source_label(audio_source_t source, device_language_t langu
     case AUDIO_SOURCE_USB: id = DEVICE_TEXT_SOURCE_USB; break;
     case AUDIO_SOURCE_SD: id = DEVICE_TEXT_SOURCE_SD; break;
     case AUDIO_SOURCE_INTERNET_RADIO: id = DEVICE_TEXT_SOURCE_INTERNET_RADIO; break;
-    case AUDIO_SOURCE_YANDEX: id = DEVICE_TEXT_SOURCE_YANDEX; break;
+    case AUDIO_SOURCE_YANDEX:
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
+        id = DEVICE_TEXT_SOURCE_YANDEX;
+        break;
+#else
+        return "";
+#endif
     case AUDIO_SOURCE_DLNA: id = DEVICE_TEXT_SOURCE_DLNA; break;
     case AUDIO_SOURCE_FM: id = DEVICE_TEXT_SOURCE_FM; break;
     case AUDIO_SOURCE_BLUETOOTH: id = DEVICE_TEXT_SOURCE_BLUETOOTH; break;

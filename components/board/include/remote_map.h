@@ -75,6 +75,7 @@ void remote_map_clear(remote_map_t *map);
 /* The file's names, "power", "digit_3", "source_usb" - what remote.csv and
  * the web page use. NULL for a value out of range. */
 const char *remote_function_name(remote_function_t function);
+bool remote_function_available(remote_function_t function);
 bool remote_function_from_name(const char *name, remote_function_t *function);
 
 /* Whether a held key keeps acting: the volume and the cursor ramp, everything

@@ -2,6 +2,8 @@
 
 #include <string.h>
 
+#include "board_features.h"
+
 static void ui_player_state_derive_view(ui_player_state_t *state,
                                         const player_snapshot_t *snapshot)
 {
@@ -166,21 +168,22 @@ bool ui_player_state_can_post(const ui_player_state_t *state,
     // no snapshot field ever moves to confirm it - the same reason USB
     // browsing stays out of the pending machinery.
     case PLAYER_COMMAND_SEEK:
+    // Skipping a track within a source also leaves the selected item alone.
+    case PLAYER_COMMAND_NEXT_TRACK:
         return true;
-    /* The ones that ask something of the track rather than of the list: the
-     * rotor's next track, and either mark on it. None of them moves anything
-     * the pending machinery watches - the station stays the station, and a
-     * mark is not playback - so none waits for a snapshot to confirm it.
+#if BOARD_HAS_YANDEX_MUSIC
+    /* A rating does not move anything the pending machinery watches: the
+     * station stays the station, and a mark is not playback.
      *
      * This list is named rather than defaulted to true, so a command added to
      * player_control_types.h is refused here until someone decides what it
      * means on this screen. The dislike was added and not listed, and the
      * result was a key that did nothing while the same command sent from the
      * browser - which does not pass through this gate - worked. */
-    case PLAYER_COMMAND_NEXT_TRACK:
     case PLAYER_COMMAND_TOGGLE_LIKE:
     case PLAYER_COMMAND_TOGGLE_DISLIKE:
         return true;
+#endif
     /* The track keys on a list source do move the active row, but they name no
      * index for a snapshot to be checked against: the player works out which
      * neighbour it is itself. So they are not pending commands either - only
@@ -204,8 +207,10 @@ bool ui_player_state_apply_post_result(ui_player_state_t *state,
         command->kind == PLAYER_COMMAND_TOGGLE ||
         command->kind == PLAYER_COMMAND_SEEK ||
         command->kind == PLAYER_COMMAND_NEXT_TRACK ||
+#if BOARD_HAS_YANDEX_MUSIC
         command->kind == PLAYER_COMMAND_TOGGLE_LIKE ||
         command->kind == PLAYER_COMMAND_TOGGLE_DISLIKE ||
+#endif
         command->kind == PLAYER_COMMAND_PREVIOUS_ITEM ||
         command->kind == PLAYER_COMMAND_NEXT_ITEM ||
         ui_player_state_is_browse(command)) return true;
@@ -423,7 +428,11 @@ bool ui_player_state_pending_item(const ui_player_state_t *state, size_t *item_i
 bool ui_player_state_list_is_the_only_screen(audio_source_t source, size_t active_item_index,
                                              player_playback_state_t playback, bool pending)
 {
+#if BOARD_HAS_YANDEX_MUSIC
     if (source != AUDIO_SOURCE_INTERNET_RADIO && source != AUDIO_SOURCE_YANDEX) return false;
+#else
+    if (source != AUDIO_SOURCE_INTERNET_RADIO) return false;
+#endif
     /* A command of our own is on its way: the screen it asked for is the one
      * to stay on. The snapshot still reads "nothing chosen, stopped" until
      * the player has resolved a first track, which the rotor can spend seconds

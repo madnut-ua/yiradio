@@ -37,6 +37,7 @@ import os
 import re
 import shutil
 import sys
+import tarfile
 
 # The mark components/ota/ota_update.c puts after the app description: an
 # image without it is refused by every radio that can update itself, so a
@@ -107,11 +108,39 @@ def describe(path, url):
     return {"url": url, "size": os.path.getsize(path), "sha256": digest.hexdigest()}
 
 
-def check_mark(path):
+def image_profile(path):
     with open(path, "rb") as handle:
-        head = handle.read(MARK_OFFSET + 4)
+        head = handle.read(MARK_OFFSET + 8)
     if head[MARK_OFFSET:MARK_OFFSET + 4] != MARK_MAGIC:
         fail("%s has no display mark at offset %d" % (path, MARK_OFFSET))
+    profile = int.from_bytes(head[MARK_OFFSET + 6:MARK_OFFSET + 8], "little")
+    if profile not in (1, 2):
+        fail("%s has no known build profile" % path)
+    return profile
+
+
+def release_profile(builds_dir, builds):
+    profile = None
+    for build in builds:
+        directory = os.path.join(builds_dir, build)
+        found = image_profile(os.path.join(directory, "jradio.bin"))
+        web = os.path.join(directory, "www.tar")
+        try:
+            with tarfile.open(web, "r:") as archive:
+                stamp_file = archive.extractfile("version.json")
+                if stamp_file is None:
+                    fail("%s has no web stamp" % web)
+                stamp = json.load(stamp_file)
+        except (OSError, KeyError, ValueError, tarfile.TarError) as error:
+            fail("%s has no readable web stamp: %s" % (web, error))
+        if not isinstance(stamp, dict) or stamp.get("profile") != str(found):
+            fail("%s does not match the firmware profile" % web)
+        if profile is not None and profile != found:
+            fail("display builds have different profiles")
+        profile = found
+    if profile is None:
+        fail("there is no firmware build")
+    return profile
 
 
 def manifest_text(manifest):
@@ -153,12 +182,12 @@ def main(argv=None):
     builds = sorted(name for name in os.listdir(args.builds) if name.startswith("firmware-"))
     if not builds:
         fail("no firmware-* builds under " + args.builds)
+    profile = release_profile(args.builds, builds)
 
     firmware = {}
     for build in builds:
         display = build[len("firmware-"):]
         source = os.path.join(args.builds, build, "jradio.bin")
-        check_mark(source)
         for name in ("ota-%s.bin" % display, "jradio-%s-%s.bin" % (args.version, display)):
             shutil.copyfile(source, os.path.join(args.out, name))
         firmware[display] = describe(source, base + "ota-%s.bin" % display)
@@ -169,7 +198,8 @@ def main(argv=None):
         shutil.copyfile(www_source, os.path.join(args.out, name))
 
     manifest = {
-        "format": 1,
+        "format": 2,
+        "profile": profile,
         "version": args.version,
         "history": history,
         "www": describe(www_source, base + "ota-www.tar"),

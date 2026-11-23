@@ -78,6 +78,7 @@ jobs:
           printf '#undef DISPLAY\n#define DISPLAY DISPLAY_%s\n' "$display" > board_options.local.h
           . "$IDF_PATH/export.sh"
           idf.py build
+          python -B tests/verify_firmware_profile.py build
           mkdir -p out
           cp build/jradio.bin build/bootloader/bootloader.bin \
              build/partition_table/partition-table.bin build/ota_data_initial.bin \
@@ -120,7 +121,7 @@ jobs:
           cp "${first}/bootloader.bin" "${first}/partition-table.bin" "${first}/littlefs.bin" site/firmware/
           cp "${first}/ota_data_initial.bin" site/firmware/ota-data.bin
           python3 tools/flasher_manifest.py --flasher-args "${first}/flasher_args.json" \
-              --partitions partitions.csv --version "${version}" "${displays[@]}" \
+              --partitions partitions.csv --version "${version}" --builds builds "${displays[@]}" \
               --out site/manifest.json
           cat site/manifest.json
           ls -lR site

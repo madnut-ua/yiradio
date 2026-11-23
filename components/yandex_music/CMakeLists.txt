@@ -1,3 +1,9 @@
+idf_build_get_property(yandex_music JRADIO_YANDEX_MUSIC)
+if(NOT yandex_music)
+    idf_component_register()
+    return()
+endif()
+
 idf_component_register(SRCS "yandex_api.c" "yandex_auth.c" "yandex_auth_flow.c"
                             "yandex_auth_json.c" "yandex_catalog.c"
                             "yandex_catalog_parse.c" "yandex_feedback.c"

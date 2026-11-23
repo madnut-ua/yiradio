@@ -15,7 +15,7 @@ into. It is written into the staging copy and never into data/ - a generated
 file in the source tree would be committed by somebody sooner or later.
 
 Usage:
-    python3 tools/stamp_version.py --version <string> --out <path>
+    python3 tools/stamp_version.py --version <string> --profile <1|2> --out <path>
 """
 
 import argparse
@@ -28,6 +28,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--version", required=True,
                         help="what the firmware is stamped with, from CMake's PROJECT_VER")
+    parser.add_argument("--profile", required=True, choices=("1", "2"))
     parser.add_argument("--out", required=True, help="the json file to write")
     args = parser.parse_args()
 
@@ -38,6 +39,7 @@ def main():
     stamp = {
         "version": args.version,
         "built": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d"),
+        "profile": args.profile,
     }
     # Compact and with a trailing newline: it is read by a device with a fixed
     # buffer, and by a person with `cat`.

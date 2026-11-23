@@ -40,6 +40,7 @@ typedef struct {
     size_t notes_count;
     ota_offer_file_t app;
     ota_offer_file_t www;
+    unsigned profile;
 } ota_offer_t;
 
 typedef enum {

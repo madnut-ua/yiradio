@@ -148,10 +148,12 @@
                     <option value="repeat" data-i18n="settings.files_end_repeat">Сначала</option>
                   </select>
                 </div>
-                <div class="device-row" id="device-yandex-row">
+                <!-- YA_MUSIC_BEGIN -->
+                <div class="device-row" id="device-yandex-row" hidden>
                   <label for="device-yandex" data-i18n="settings.yandex">Яндекс Музыка</label>
                   <input id="device-yandex" type="checkbox" data-field="yandex_music">
                 </div>
+                <!-- YA_MUSIC_END -->
                 <div class="device-row" id="device-dlna-row">
                   <label for="device-dlna">DLNA</label>
                   <input id="device-dlna" type="checkbox" data-field="dlna">
@@ -541,7 +543,8 @@
           </div>
         </section>
 
-        <section class="card is-collapsed" data-section="yandex" aria-labelledby="yandex-title">
+        <!-- YA_MUSIC_BEGIN -->
+        <section class="card is-collapsed" id="yandex-card" data-section="yandex" aria-labelledby="yandex-title" hidden>
           <div class="card-head">
             <button class="card-toggle" type="button" aria-expanded="false" aria-controls="yandex-body">
               <svg class="card-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 5 7 7-7 7"/></svg>
@@ -572,8 +575,10 @@
             </div>
 
             <p class="field-note" data-i18n="note.yandex">Пароль от Яндекса устройству не нужен: код подтверждается на сайте Яндекса, сюда возвращается только токен доступа.</p>
+            <p class="field-note" data-i18n="note.yandex_backup">Токен ЯМузыки хранится в архиве открытым текстом в файле yandex.json. Этот файл также можно восстановить отдельно.</p>
           </div>
         </section>
+        <!-- YA_MUSIC_END -->
 
         <section class="card is-collapsed" data-section="backup" aria-labelledby="backup-title">
           <div class="card-head">
@@ -585,7 +590,7 @@
           </div>
 
           <div class="card-body" id="backup-body" hidden>
-            <p class="field-note" data-i18n="note.backup">В архив попадает всё, что устройство знает о себе: сети Wi-Fi, настройки, токен ЯМузыки, ключ погоды, обученные кнопки пульта и FM-станции. Плейлист сохраняется отдельно, на странице «Станции».</p>
+            <p class="field-note" data-i18n="note.backup">Архив содержит сети Wi-Fi, настройки, ключ погоды, обученные кнопки пульта и FM-станции вместе с их картинками. Плейлист сохраняется отдельно, на странице «Станции».</p>
 
             <div class="settings-actions">
               <a id="backup-download" class="secondary-button" href="/api/backup" download data-i18n="backup.download">Скачать архив</a>
@@ -596,8 +601,8 @@
               <button id="backup-restore" class="primary-button" type="button" disabled data-i18n="backup.restore">Восстановить</button>
             </div>
 
-            <p class="field-note" data-i18n="note.restore">Восстановить можно весь архив целиком или один файл из него — wifi.json, settings.csv, yandex.json, weather.json, remote.csv, fm_presets.csv или levels.csv. После восстановления устройство перезагрузится.</p>
-            <p class="field-note" data-i18n="note.backup_secret">Пароли Wi-Fi, токен ЯМузыки и ключ погоды лежат в архиве открытым текстом: храните его так же, как хранили бы пароль.</p>
+            <p class="field-note" data-i18n="note.restore">Восстановить можно весь архив целиком или один файл из него — wifi.json, settings.csv, weather.json, remote.csv, fm_presets.csv или levels.csv. После восстановления устройство перезагрузится.</p>
+            <p class="field-note" data-i18n="note.backup_secret">Пароли Wi-Fi и ключ погоды лежат в архиве открытым текстом: храните его так же, как хранили бы пароль.</p>
           </div>
         </section>
 

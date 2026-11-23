@@ -35,9 +35,13 @@
 #include "web_server.h"
 #include "wifi_provisioning.h"
 #include "wifi_settings.h"
+#if BOARD_HAS_YANDEX_MUSIC
 #include "yandex_auth.h"
 #include "yandex_catalog.h"
 #include "yandex_feedback.h"
+#endif
+_Static_assert(BOARD_HAS_YANDEX_MUSIC == JRADIO_CONFIGURED_YANDEX_MUSIC,
+               "board feature configuration differs from the build graph");
 
 static const char *TAG = "jradio";
 
@@ -345,12 +349,8 @@ void app_main(void)
     /* Same place and the same reason: it waits for the network on its own,
      * and it reads its service and its coordinates off the same card. */
     start_optional("weather", weather_init(settings_read ? &boot_settings : NULL));
-    /* Each of these belongs to a part or a feature board_options.h can leave
-     * out, so each is asked for only when this build has it. A plain `if` on
-     * a constant rather than #if: the call still has to compile, which is what
-     * catches a signature drifting away from a subsystem nobody currently
-     * builds. */
-    if (BOARD_HAS_YANDEX_MUSIC) {
+#if BOARD_HAS_YANDEX_MUSIC
+    {
         // After Wi-Fi, because that is what mounts LittleFS, and before the UI
         // so the menu already knows whether an account is linked when it first
         // draws.
@@ -361,6 +361,7 @@ void app_main(void)
          * tomorrow does not start where it started today. */
         start_optional("Yandex Music feedback", yandex_feedback_init());
     }
+#endif
     /* The cover store, whoever fills it: station pictures, Yandex, DLNA and
      * the phone draw through it as well as files. It used to be started by
      * the file player alone, which was always there when the build decided

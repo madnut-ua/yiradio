@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "audio_level.h"
+#include "board_features.h"
 #include "cJSON.h"
 
 enum {
@@ -725,8 +726,10 @@ static bool parse_player_action(const cJSON *root, uint32_t fields,
             parsed->player.source = AUDIO_SOURCE_USB;
         } else if (strcmp(source->valuestring, "sd") == 0) {
             parsed->player.source = AUDIO_SOURCE_SD;
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
         } else if (strcmp(source->valuestring, "yandex") == 0) {
             parsed->player.source = AUDIO_SOURCE_YANDEX;
+#endif
         } else if (strcmp(source->valuestring, "dlna") == 0) {
             parsed->player.source = AUDIO_SOURCE_DLNA;
         } else if (strcmp(source->valuestring, "bluetooth") == 0) {
@@ -760,6 +763,7 @@ static bool parse_player_action(const cJSON *root, uint32_t fields,
         parsed->player.kind = PLAYER_COMMAND_NEXT_ITEM;
         return true;
     }
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
     if (strcmp(action, "player.like") == 0) {
         // Toggles rather than sets: the client would have to be told what the
         // mark is now to send the other one, and it is told - but a second
@@ -777,6 +781,7 @@ static bool parse_player_action(const cJSON *root, uint32_t fields,
         parsed->player.kind = PLAYER_COMMAND_TOGGLE_DISLIKE;
         return true;
     }
+#endif
     if (strcmp(action, "browse.up") == 0) {
         // No index: "up" is relative to whatever directory the shared listing
         // is on, which is the same one the device screen shows.

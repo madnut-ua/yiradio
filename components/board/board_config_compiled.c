@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-#include "board_options.h"
+#include "board_features.h"
 // For its defaults: a button left out is "not wired", and BUTTON_F2_GPIO is
 // still read as the quick-menu button's older name.
 #include "board_input.h"
@@ -170,9 +170,7 @@ void board_config_compiled(board_config_t *config)
     config->i2s0_din = PIN(I2S_DIN_GPIO);
     config->i2s0_mclk = PIN(I2S_MCLK_GPIO);
 #endif
-#if defined(YANDEX_MUSIC)
-    config->yandex_music = YANDEX_MUSIC == FEATURE_ON ? 1U : 0U;
-#endif
+    config->yandex_music = BOARD_HAS_YANDEX_MUSIC;
 #if defined(DLNA)
     config->dlna = DLNA == FEATURE_ON ? 1U : 0U;
 #endif

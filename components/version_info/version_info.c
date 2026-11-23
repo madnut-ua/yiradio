@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "esp_app_desc.h"
+#include "board_features.h"
 
 /* Where tools/stamp_version.py lands once the image is flashed. Beside
  * settings.csv rather than under www/: it is read by the device and is not a
@@ -34,6 +35,11 @@ static void read_web_stamp(version_info_part_t *part)
     (void)version_info_parse(buffer, read, part);
 }
 
+version_info_profile_t version_info_current_profile(void)
+{
+    return BOARD_HAS_YANDEX_MUSIC ? VERSION_INFO_PROFILE_EXTENDED : VERSION_INFO_PROFILE_BASE;
+}
+
 void version_info_read(version_info_t *info)
 {
     if (info == NULL) return;
@@ -44,6 +50,7 @@ void version_info_read(version_info_t *info)
      * the boot log prints as "App version". */
     const esp_app_desc_t *desc = esp_app_get_description();
     if (desc != NULL) {
+        info->firmware.profile = version_info_current_profile();
         copy_field(info->firmware.version, sizeof(info->firmware.version), desc->version);
         copy_field(info->firmware.built, sizeof(info->firmware.built), desc->date);
         copy_field(info->idf, sizeof(info->idf), desc->idf_ver);

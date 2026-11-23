@@ -20,7 +20,10 @@ if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git" AND
     endif()
 endif()
 
+set(CMAKE_PROJECT_jradio_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/tools/board_features.cmake")
 project(jradio)
+idf_build_get_property(jradio_yandex_music JRADIO_YANDEX_MUSIC)
+math(EXPR jradio_build_profile "1 + ${jradio_yandex_music}")
 
 # board_options.h ends by including board_options.local.h - a board's own
 # wiring, ignored by git. The compiler finds the file beside board_options.h
@@ -93,9 +96,11 @@ idf_build_get_property(jradio_project_ver PROJECT_VER)
 add_custom_target(littlefs_stage
     COMMAND ${CMAKE_COMMAND} -E remove_directory "${littlefs_stage_dir}"
     COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/data" "${littlefs_stage_dir}"
+    COMMAND ${python} "${CMAKE_SOURCE_DIR}/tools/stage_profile.py"
+            "${littlefs_stage_dir}" "${jradio_yandex_music}"
     COMMAND ${python} "${CMAKE_SOURCE_DIR}/tools/gzip_www_assets.py" "${littlefs_stage_dir}/www"
     COMMAND ${python} "${CMAKE_SOURCE_DIR}/tools/stamp_version.py"
-            --version "${jradio_project_ver}"
+            --version "${jradio_project_ver}" --profile "${jradio_build_profile}"
             --out "${littlefs_stage_dir}/config/version.json"
     COMMAND ${python} "${CMAKE_SOURCE_DIR}/tools/pack_www.py"
             --stage "${littlefs_stage_dir}" --out "${CMAKE_BINARY_DIR}/www.tar"

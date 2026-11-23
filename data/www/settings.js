@@ -32,6 +32,8 @@
   const aboutModule = document.querySelector('#about-module');
   const aboutNotice = document.querySelector('#about-notice');
   const aboutAuthor = document.querySelector('#about-author');
+  /* YA_MUSIC_BEGIN */
+  const yandexCard = document.querySelector('#yandex-card');
   const yandexStatus = document.querySelector('#yandex-status');
   const yandexCodeBlock = document.querySelector('#yandex-code-block');
   const yandexUrl = document.querySelector('#yandex-url');
@@ -44,6 +46,7 @@
   const yandexStationsBlock = document.querySelector('#yandex-stations-block');
   const yandexStations = document.querySelector('#yandex-stations');
   const yandexStationsEmpty = document.querySelector('#yandex-stations-empty');
+  /* YA_MUSIC_END */
   const deviceStatus = document.querySelector('#device-status');
   const deviceTimezone = document.querySelector('#device-timezone');
   const sleepSelect = document.querySelector('#sleep-select');
@@ -75,7 +78,7 @@
   /* The device's own settings screen, field for field, in the order and with
      the wording it uses - so that "Скроллинг: Влево-вправо" means the same
      thing in both places. `row` and `gate` belong to the fields the device
-     itself can be without: a build with no Yandex Music or no media server has
+     itself can be without: a build with no media server has
      no switch for it, and a board with only one place to go has no home screen
      to choose. */
   const deviceFields = [
@@ -93,8 +96,10 @@
     {field: 'power_restore', kind: 'switch', node: document.querySelector('#device-power-restore'),
      row: document.querySelector('#device-power-restore-row'), gate: 'sleep'},
     {field: 'files_end', kind: 'choice', node: document.querySelector('#device-files-end')},
+    /* YA_MUSIC_BEGIN */
     {field: 'yandex_music', kind: 'switch', node: document.querySelector('#device-yandex'),
      row: document.querySelector('#device-yandex-row'), gate: 'yandex_music'},
+    /* YA_MUSIC_END */
     {field: 'dlna', kind: 'switch', node: document.querySelector('#device-dlna'),
      row: document.querySelector('#device-dlna-row'), gate: 'dlna'},
     {field: 'bt_output', kind: 'switch', node: document.querySelector('#device-bt-output'),
@@ -221,8 +226,12 @@
   // device refuses one while a save is still waiting for its IP, and a refusal
   // it never hears about is worse than a button that says why it is not ready.
   let lastWifi = null;
+  /* YA_MUSIC_BEGIN */
+  let yandexAvailable = false;
+  let yandexRequest = null;
   let yandexTimer = null;
   let yandexBusy = false;
+  /* YA_MUSIC_END */
   let deviceBusy = false;
   // The field whose handle is being held right now, if any. A push from the
   // device must not move a control the visitor has hold of.
@@ -927,11 +936,7 @@
     });
   }
 
-  /* The device settings run over REST for the same reason the Yandex section
-     below does: they change when someone changes them and never on their own,
-     so they have no business in the diff stream that carries the player.
-
-     Neither this page nor the device screen owns them - both write settings.csv
+  /* Neither this page nor the device screen owns the settings - both write settings.csv
      through the same setters, and the device is told to re-read after a write
      from here. That also means the values shown were read when the page loaded:
      turn the knob on the device and this page will not notice until it is
@@ -1223,9 +1228,12 @@
 
   function applyDeviceSettings(payload) {
     if (!isObject(payload)) return false;
+    const available = isObject(payload.available) ? payload.available : {};
+    /* YA_MUSIC_BEGIN */
+    setYandexAvailable(available.yandex_music === true);
+    /* YA_MUSIC_END */
     applyLanguage(payload);
     applySleepTimer(payload.sleep);
-    const available = isObject(payload.available) ? payload.available : {};
     // Before the values below, or the zone would be set on an empty list.
     fillTimezones(payload.timezones);
     fillSecondsChoices(payload.screensaver_seconds_choices);
@@ -1425,13 +1433,15 @@
   function applyLanguage(payload) {
     if (!isObject(payload) || typeof payload.language !== 'string') return;
     if (!window.jradioI18n.setLanguage(payload.language)) return;
-    /* The Wi-Fi rows, the account card and the version card carry words this
+    /* The Wi-Fi rows and the version card carry words this
        page builds rather than words the markup holds, so they are asked for
        again. Waiting for their own polls would leave half the page in the
        language it was in a moment ago. */
     if (lastWifi !== null) renderSavedNetworks(lastWifi);
     refreshAbout();
+    /* YA_MUSIC_BEGIN */
     refreshYandex();
+    /* YA_MUSIC_END */
   }
 
   function refreshDeviceSettings() {
@@ -1608,7 +1618,12 @@
           const key = restoreErrorText[code];
           let text = key ? t(key) : t('backup.refused');
           if (code === 'compressed') text += t('backup.err_compressed_tail');
-          if (code === 'unknown-file') text += 'wifi.json, settings.csv, yandex.json';
+          if (code === 'unknown-file') {
+            text += 'wifi.json, settings.csv, weather.json, remote.csv, fm_presets.csv, levels.csv';
+            /* YA_MUSIC_BEGIN */
+            if (yandexAvailable) text += ', yandex.json';
+            /* YA_MUSIC_END */
+          }
           setBackupStatus(text, 'error');
           return;
         }
@@ -1651,6 +1666,7 @@
     backupRestore.addEventListener('click', () => restoreChosenFile());
   }
 
+  /* YA_MUSIC_BEGIN */
   // Yandex Music runs over REST rather than the WebSocket: it changes a few
   // times per authorisation and never during playback, so it does not belong
   // in the live diff stream that carries the player state.
@@ -1749,7 +1765,7 @@
   }
 
   function scheduleYandexRefresh(fast) {
-    if (yandexTimer !== null) return;
+    if (!yandexAvailable || yandexTimer !== null) return;
     // Two seconds while a code is on screen so the countdown and the moment of
     // confirmation are visible; rarely otherwise, since nothing changes.
     yandexTimer = window.setTimeout(() => {
@@ -1757,6 +1773,7 @@
       refreshYandex();
     }, fast ? 2000 : 15000);
   }
+  /* YA_MUSIC_END */
 
   /* Versions never change while the device is running, so this is fetched
      once when the page loads and never polled. */
@@ -1804,22 +1821,51 @@
       .catch(() => {});
   }
 
+  /* YA_MUSIC_BEGIN */
+  function clearYandexTimer() {
+    if (yandexTimer === null) return;
+    window.clearTimeout(yandexTimer);
+    yandexTimer = null;
+  }
+
+  function setYandexAvailable(available) {
+    if (available === yandexAvailable) return;
+    yandexAvailable = available;
+    yandexCard.hidden = !available;
+    if (available) {
+      refreshYandex();
+    } else {
+      clearYandexTimer();
+      yandexRequest = null;
+    }
+  }
+
   function refreshYandex() {
-    return window.fetch('/api/yandex', {cache: 'no-store'})
+    if (!yandexAvailable) return Promise.resolve();
+    if (yandexRequest !== null) return yandexRequest;
+    const request = window.fetch('/api/yandex', {cache: 'no-store'})
       .then((response) => {
         if (!response || response.ok !== true) throw new Error('request failed');
         return response.json();
       })
-      .then((payload) => scheduleYandexRefresh(applyYandex(payload)))
+      .then((payload) => {
+        if (yandexRequest === request) scheduleYandexRefresh(applyYandex(payload));
+      })
       .catch(() => {
+        if (yandexRequest !== request) return;
         yandexStatus.textContent = t('common.no_device');
         yandexStatus.classList.add('is-error');
         scheduleYandexRefresh(false);
+      })
+      .finally(() => {
+        if (yandexRequest === request) yandexRequest = null;
       });
+    yandexRequest = request;
+    return request;
   }
 
   function sendYandexAction(action) {
-    if (yandexBusy) return Promise.resolve();
+    if (!yandexAvailable || yandexBusy) return Promise.resolve();
     yandexBusy = true;
     yandexLink.disabled = true;
     yandexCancel.disabled = true;
@@ -1834,21 +1880,19 @@
       .catch(() => {})
       .then(() => {
         yandexBusy = false;
-        if (yandexTimer !== null) {
-          window.clearTimeout(yandexTimer);
-          yandexTimer = null;
-        }
+        clearYandexTimer();
+        yandexRequest = null;
         return refreshYandex();
       });
   }
+  /* YA_MUSIC_END */
 
   /* The page folds: one section stands open and the rest are a heading each.
      Unfolded it is five screens of scrolling on a phone, four of them past
      sections nobody came for.
 
-     The status stays outside the button on purpose - saved, no connection, the
-     Yandex countdown: all worth reading with the section folded, and a live
-     region inside a button is read out as part of the button's own name.
+     The status stays outside the button: worth reading with the section
+     folded, and a live region inside a button becomes part of its name.
 
      Which one was open is the page's own shape rather than a device setting,
      so it is remembered here and never written to settings.csv. Storage that
@@ -1946,13 +1990,14 @@
   bindSections();
   bindDeviceFields();
   bindBackup();
+  /* YA_MUSIC_BEGIN */
   yandexLink.addEventListener('click', () => sendYandexAction('begin'));
   yandexCancel.addEventListener('click', () => sendYandexAction('cancel'));
   yandexForget.addEventListener('click', () => sendYandexAction('forget'));
   yandexRefresh.addEventListener('click', () => sendYandexAction('refresh'));
+  /* YA_MUSIC_END */
   setConnected(false);
   connect();
   refreshDeviceSettings();
-  refreshYandex();
   refreshAbout();
 })();

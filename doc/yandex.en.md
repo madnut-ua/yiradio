@@ -41,4 +41,8 @@ them the station does not know a song has played, and tracks repeat.
 
 **If you do not need it.** Settings → General has a "Yandex Music" switch: the
 source disappears from the home screen, the link is kept. To take it out of
-the firmware entirely, set `YANDEX_MUSIC FEATURE_OFF` in `board_options.h`.
+both the firmware and its web dashboard entirely, set `YANDEX_MUSIC FEATURE_OFF`
+in `board_options.h` or leave the directive commented out. Build both artifacts
+and install the matching `www.tar` from Settings → Update. An app-only flash
+leaves the old dashboard in place. Installing the web archive does not erase
+the saved token; a build without the feature does not use or back it up.

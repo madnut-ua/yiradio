@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #include "board_display_profile.h"
+#include "board_features.h"
 #include "ui_buffer_graph.h"
 #include "ui_font_metrics.h"
 
@@ -655,6 +656,7 @@ _Static_assert(UI_QUICK_VALUE_W >= UI_QUICK_SWITCH_W,
 _Static_assert(UI_QUICK_SWITCH_H <= UI_QUICK_ROW_H - 4,
                "the quick panel's switch is taller than its row");
 
+#if BOARD_HAS_YANDEX_MUSIC
 /* The Yandex pairing screen: a status line under the strip and a panel with
  * the code in the display face, the address in the icon face and the
  * countdown in the body face. Placed by eye on the first panel and left
@@ -682,6 +684,7 @@ _Static_assert(UI_YANDEX_PANEL_Y + UI_YANDEX_PANEL_H <= TFT_HEIGHT,
                "the Yandex pairing panel runs off the bottom of the panel");
 _Static_assert(UI_YANDEX_COUNTDOWN_Y + UI_FONT_BODY_LINE_H <= UI_YANDEX_PANEL_H,
                "the Yandex countdown runs off its panel");
+#endif
 
 /* The one number in this file that is time rather than geometry, and it is
  * here for the same reason as the rest: it is arithmetic over the panel, so it
@@ -857,12 +860,14 @@ _Static_assert(UI_SRC_STREAM_X >= UI_SRC_ART_X + UI_SRC_ART_SIZE ||
                    UI_SRC_STREAM_X + UI_SRC_STREAM_W <= UI_SRC_ART_X ||
                    UI_SRC_STREAM_Y >= UI_SRC_ART_Y + UI_SRC_ART_SIZE,
                "the player's stream readings run over its cover art");
+#if BOARD_HAS_YANDEX_MUSIC
 /* The strip stands where the reading's text stands, and when that is the
  * footer row it must stop short of the like mark that follows it. Off that
  * row it only has to be on the panel. */
 _Static_assert(UI_SRC_BUFFER_Y != UI_SRC_FOOT_Y ||
                    UI_SRC_BUFFER_X + UI_BUFFER_GRAPH_W <= UI_SRC_LIKE_X,
                "the buffer graph runs into the like mark");
+#endif
 _Static_assert(UI_SRC_BUFFER_X + UI_BUFFER_GRAPH_W <= TFT_WIDTH - UI_CONTENT_X,
                "the buffer graph runs off the right edge");
 _Static_assert(UI_SRC_BUFFER_GRAPH_Y + UI_SRC_BUFFER_GRAPH_H <= TFT_HEIGHT,

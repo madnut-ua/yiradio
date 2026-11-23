@@ -28,6 +28,7 @@ typedef struct {
     FILE *file;
     char path[OTA_WWW_PATH_MAX];
     char version[32];
+    unsigned profile;
     bool failed;
 } ota_www_t;
 

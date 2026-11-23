@@ -60,8 +60,10 @@
     'player.next': ['Следующий трек', 'Next track'],
     'player.play': ['Воспроизвести', 'Play'],
     'player.pause': ['Пауза', 'Pause'],
+    /* YA_MUSIC_BEGIN */
     'player.like': ['Нравится', 'Like'],
     'player.dislike': ['Не нравится', 'Dislike'],
+    /* YA_MUSIC_END */
     'player.position': ['Позиция в треке', 'Position in the track'],
     'player.volume': ['Громкость', 'Volume'],
     'player.expand': ['Развернуть карточку трека', 'Expand the track card'],
@@ -182,8 +184,10 @@
     'remote.f.list': ['Список станций', 'Station list'],
     'remote.f.sleep': ['Таймер сна', 'Sleep timer'],
     'remote.f.peek': ['Инфо', 'Info'],
+    /* YA_MUSIC_BEGIN */
     'remote.f.like': ['Нравится (ЯМузыка)', 'Like (Ya.Music)'],
     'remote.f.dislike': ['Не нравится (ЯМузыка)', 'Dislike (Ya.Music)'],
+    /* YA_MUSIC_END */
     'remote.f.digit_0': ['0', '0'], 'remote.f.digit_1': ['1', '1'], 'remote.f.digit_2': ['2', '2'],
     'remote.f.digit_3': ['3', '3'], 'remote.f.digit_4': ['4', '4'], 'remote.f.digit_5': ['5', '5'],
     'remote.f.digit_6': ['6', '6'], 'remote.f.digit_7': ['7', '7'], 'remote.f.digit_8': ['8', '8'],
@@ -192,7 +196,9 @@
     'remote.f.source_usb': ['USB-накопитель', 'USB drive'],
     'remote.f.source_sd': ['SD-карта', 'SD card'],
     'remote.f.source_bluetooth': ['Bluetooth', 'Bluetooth'],
+    /* YA_MUSIC_BEGIN */
     'remote.f.source_yandex': ['ЯМузыка', 'Ya.Music'],
+    /* YA_MUSIC_END */
     'remote.f.source_dlna': ['Медиасервер', 'Media server'],
     'remote.f.source_fm': ['FM-радио', 'FM radio'],
 
@@ -212,6 +218,11 @@
     'fl.source_default': ['Плата из README. Если у вас другая распайка или другой дисплей — задайте их в редакторе «Оборудование».',
                           'The README board. If your wiring or display differs, set them in the Hardware editor.'],
     'fl.parts': ['Подключено', 'Fitted'],
+    /* YA_MUSIC_BEGIN */
+    'fl.firmware_feature': ['Яндекс Музыка в прошивке', 'Yandex Music in the firmware'],
+    'fl.included': ['Включена', 'Included'],
+    'fl.not_included': ['Не включена', 'Not included'],
+    /* YA_MUSIC_END */
     'fl.no_manifest': ['Не удалось прочитать manifest.json: файлов прошивки на сайте нет.', 'Cannot read manifest.json: the site has no firmware files.'],
     'fl.no_build': ['Для дисплея {display} готовой прошивки нет.', 'There is no ready firmware for the {display} display.'],
     'fl.firmware': ['1. Прошивка', '1. Firmware'],
@@ -329,7 +340,10 @@
     'hw.dev.encoder': ['Энкодер', 'Encoder'],
     'hw.dev.buttons': ['Кнопки', 'Buttons'],
     'hw.dev.ir': ['ИК-приёмник', 'IR receiver'],
-    'hw.f.yandex_music': ['Яндекс Музыка', 'Yandex Music'], 'hw.f.dlna': ['Медиасервер (DLNA)', 'Media server (DLNA)'],
+    /* YA_MUSIC_BEGIN */
+    'hw.f.yandex_music': ['Яндекс Музыка', 'Yandex Music'],
+    /* YA_MUSIC_END */
+    'hw.f.dlna': ['Медиасервер (DLNA)', 'Media server (DLNA)'],
     'hw.dev.dac': ['ЦАП', 'DAC'],
     'hw.dev.amp': ['Усилитель', 'Amplifier'],
     'hw.dev.power': ['Питание периферии', 'Peripheral power'],
@@ -507,7 +521,9 @@
     'list.parent': ['.. (наверх)', '.. (up)'],
     'list.open': ['Открыть', 'Open'],
     'list.playing': ['Играет', 'Playing'],
+    /* YA_MUSIC_BEGIN */
     'list.note_artist': ['в стиле артиста', 'artist-style wave'],
+    /* YA_MUSIC_END */
     'list.unsupported': ['Не поддерживается', 'Not supported'],
     'list.read_failed_dlna': ['Не удалось прочитать медиасервер',
                               'Could not read the media server'],
@@ -762,7 +778,9 @@
     'settings.files_end': ['Конец папки', 'End of folder'],
     'settings.files_end_stop': ['Стоп', 'Stop'],
     'settings.files_end_repeat': ['Сначала', 'Start over'],
+    /* YA_MUSIC_BEGIN */
     'settings.yandex': ['Яндекс Музыка', 'Yandex Music'],
+    /* YA_MUSIC_END */
     'settings.timezone': ['Часовой пояс', 'Time zone'],
     'settings.ntp': ['Сервер времени', 'Time server'],
     'settings.device_name': ['Имя устройства', 'Device name'],
@@ -887,6 +905,7 @@
                                 'Disconnect from "{ssid}"? It will not return until a restart, '],
     'wifi.page_stops': ['и эта страница перестанет отвечать.', 'and this page will stop answering.'],
 
+    /* YA_MUSIC_BEGIN */
     // Yandex Music.
     'yandex.title': ['ЯМузыка', 'Ya.Music'],
     'yandex.checking': ['Проверка…', 'Checking…'],
@@ -909,6 +928,7 @@
     'yandex.link_failed': ['Не удалось привязать аккаунт', 'Could not link the account'],
     'yandex.loading': ['Загрузка станций…', 'Loading stations…'],
     'yandex.list_failed': ['Не удалось получить станции', 'Could not fetch the stations'],
+    /* YA_MUSIC_END */
 
     // About and backup.
     'about.title': ['Об устройстве', 'About'],
@@ -963,6 +983,8 @@
     'update.err_format': ['Эта прошивка слишком старая для нового формата — обновитесь из файла',
                           'This firmware is too old for the new format - update from a file'],
     'update.err_no_display': ['В релизе нет прошивки для этого дисплея', 'The release has no firmware for this display'],
+    'update.err_profile': ['В релизе другой профиль сборки — установите нужную пару файлов вручную',
+                           'The release has a different build profile — install the matching files manually'],
     'update.err_checksum': ['Файл скачался с ошибкой — попробуйте ещё раз', 'The download was damaged - try again'],
     'update.err_busy': ['Радио уже занято обновлением', 'The radio is busy with an update already'],
     'update.files': ['Для этого радио нужны {app} и {web} со страницы релизов: ',
@@ -1010,20 +1032,24 @@
        why a setting behaves the way it does. */
     'note.device': ['Записывается в settings.csv устройства и применяется сразу — экран и кнопки на корпусе показывают то же самое.',
                     'Written to the device\'s settings.csv and applied at once — the screen and the buttons on the case show the same.'],
-    'note.backup': ['В архив попадает всё, что устройство знает о себе: сети Wi-Fi, настройки, токен ЯМузыки, ключ погоды, обученные кнопки пульта и FM-станции вместе с их картинками. Плейлист сохраняется отдельно, на странице «Станции».',
-                    'The archive holds everything the device knows about itself: Wi-Fi networks, settings, the Ya.Music token, the weather key, the keys the remote was taught and the FM stations with their pictures. The playlist is saved separately, on the Stations page.'],
-    'note.restore': ['Восстановить можно весь архив целиком или один файл из него — wifi.json, settings.csv, yandex.json, weather.json, remote.csv, fm_presets.csv или levels.csv. После восстановления устройство перезагрузится.',
-                     'Restore the whole archive or a single file out of it — wifi.json, settings.csv, yandex.json, weather.json, remote.csv, fm_presets.csv or levels.csv. The device restarts afterwards.'],
+    'note.backup': ['Архив содержит сети Wi-Fi, настройки, ключ погоды, обученные кнопки пульта и FM-станции вместе с их картинками. Плейлист сохраняется отдельно, на странице «Станции».',
+                    'The archive holds Wi-Fi networks, settings, the weather key, learned remote buttons, and FM stations with their pictures. The playlist is saved separately on the Stations page.'],
+    'note.restore': ['Восстановить можно весь архив целиком или один файл из него — wifi.json, settings.csv, weather.json, remote.csv, fm_presets.csv или levels.csv. После восстановления устройство перезагрузится.',
+                     'Restore the whole archive or a single file from it: wifi.json, settings.csv, weather.json, remote.csv, fm_presets.csv or levels.csv. The device restarts afterwards.'],
     'note.update': ['Выберите оба файла сразу. Устройство проверит их и попросит нажать энкодер: без нажатия ничего не меняется. Станции, Wi-Fi и настройки остаются на месте.',
                     'Choose both files at once. The radio checks them and asks for a press of the encoder: without it nothing changes. Stations, Wi-Fi and settings stay as they are.'],
     'note.update_check': ['Радио раз в день спрашивает у GitHub, вышла ли новая версия, и ничего не сообщает о себе. О новой версии скажет плашка вверху страницы.',
                           'Once a day the radio asks GitHub whether a new version is out, and tells it nothing about itself. A new version is announced at the top of the page.'],
-    'note.backup_secret': ['Пароли Wi-Fi, токен ЯМузыки и ключ погоды лежат в архиве открытым текстом: храните его так же, как хранили бы пароль.',
-                           'The Wi-Fi passwords, the Ya.Music token and the weather key are in the archive as plain text: keep it the way you would keep a password.'],
+    'note.backup_secret': ['Пароли Wi-Fi и ключ погоды лежат в архиве открытым текстом: храните его так же, как хранили бы пароль.',
+                           'Wi-Fi passwords and the weather key are stored in the archive as plain text. Keep it as you would a password.'],
     'note.wifi': ['Пароль отправляется устройству один раз и сразу удаляется из поля. Сети вокруг устройство ищет только пока не подключено ни к одной из них.',
                   'The password is sent once and cleared from the field immediately. The device only looks for networks while it is connected to none.'],
+    /* YA_MUSIC_BEGIN */
     'note.yandex': ['Пароль от Яндекса устройству не нужен: код подтверждается на сайте Яндекса, сюда возвращается только токен доступа.',
                     'The device never needs the Yandex password: the code is confirmed on Yandex\'s own site and only an access token comes back.'],
+    'note.yandex_backup': ['Токен ЯМузыки хранится в архиве открытым текстом в файле yandex.json. Этот файл также можно восстановить отдельно.',
+                           'The archive stores the Ya.Music token in plain text in yandex.json. You can also restore that file on its own.'],
+    /* YA_MUSIC_END */
     'note.versions': ['Прошивка и веб-интерфейс пишутся разными командами, поэтому у них свои версии. Если они разошлись, перепрошейте раздел данных.',
                       'The firmware and the web interface are flashed by different commands, so each has its own version. If they differ, reflash the data partition.'],
   };

@@ -7,7 +7,7 @@
 /* The manifest as tools/ota_manifest.py writes it, two displays and the web
  * files. */
 static const char k_manifest[] =
-    "{\"format\":1,\"version\":\"v1.6.0\","
+    "{\"format\":2,\"profile\":1,\"version\":\"v1.6.0\","
     "\"history\":["
     "{\"version\":\"v1.6.0\",\"ru\":\"Новое:\\n- Обновление по сети.\",\"en\":\"New:\\n- Updates.\"},"
     "{\"version\":\"v1.5.5\",\"ru\":\"Новое:\\n- Темы.\",\"en\":\"\"},"
@@ -28,6 +28,7 @@ static void test_the_offer_is_this_displays_firmware_and_the_web_files(void)
     assert(ota_offer_parse(k_manifest, strlen(k_manifest), "st7789_320_240", "v1.5.5", &offer) ==
            OTA_OFFER_OK);
     assert(strcmp(offer.version, "v1.6.0") == 0);
+    assert(offer.profile == 1U);
     assert(strstr(offer.app.url, "ota-st7789_320_240.bin") != NULL);
     assert(offer.app.size == 2780000U);
     assert(offer.app.sha256[0] == 0xFF && offer.app.sha256[31] == 0x00);
@@ -83,8 +84,11 @@ static void test_broken_and_later_manifests_are_told_apart(void)
     assert(ota_offer_parse("<html>Not Found</html>", 22, "st7789_320_240", "v1.5.5", &offer) ==
            OTA_OFFER_MALFORMED);
     snprintf(text, sizeof(text), "%s", k_manifest);
-    memcpy(strstr(text, "\"format\":1"), "\"format\":2", 10);
+    memcpy(strstr(text, "\"format\":2"), "\"format\":1", 10);
     assert(ota_offer_parse(text, strlen(text), "st7789_320_240", "v1.5.5", &offer) == OTA_OFFER_FORMAT);
+    snprintf(text, sizeof(text), "%s", k_manifest);
+    memcpy(strstr(text, "\"profile\":1"), "\"profile\":0", 11);
+    assert(ota_offer_parse(text, strlen(text), "st7789_320_240", "v1.5.5", &offer) == OTA_OFFER_MALFORMED);
     /* A digest one character short. */
     snprintf(text, sizeof(text), "%s", k_manifest);
     char *digest = strstr(text, "ffeeddcc");

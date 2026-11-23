@@ -2,7 +2,13 @@
 
 const assert = require('assert');
 const fs = require('fs');
+const path = require('path');
 const vm = require('vm');
+
+// An explicit path runs the smoke test against an OFF copy made by stage_profile.py.
+const offWebRoot = process.argv[2];
+const webRoot = offWebRoot || 'data/www';
+const webSource = (name) => fs.readFileSync(path.join(webRoot, name), 'utf8');
 
 class ClassList {
   constructor() { this.values = new Set(); }
@@ -55,10 +61,12 @@ class Element {
 
 /* The five folding sections of the settings page, as the markup builds them:
    a card holding the heading's button and the body that folds away. */
-const SECTION_NAMES = ['device', 'remote', 'backup', 'wifi', 'yandex', 'about'];
+const SECTION_NAMES = ['device', 'remote', 'backup', 'wifi', 'yandex', 'about']
+  .filter((name) => !offWebRoot || name !== 'yandex');
 const sectionCards = SECTION_NAMES.map((name) => {
   const card = new Element();
   card.dataset.section = name;
+  if (name === 'yandex') card.hidden = true;
   const toggle = new Element();
   toggle.classList.add('card-toggle');
   const body = new Element();
@@ -122,7 +130,10 @@ const ids = [
   'backup-status', 'backup-file', 'backup-restore',
   'remote-card',
 ];
-const elements = Object.fromEntries(ids.map((id) => [`#${id}`, new Element()]));
+const elements = Object.fromEntries(ids
+  .filter((id) => !offWebRoot || !id.includes('yandex'))
+  .map((id) => [`#${id}`, new Element()]));
+if (!offWebRoot) elements['#yandex-card'] = section.yandex;
 /* The alarm's seven day buttons, in the order the markup puts them and each
    carrying the bit the device uses - Sunday is 0, and it is last on the page. */
 const alarmDayChips = [1, 2, 3, 4, 5, 6, 0].map((day) => {
@@ -207,7 +218,7 @@ let settingsReply = {
   theme_secondary: '#e0e6ea', theme_dim: '#b0bec5', theme_accent: '#ffb74d',
   theme_saver: '#000000',
   brightness: 45, volume: 62,
-  available: {home_screen: true, yandex_music: false, dlna: true, bt_output: true},
+  available: {home_screen: true, dlna: true, bt_output: true},
   brightness_min: 10, brightness_max: 90, volume_step_min: 1, volume_step_max: 20,
   screensaver: 'clock', screensaver_seconds: 120, screensaver_brightness: 15,
   idle_brightness_min: 5, idle_brightness_max: 50,
@@ -399,8 +410,9 @@ function snapshot(revision, wifi) {
 }
 
 vm.createContext(context);
-vm.runInContext(fs.readFileSync('data/www/i18n.js', 'utf8'), context);
-vm.runInContext(fs.readFileSync('data/www/settings.js', 'utf8'), context);
+if (offWebRoot) settingsReply.available.yandex_music = true;
+vm.runInContext(webSource('i18n.js'), context);
+vm.runInContext(webSource('settings.js'), context);
 
 const first = FakeWebSocket.instances[0];
 assert.equal(first.url, 'ws://radio.local/ws');
@@ -550,8 +562,8 @@ async function settle() {
    listeners to them, so this is only safe at the very end of the file - which
    is where the About assertions are. */
 async function reload() {
-  vm.runInContext(fs.readFileSync('data/www/i18n.js', 'utf8'), context);
-vm.runInContext(fs.readFileSync('data/www/settings.js', 'utf8'), context);
+  vm.runInContext(webSource('i18n.js'), context);
+  vm.runInContext(webSource('settings.js'), context);
   await settle();
 }
 
@@ -563,7 +575,38 @@ function lastYandexTimer() {
 
 (async () => {
   await settle();
-  assert.ok(fetchCalls.some((call) => call.url === '/api/yandex'));
+  const yandexCalls = () => fetchCalls.filter((call) => call.url === '/api/yandex');
+  if (offWebRoot) {
+    assert.equal(elements['#device-status'].textContent, 'Готово');
+    assert.equal(yandexCalls().length, 0);
+    console.log('staged OFF settings smoke test passed');
+    return;
+  }
+  // The runtime setting is true, but missing, false and non-boolean build
+  // capabilities all leave the card hidden and make no account requests.
+  assert.equal(section.yandex.hidden, true);
+  assert.equal(elements['#device-yandex-row'].hidden, true);
+  assert.equal(yandexCalls().length, 0);
+  elements['#yandex-link'].emit('click');
+  let gateRevision = 3;
+  const publishGate = async () => {
+    sendEvent(second, {type: 'settings.update', revision: ++gateRevision, settings: settingsReply});
+    await settle();
+  };
+  for (const available of [false, 'true']) {
+    settingsReply.available.yandex_music = available;
+    await publishGate();
+    assert.equal(section.yandex.hidden, true);
+    assert.equal(yandexCalls().length, 0);
+  }
+  // Turning the source off is not equivalent to compiling it out.
+  settingsReply.available.yandex_music = true;
+  settingsReply.yandex_music = false;
+  await publishGate();
+  assert.equal(section.yandex.hidden, false);
+  assert.equal(elements['#device-yandex-row'].hidden, false);
+  assert.equal(elements['#device-yandex'].checked, false);
+  assert.equal(yandexCalls().length, 1);
   assert.equal(elements['#yandex-status'].textContent, 'Аккаунт не привязан');
   assert.equal(elements['#yandex-link'].hidden, false);
   assert.equal(elements['#yandex-cancel'].hidden, true);
@@ -578,7 +621,7 @@ function lastYandexTimer() {
   };
   elements['#yandex-link'].emit('click');
   await settle();
-  const post = fetchCalls.find((call) => call.options && call.options.method === 'POST');
+  const post = yandexCalls().find((call) => call.options && call.options.method === 'POST');
   assert.deepEqual(JSON.parse(post.options.body), {action: 'begin'});
   assert.equal(elements['#yandex-code'].textContent, 'gm2anfv7');
   assert.equal(elements['#yandex-url'].href, 'https://ya.ru/device');
@@ -689,6 +732,16 @@ function lastYandexTimer() {
   assert.equal(elements['#yandex-status'].textContent, 'Нет связи с устройством');
   // Still scheduled: the device coming back must not need a page reload.
   assert.equal(lastYandexTimer().delay, 15000);
+
+  const revokedPoll = lastYandexTimer();
+  const beforeRevoke = yandexCalls().length;
+  settingsReply.available.yandex_music = false;
+  await publishGate();
+  assert.equal(section.yandex.hidden, true);
+  assert.equal(revokedPoll.cleared, true);
+  revokedPoll.callback();
+  elements['#yandex-link'].emit('click');
+  assert.equal(yandexCalls().length, beforeRevoke);
 
   /* The device settings, which are the same settings.csv the panel writes.
      The values above are what the device answered on load - a page that
@@ -1705,7 +1758,8 @@ function lastYandexTimer() {
   assert.equal(documentRef.documentElement.lang, 'ru');
   sendEvent(second, {
     type: 'settings.update', revision: 90,
-    settings: {...settingsReply, language: 'en'},
+    settings: {...settingsReply, language: 'en',
+               available: {...settingsReply.available, yandex_music: true}},
   });
   assert.equal(documentRef.documentElement.lang, 'en');
   assert.equal(elements['#device-language'].value, 'en');

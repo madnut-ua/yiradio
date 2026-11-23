@@ -1,4 +1,5 @@
 #include "web_settings.h"
+#include "board_features.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -54,7 +55,9 @@ static const field_descriptor_t k_fields[] = {
     {"buffer_view", WEB_SETTINGS_FIELD_BUFFER_VIEW, {"text", "graph"}, false, false},
     {"autoplay", WEB_SETTINGS_FIELD_AUTOPLAY, {NULL}, false, false},
     {"files_end", WEB_SETTINGS_FIELD_FILES_END, {"stop", "repeat"}, false, false},
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
     {"yandex_music", WEB_SETTINGS_FIELD_YANDEX_MUSIC, {NULL}, false, false},
+#endif
     {"dlna", WEB_SETTINGS_FIELD_DLNA, {NULL}, false, false},
     {"bt_output", WEB_SETTINGS_FIELD_BT_OUTPUT, {NULL}, false, false},
     {"flip_vertical", WEB_SETTINGS_FIELD_FLIP_VERTICAL, {NULL}, false, false},
@@ -268,7 +271,11 @@ bool web_settings_apply(device_settings_t *settings,
     case WEB_SETTINGS_FIELD_FILES_END:
         return device_settings_set_files_end(settings, (device_files_end_t)change->value);
     case WEB_SETTINGS_FIELD_YANDEX_MUSIC:
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
         return device_settings_set_yandex_music(settings, change->value != 0);
+#else
+        return false;
+#endif
     case WEB_SETTINGS_FIELD_DLNA:
         return device_settings_set_dlna(settings, change->value != 0);
     case WEB_SETTINGS_FIELD_BT_OUTPUT:
@@ -531,8 +538,10 @@ static void write_body(web_json_writer_t *writer, const web_settings_view_t *vie
     web_json_literal(writer, view->autoplay ? "true" : "false");
     web_json_literal(writer, ",\"files_end\":");
     web_json_string(writer, view->files_end == DEVICE_FILES_END_REPEAT ? "repeat" : "stop");
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
     web_json_literal(writer, ",\"yandex_music\":");
     web_json_literal(writer, view->yandex_music ? "true" : "false");
+#endif
     web_json_literal(writer, ",\"dlna\":");
     web_json_literal(writer, view->dlna ? "true" : "false");
     web_json_literal(writer, ",\"bt_output\":");
@@ -618,8 +627,10 @@ static void write_body(web_json_writer_t *writer, const web_settings_view_t *vie
      * firmware was compiled without would change a value nothing reads. */
     web_json_literal(writer, ",\"available\":{\"home_screen\":");
     web_json_literal(writer, view->home_screen_available ? "true" : "false");
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
     web_json_literal(writer, ",\"yandex_music\":");
     web_json_literal(writer, view->yandex_available ? "true" : "false");
+#endif
     web_json_literal(writer, ",\"dlna\":");
     web_json_literal(writer, view->dlna_available ? "true" : "false");
     web_json_literal(writer, ",\"bt_output\":");

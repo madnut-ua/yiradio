@@ -77,6 +77,11 @@ bool version_info_parse(const char *json, size_t length, version_info_part_t *pa
     /* The date is optional in a way the version is not: a stamp that names
      * what was built is useful even if it cannot say when. */
     (void)read_string_field(json, length, "built", part->built, sizeof(part->built));
+    char profile[2];
+    if (read_string_field(json, length, "profile", profile, sizeof(profile))) {
+        if (profile[0] == '1') part->profile = VERSION_INFO_PROFILE_BASE;
+        if (profile[0] == '2') part->profile = VERSION_INFO_PROFILE_EXTENDED;
+    }
     part->present = true;
     return true;
 }
@@ -88,5 +93,8 @@ bool version_info_matched(const version_info_t *info)
      * "unknown" for it, and calling that agreement would hide exactly the
      * case this module exists to show. */
     if (!info->firmware.present || !info->web.present) return false;
-    return strcmp(info->firmware.version, info->web.version) == 0;
+    return strcmp(info->firmware.version, info->web.version) == 0 &&
+           (info->firmware.profile == VERSION_INFO_PROFILE_UNKNOWN ||
+            info->web.profile == VERSION_INFO_PROFILE_UNKNOWN ||
+            info->firmware.profile == info->web.profile);
 }

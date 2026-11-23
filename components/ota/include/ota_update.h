@@ -48,7 +48,7 @@ void ota_update_get_status(ota_status_t *status);
  * whole file is shorter), stops the sound, opens the slot and writes the head.
  * total is the whole file's size. *why says what was wrong when the file
  * itself is refused. */
-esp_err_t ota_update_begin(const uint8_t *head, size_t head_length, size_t total,
+esp_err_t ota_update_begin(const uint8_t *head, size_t head_length, size_t total, bool online,
                            ota_image_result_t *why);
 esp_err_t ota_update_write(const void *data, size_t length);
 /* Verifies what was written; with `ask`, the panel then asks for the press.

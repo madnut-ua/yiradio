@@ -55,6 +55,7 @@
     missing: 'update.err_release',
     format: 'update.err_format',
     no_display: 'update.err_no_display',
+    profile: 'update.err_profile',
     checksum: 'update.err_checksum',
     verify: 'update.err_verify',
     flash: 'update.err_flash',

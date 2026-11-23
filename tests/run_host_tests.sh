@@ -287,7 +287,8 @@ run_test ui_theme tests/test_ui_theme.c components/ui/ui_theme.c
 run_test improv_proto tests/test_improv_proto.c components/improv/improv_proto.c
 run_test ota_image tests/test_ota_image.c components/ota/ota_image.c
 run_test ota_tar tests/test_ota_tar.c components/ota/ota_tar.c
-run_test ota_www tests/test_ota_www.c components/ota/ota_www.c components/ota/ota_tar.c
+run_test ota_www tests/test_ota_www.c components/ota/ota_www.c components/ota/ota_tar.c \
+    components/version_info/version_info_parse.c
 run_test ota_offer -I"${cjson_include}" tests/test_ota_offer.c components/ota/ota_offer.c "${cjson_source}"
 run_test ui_station_list tests/test_ui_station_list.c components/ui/ui_station_list.c
 run_test ui_touch_gesture tests/test_ui_touch_gesture.c components/ui/ui_touch_gesture.c
@@ -380,6 +381,7 @@ node tests/test_web_files.js
 node tests/test_web_hardware.js
 node tests/test_web_flasher.js
 python3 -B tests/test_ota_manifest.py
+python3 -B tests/test_stage_profile.py
 node tests/test_web_improv.js
 node tests/test_web_update.js
 node tests/test_web_remote.js

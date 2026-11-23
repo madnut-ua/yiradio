@@ -3,6 +3,7 @@
 #include "settings_csv.h"
 #include "settings_nvs.h"
 #include "device_timezone.h"
+#include "board_features.h"
 
 #ifdef ESP_PLATFORM
 #include "esp_mac.h"
@@ -254,7 +255,9 @@ bool device_settings_init_at(device_settings_t *settings, const char *path)
         .balance = 0,
         .screensaver_seconds = DEVICE_SCREENSAVER_SECONDS_DEFAULT,
         .screensaver_brightness = DEVICE_SCREENSAVER_BRIGHTNESS_DEFAULT,
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
         .yandex_music = true,
+#endif
         .dlna = true,
         .alarm = {.enabled = false,
                   .hour = DEVICE_ALARM_HOUR_DEFAULT,
@@ -367,9 +370,11 @@ bool device_settings_init_at(device_settings_t *settings, const char *path)
     if (read_value(&csv, "autoplay", value, sizeof(value))) {
         (void)parse_bool(value, &settings->autoplay);
     }
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
     if (read_value(&csv, "yandex_music", value, sizeof(value))) {
         (void)parse_bool(value, &settings->yandex_music);
     }
+#endif
     if (read_value(&csv, "dlna", value, sizeof(value))) {
         (void)parse_bool(value, &settings->dlna);
     }
@@ -607,8 +612,10 @@ bool device_settings_init_at(device_settings_t *settings, const char *path)
             settings->last_source = DEVICE_LAST_SOURCE_USB;
         } else if (strcmp(value, "sd") == 0) {
             settings->last_source = DEVICE_LAST_SOURCE_SD;
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
         } else if (strcmp(value, "yandex") == 0) {
             settings->last_source = DEVICE_LAST_SOURCE_YANDEX;
+#endif
         } else if (strcmp(value, "dlna") == 0) {
             settings->last_source = DEVICE_LAST_SOURCE_DLNA;
         } else if (strcmp(value, "bluetooth") == 0) {
@@ -624,6 +631,7 @@ bool device_settings_init_at(device_settings_t *settings, const char *path)
      * was not. */
     (void)settings_csv_snapshot_get(&csv, "last_usb_file", settings->last_file,
                            sizeof(settings->last_file));
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
     /* One key holding the three, tab-separated - the shape stations.csv uses
      * for the same reason. Three keys would have needed three writes for one
      * identity, and two of them can legitimately be empty, which is a value
@@ -638,6 +646,7 @@ bool device_settings_init_at(device_settings_t *settings, const char *path)
         (void)unpack_field(cursor, settings->last_yandex_from,
                            sizeof(settings->last_yandex_from));
     }
+#endif
     /* The same shape, and for the same reason: one place on one server, so one
      * value. The heading beside it is its own key - see the header. */
     char dlna[DEVICE_LAST_DLNA_PACKED_MAX];
@@ -796,12 +805,14 @@ bool device_settings_set_autoplay(device_settings_t *settings, bool enabled)
     return true;
 }
 
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
 bool device_settings_set_yandex_music(device_settings_t *settings, bool enabled)
 {
     if (!save_value(settings, "yandex_music", enabled ? "1" : "0")) return false;
     settings->yandex_music = enabled;
     return true;
 }
+#endif
 
 bool device_settings_set_dlna(device_settings_t *settings, bool enabled)
 {
@@ -1529,10 +1540,15 @@ bool device_settings_set_weather_longitude(device_settings_t *settings, const ch
 bool device_settings_set_last_source(device_settings_t *settings,
                                      device_last_source_t source)
 {
+#if defined(ESP_PLATFORM) && !BOARD_HAS_YANDEX_MUSIC
+    if (source == DEVICE_LAST_SOURCE_YANDEX) return false;
+#endif
     const char *text = source == DEVICE_LAST_SOURCE_INTERNET_RADIO ? "internet_radio"
                      : source == DEVICE_LAST_SOURCE_USB           ? "usb"
                      : source == DEVICE_LAST_SOURCE_SD            ? "sd"
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
                      : source == DEVICE_LAST_SOURCE_YANDEX        ? "yandex"
+#endif
                      : source == DEVICE_LAST_SOURCE_DLNA          ? "dlna"
                      : source == DEVICE_LAST_SOURCE_BLUETOOTH     ? "bluetooth"
                      : source == DEVICE_LAST_SOURCE_FM            ? "fm"
@@ -1612,6 +1628,7 @@ bool device_settings_volume_file(const device_settings_t *settings, const char *
     return true;
 }
 
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
 bool device_settings_set_last_yandex(device_settings_t *settings, const char *id,
                                      const char *name, const char *from)
 {
@@ -1652,6 +1669,7 @@ bool device_settings_set_last_yandex(device_settings_t *settings, const char *id
     memcpy(settings->last_yandex_from, packed_from, strlen(packed_from) + 1U);
     return true;
 }
+#endif
 
 bool device_settings_set_last_dlna(device_settings_t *settings, const char *server,
                                    const char *container, const char *track,

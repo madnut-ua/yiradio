@@ -8,6 +8,7 @@
 #pragma once
 
 #include "lvgl.h"
+#include "board_features.h"
 
 extern const lv_image_dsc_t ui_feed_icon_podcasts_24;
 extern const lv_image_dsc_t ui_feed_icon_podcasts_32;
@@ -45,21 +46,25 @@ extern const lv_image_dsc_t ui_feed_icon_dlna_44;
 extern const lv_image_dsc_t ui_feed_icon_dlna_48;
 extern const lv_image_dsc_t ui_feed_icon_dlna_64;
 extern const lv_image_dsc_t ui_feed_icon_dlna_16;
+#if BOARD_HAS_YANDEX_MUSIC
 extern const lv_image_dsc_t ui_feed_icon_spark_24;
 extern const lv_image_dsc_t ui_feed_icon_spark_32;
 extern const lv_image_dsc_t ui_feed_icon_spark_44;
 extern const lv_image_dsc_t ui_feed_icon_spark_48;
 extern const lv_image_dsc_t ui_feed_icon_spark_64;
 extern const lv_image_dsc_t ui_feed_icon_spark_16;
+#endif
 extern const lv_image_dsc_t ui_feed_icon_settings_24;
 extern const lv_image_dsc_t ui_feed_icon_settings_32;
 extern const lv_image_dsc_t ui_feed_icon_settings_44;
 extern const lv_image_dsc_t ui_feed_icon_settings_48;
 extern const lv_image_dsc_t ui_feed_icon_settings_64;
 extern const lv_image_dsc_t ui_feed_icon_volume_16;
+#if BOARD_HAS_YANDEX_MUSIC
 extern const lv_image_dsc_t ui_feed_icon_heart_16;
 extern const lv_image_dsc_t ui_feed_icon_heart_filled_16;
 extern const lv_image_dsc_t ui_feed_icon_heart_slash_16;
+#endif
 extern const lv_image_dsc_t ui_feed_icon_music_note_64;
 extern const lv_image_dsc_t ui_feed_icon_music_note_107;
 extern const lv_image_dsc_t ui_feed_icon_bedtime_16;

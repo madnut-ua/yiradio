@@ -269,7 +269,7 @@ static void on_key(const ir_code_t *code, void *context)
     const uint32_t repeats = s_held_repeats;
     xSemaphoreGive(s_lock);
 
-    if (function == REMOTE_FUNCTION_COUNT) return;
+    if (!remote_function_available(function)) return;
     if (repeat) {
         if (!remote_function_repeats(function)) return;
         if ((uint32_t)(now - s_held_since_ms) < REMOTE_HOLD_BEFORE_RAMP_MS) return;
@@ -406,7 +406,7 @@ bool remote_control_wake_check(void)
 
 bool remote_control_learn(remote_function_t function)
 {
-    if ((unsigned)function >= (unsigned)REMOTE_FUNCTION_COUNT || s_lock == NULL) return false;
+    if (!remote_function_available(function) || s_lock == NULL) return false;
     xSemaphoreTake(s_lock, portMAX_DELAY);
     s_learning = function;
     s_learning_armed_ms = now_ms();
@@ -419,7 +419,7 @@ bool remote_control_learn(remote_function_t function)
 
 bool remote_control_forget(remote_function_t function)
 {
-    if ((unsigned)function >= (unsigned)REMOTE_FUNCTION_COUNT || s_lock == NULL) return false;
+    if (!remote_function_available(function) || s_lock == NULL) return false;
     xSemaphoreTake(s_lock, portMAX_DELAY);
     remote_map_forget(&s_map, function);
     if (s_learning == function) s_learning = REMOTE_FUNCTION_COUNT;

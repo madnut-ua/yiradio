@@ -18,6 +18,7 @@
 #include "board.h"
 #include "board_config.h"
 #include "board_display_profile.h"
+#include "board_features.h"
 #include "device_settings.h"
 #include "file_storage.h"
 #include "player_control.h"
@@ -51,8 +52,10 @@
 #include "ui_status_bar.h"
 #include "weather.h"
 #include "ui_web_address.h"
+#if BOARD_HAS_YANDEX_MUSIC
 #include "ui_yandex_screen.h"
 #include "yandex_catalog.h"
+#endif
 #include "file_track_progress.h"
 
 #include "audio_volume.h"
@@ -432,7 +435,9 @@ static ui_status_strip_t s_source_strip;
 static ui_status_strip_t s_menu_strip;
 static ui_status_strip_t s_feed_strip;
 static ui_status_strip_t s_list_strip;
+#if BOARD_HAS_YANDEX_MUSIC
 static ui_status_strip_t s_yandex_strip;
+#endif
 static lv_obj_t *s_source_art;
 /* The note drawn on the empty tile, its own object rather than the tile's
  * text: it is a bitmap now, and it is hidden while a cover is up. It used to
@@ -459,6 +464,7 @@ static lv_obj_t *s_source_volume_icon;
 static lv_obj_t *s_source_bt_icon;
 #endif
 static bool s_source_to_speaker;
+#if BOARD_HAS_YANDEX_MUSIC
 /* The like mark, between the buffer reading and the volume. Only the rotor's
  * tracks have one, so it is hidden for every other source rather than shown
  * empty - an empty heart on a radio station would offer something the button
@@ -468,6 +474,7 @@ static lv_obj_t *s_source_like;
  * the bitmap invalidates the area, and this is decided on every pass of a
  * 10 ms loop while the mark changes about once a track. */
 static int8_t s_source_like_shown = -1;
+#endif
 static lv_obj_t *s_source_pause;
 static lv_obj_t *s_source_progress;
 /* Four rising bars. Drawn rather than taken from a font: LVGL's symbol set has
@@ -539,7 +546,23 @@ static lv_obj_t *s_settings_more_above;
 static lv_obj_t *s_settings_more_below;
 /* One per boolean setting, not per row on screen: only one group is open at
  * a time, so at most three are ever visible, but each keeps its own object. */
-#define UI_SETTINGS_SWITCH_COUNT 12U
+enum {
+    UI_SETTINGS_SWITCH_AUTOPLAY,
+    UI_SETTINGS_SWITCH_FLIP_VERTICAL,
+    UI_SETTINGS_SWITCH_FLIP_HORIZONTAL,
+#if BOARD_HAS_YANDEX_MUSIC
+    UI_SETTINGS_SWITCH_YANDEX,
+#endif
+    UI_SETTINGS_SWITCH_DLNA,
+    UI_SETTINGS_SWITCH_WEATHER,
+    UI_SETTINGS_SWITCH_BT_OUTPUT,
+    UI_SETTINGS_SWITCH_INVERT_COLORS,
+    UI_SETTINGS_SWITCH_LOUDNESS_TREBLE,
+    UI_SETTINGS_SWITCH_LEVEL_NORMALIZE,
+    UI_SETTINGS_SWITCH_SPDIF_OUTPUT,
+    UI_SETTINGS_SWITCH_SOFT_START,
+    UI_SETTINGS_SWITCH_COUNT,
+};
 static lv_obj_t *s_settings_switches[UI_SETTINGS_SWITCH_COUNT];
 static lv_obj_t *s_settings_web_band;
 static lv_obj_t *s_settings_web_address;
@@ -595,6 +618,7 @@ static bool s_playback_menu_open;
  * screen - see ui_open_radio_home(). Retried from the poll loop, which is
  * where the pending command it is waiting on gets resolved. */
 static bool s_radio_home_pending;
+#if BOARD_HAS_YANDEX_MUSIC
 static lv_obj_t *s_yandex_screen;
 static lv_obj_t *s_yandex_status;
 static lv_obj_t *s_yandex_code_panel;
@@ -645,6 +669,7 @@ static bool s_yandex_rows_drawn;
 static ui_yandex_mode_t s_yandex_mode = UI_YANDEX_MODE_PAIRING;
 static uint32_t s_yandex_notice_until_ms;
 static const char *s_yandex_notice;
+#endif
 static lv_obj_t *s_station_list_screen;
 static lv_obj_t *s_station_list_title;
 static lv_obj_t *s_station_list_notice;
@@ -666,7 +691,9 @@ static lv_obj_t *s_station_list_icons[UI_STATION_LIST_MAX_ROWS];
  * eye counts down - it has to stay where it is while the name travels. */
 static lv_obj_t *s_station_list_numbers[UI_STATION_LIST_MAX_ROWS];
 static ui_list_decor_t s_station_list_decor;
+#if BOARD_HAS_YANDEX_MUSIC
 static ui_list_decor_t s_yandex_decor;
+#endif
 static ui_list_decor_t s_settings_decor;
 static ui_list_decor_t s_menu_decor;
 /* The first visible item on the home list's top row. */
@@ -677,11 +704,13 @@ static ui_player_state_t s_player_ui;
 // Only the player screen tells a single click from a double one, so only
 // there does a click wait out the window; every other screen acts at once.
 static ui_click_gesture_t s_player_click;
+#if BOARD_HAS_YANDEX_MUSIC
 /* The like key has its own gesture, because it is its own button: a press of
  * it must not join a gesture the encoder started, and both can be pending at
  * once. Only the rotor arms it - everywhere else BTN_PREV steps a list and a
  * 350 ms wait for a second press would be felt. */
 static ui_click_gesture_t s_like_click;
+#endif
 /* Open only while the encoder is scrubbing the playing file. It takes over
  * both the knob and the progress bar, so everything that leaves the player
  * screen has to close it - a thick bar left behind would be a mode with no way
@@ -2829,8 +2858,12 @@ static void ui_update_footer(void)
         s_level_logged_ms = level_now_ms;
     }
     char level_text[24];
+#if BOARD_HAS_YANDEX_MUSIC
     const bool stream = s_player_ui.source == AUDIO_SOURCE_INTERNET_RADIO ||
                         s_player_ui.source == AUDIO_SOURCE_YANDEX;
+#else
+    const bool stream = s_player_ui.source == AUDIO_SOURCE_INTERNET_RADIO;
+#endif
     const bool show_level =
         stream && !have_bar &&
         ui_level_text(&level, ui_text(DEVICE_TEXT_DB_SHORT), ui_text(DEVICE_TEXT_LEVEL_MEASURING),
@@ -2882,6 +2915,7 @@ static void ui_update_playback_marks(const player_snapshot_t *snapshot)
         lv_obj_add_flag(s_source_pause, LV_OBJ_FLAG_HIDDEN);
     }
 
+#if BOARD_HAS_YANDEX_MUSIC
     /* A bitmap per state rather than one recoloured: an outline heart, a solid
      * one and a struck-through one are different shapes, and marks told apart
      * by brightness alone would read as "liked, dimly" rather than as three
@@ -2906,6 +2940,7 @@ static void ui_update_playback_marks(const player_snapshot_t *snapshot)
             lv_obj_clear_flag(s_source_like, LV_OBJ_FLAG_HIDDEN);
         }
     }
+#endif
 }
 
 /* Puts `state` on the performer row, or gives the row back to the performer.
@@ -3156,13 +3191,16 @@ static void ui_update_source_row(void)
     for (unsigned rank = 0U; rank < UI_FEED_ITEM_COUNT && shown < UI_SRC_SOURCE_MAX; ++rank) {
         const unsigned item = (unsigned)ui_menu_item_in_order((uint8_t)rank);
         if (!ui_menu_item_is_visible((ui_menu_item_t)item, mask)) continue;
+        audio_source_t source = AUDIO_SOURCE_NONE;
+#if BOARD_HAS_YANDEX_MUSIC
         /* Yandex by name: activation leaves it out, because on the carousel
          * it opens a list rather than a source - and asked through it, the
          * row had no Yandex frame, so a wave lit nothing at all. */
-        audio_source_t source = AUDIO_SOURCE_NONE;
         if (item == UI_FEED_YANDEX) {
             source = AUDIO_SOURCE_YANDEX;
-        } else if (!ui_feed_model_activate((ui_feed_item_t)item, &source)) {
+        } else
+#endif
+        if (!ui_feed_model_activate((ui_feed_item_t)item, &source)) {
             continue;
         }
         s_source_row_source[shown] = source;
@@ -3443,6 +3481,7 @@ static void ui_update_radio_status(const player_snapshot_t *snapshot)
     const char *stream_name = pending ? "" : snapshot->context;
     const char *list_name = NULL;
     bool name_from_list = true;
+#if BOARD_HAS_YANDEX_MUSIC
     if (source == AUDIO_SOURCE_YANDEX) {
         yandex_station_t station;
         if (yandex_catalog_station_at(display_item_index, &station)) {
@@ -3452,7 +3491,9 @@ static void ui_update_radio_status(const player_snapshot_t *snapshot)
              * gone. What the chain reports is still its name. */
             list_name = snapshot->context;
         }
-    } else {
+    } else
+#endif
+    {
         const station_catalog_entry_t *entry =
             player_control_station_at(display_item_index);
         if (entry != NULL) {
@@ -3511,10 +3552,12 @@ static void ui_apply_source_visibility(void)
                                      board_has_bluetooth());
     ui_menu_set_source_visible(&s_menu, UI_MENU_ITEM_FM_RADIO, ui_fm_tuner_answered());
     ui_feed_model_set_source_visible(&s_feed_model, UI_MENU_ITEM_FM_RADIO, ui_fm_tuner_answered());
+#if BOARD_HAS_YANDEX_MUSIC
     ui_menu_set_source_visible(&s_menu, UI_MENU_ITEM_YANDEX_MUSIC,
                                s_device_settings.yandex_music);
     ui_feed_model_set_source_visible(&s_feed_model, UI_MENU_ITEM_YANDEX_MUSIC,
                                      s_device_settings.yandex_music);
+#endif
     ui_menu_set_source_visible(&s_menu, UI_MENU_ITEM_DLNA, s_device_settings.dlna);
     ui_feed_model_set_source_visible(&s_feed_model, UI_MENU_ITEM_DLNA,
                                      s_device_settings.dlna);
@@ -4407,10 +4450,12 @@ static void ui_settings_row_text(const ui_settings_row_t *row, char *text, size_
         ui_settings_switch_field(text, text_size, DEVICE_TEXT_ROW_WEATHER,
                                  s_device_settings.weather_provider != DEVICE_WEATHER_OFF);
         break;
+#if BOARD_HAS_YANDEX_MUSIC
     case UI_SETTINGS_ROW_YANDEX_FIELD:
         ui_settings_switch_field(text, text_size, DEVICE_TEXT_ROW_YANDEX,
                                  s_device_settings.yandex_music);
         break;
+#endif
     case UI_SETTINGS_ROW_DLNA_FIELD:
         ui_settings_switch_field(text, text_size, DEVICE_TEXT_ROW_DLNA,
                                  s_device_settings.dlna);
@@ -4543,51 +4588,53 @@ static bool ui_settings_row_switch(ui_settings_row_id_t id, size_t *index, bool 
 {
     switch (id) {
     case UI_SETTINGS_ROW_AUTOPLAY_FIELD:
-        *index = 0U;
+        *index = UI_SETTINGS_SWITCH_AUTOPLAY;
         *value = s_device_settings.autoplay;
         return true;
     case UI_SETTINGS_ROW_FLIP_VERTICAL_FIELD:
-        *index = 1U;
+        *index = UI_SETTINGS_SWITCH_FLIP_VERTICAL;
         *value = s_device_settings.flip_vertical;
         return true;
     case UI_SETTINGS_ROW_FLIP_HORIZONTAL_FIELD:
-        *index = 2U;
+        *index = UI_SETTINGS_SWITCH_FLIP_HORIZONTAL;
         *value = s_device_settings.flip_horizontal;
         return true;
+#if BOARD_HAS_YANDEX_MUSIC
     case UI_SETTINGS_ROW_YANDEX_FIELD:
-        *index = 3U;
+        *index = UI_SETTINGS_SWITCH_YANDEX;
         *value = s_device_settings.yandex_music;
         return true;
+#endif
     case UI_SETTINGS_ROW_DLNA_FIELD:
-        *index = 4U;
+        *index = UI_SETTINGS_SWITCH_DLNA;
         *value = s_device_settings.dlna;
         return true;
     case UI_SETTINGS_ROW_WEATHER_FIELD:
-        *index = 5U;
+        *index = UI_SETTINGS_SWITCH_WEATHER;
         *value = s_device_settings.weather_provider != DEVICE_WEATHER_OFF;
         return true;
     case UI_SETTINGS_ROW_BT_OUTPUT_FIELD:
-        *index = 6U;
+        *index = UI_SETTINGS_SWITCH_BT_OUTPUT;
         *value = s_device_settings.bt_output;
         return true;
     case UI_SETTINGS_ROW_INVERT_COLORS_FIELD:
-        *index = 7U;
+        *index = UI_SETTINGS_SWITCH_INVERT_COLORS;
         *value = s_device_settings.invert_colors;
         return true;
     case UI_SETTINGS_ROW_LOUDNESS_TREBLE_FIELD:
-        *index = 8U;
+        *index = UI_SETTINGS_SWITCH_LOUDNESS_TREBLE;
         *value = s_device_settings.loudness_treble;
         return true;
     case UI_SETTINGS_ROW_LEVEL_NORMALIZE_FIELD:
-        *index = 9U;
+        *index = UI_SETTINGS_SWITCH_LEVEL_NORMALIZE;
         *value = s_device_settings.level_normalize;
         return true;
     case UI_SETTINGS_ROW_SPDIF_OUTPUT_FIELD:
-        *index = 10U;
+        *index = UI_SETTINGS_SWITCH_SPDIF_OUTPUT;
         *value = s_device_settings.spdif_output;
         return true;
     case UI_SETTINGS_ROW_SOFT_START_FIELD:
-        *index = 11U;
+        *index = UI_SETTINGS_SWITCH_SOFT_START;
         *value = s_device_settings.soft_start;
         return true;
     default:
@@ -5056,6 +5103,7 @@ static void ui_reload_settings(void)
     }
 }
 
+#if BOARD_HAS_YANDEX_MUSIC
 /* Yandex Music pairing screen. It exists because the device flow needs a place
  * to print the code and the address the user types it into: the code is
  * useless in the serial log, which nobody has open while linking a phone. */
@@ -5413,19 +5461,25 @@ static void ui_close_yandex(void)
      * button to the wrong screen. */
     ui_render_player_state();
 }
+#endif
 
 /* The list belonging to `source`. Yandex has a screen of its own - its rows
  * are fetched from the account rather than read from the catalog file - so
  * the double click that opens a list has to pick between the two. */
 static void ui_open_source_list(audio_source_t source)
 {
+#if BOARD_HAS_YANDEX_MUSIC
     if (source == AUDIO_SOURCE_YANDEX) {
         ui_show_yandex();
         return;
     }
+#else
+    (void)source;
+#endif
     ui_show_station_list();
 }
 
+#if BOARD_HAS_YANDEX_MUSIC
 /* The like key's two gestures, resolved against the mark the track carries.
  *
  * A double press asks for the rejection. A single one normally asks for the
@@ -5448,6 +5502,7 @@ static void ui_submit_like_press(bool double_press)
     }
     (void)ui_submit_player_command(&command);
 }
+#endif
 
 static void ui_settings_change_selected(void)
 {
@@ -5493,11 +5548,13 @@ static void ui_settings_change_selected(void)
                                     : DEVICE_FILES_END_REPEAT);
         if (changed) ui_apply_files_end();
         break;
+#if BOARD_HAS_YANDEX_MUSIC
     case UI_SETTINGS_ROW_YANDEX_FIELD:
         changed = device_settings_set_yandex_music(&s_device_settings,
                                                    !s_device_settings.yandex_music);
         if (changed) ui_apply_source_visibility();
         break;
+#endif
     case UI_SETTINGS_ROW_DLNA_FIELD:
         changed = device_settings_set_dlna(&s_device_settings, !s_device_settings.dlna);
         if (changed) ui_apply_source_visibility();
@@ -6112,6 +6169,7 @@ static void ui_create_source_screen(void)
      * device still booting and no station open. */
     ui_buffer_graph_reset(&s_buffer_graph, ui_tick_get_ms());
 
+#if BOARD_HAS_YANDEX_MUSIC
     /* Between the two readings, in the gap the buffer line does not reach: the
      * footer is where the things you can do to what is playing live, and the
      * volume moved right to make room rather than the mark being pushed out to
@@ -6123,6 +6181,7 @@ static void ui_create_source_screen(void)
     lv_obj_set_pos(s_source_like, UI_SRC_LIKE_X, UI_SRC_FOOT_Y + 1);
     lv_obj_set_style_image_recolor_opa(s_source_like, LV_OPA_COVER, 0);
     lv_obj_add_flag(s_source_like, LV_OBJ_FLAG_HIDDEN);
+#endif
 
     /* Names the bar next to it. Without it the strip was just a rectangle in
      * the footer, indistinguishable from the progress bar above. Centred on
@@ -6266,6 +6325,7 @@ static void ui_load_source_screen(audio_source_t selected_source)
         ui_set_label_text_if_changed(s_source_stream, "");
         s_waiting_for_source_item = true;
         s_source_item_wait_started_ms = ui_tick_get_ms();
+#if BOARD_HAS_YANDEX_MUSIC
     } else if (selected_source == AUDIO_SOURCE_YANDEX) {
         /* Connecting like a station: its name is known before the first byte
          * arrives, so the line says so rather than sitting idle.
@@ -6279,6 +6339,7 @@ static void ui_load_source_screen(audio_source_t selected_source)
         ui_set_label_text_if_changed(s_source_stream, "");
         s_waiting_for_source_item = true;
         s_source_item_wait_started_ms = ui_tick_get_ms();
+#endif
     } else if (audio_source_is_files(selected_source)) {
         s_waiting_for_source_item = false;
         // Nothing plays until a file is chosen, so this screen opens idle
@@ -6326,6 +6387,7 @@ static void ui_show_source(void)
         ui_render_player_state();
         return;
     }
+#if BOARD_HAS_YANDEX_MUSIC
     /* Yandex has its own list screen rather than the shared one: it is fetched
      * from the account, not read from the catalog file. */
     if (selected_source == AUDIO_SOURCE_YANDEX) {
@@ -6333,6 +6395,7 @@ static void ui_show_source(void)
         ui_show_yandex();
         return;
     }
+#endif
     // A drive that cannot be browsed still opens its screen - the list, empty,
     // saying why. Refusing to leave the menu left the user pressing a working
     // button with nothing happening but a line of small print.
@@ -6915,6 +6978,7 @@ static void ui_toggle_playback(void)
     (void)ui_submit_player_command(&command);
 }
 
+#if BOARD_HAS_YANDEX_MUSIC
 /* Remembers the row OK was pressed on. Starting it takes two commands that
  * cannot be posted together - the source, then the row - because a
  * SELECT_ITEM is only accepted once a snapshot has confirmed the source and
@@ -6982,6 +7046,7 @@ static void ui_yandex_step_start(const player_snapshot_t *snapshot)
         ui_scroller_set_text(&s_source_detail, station.name);
     }
 }
+#endif
 
 /* The sleep button (F1) held. Everything outside the chip is about to lose
  * power, so what is playing is stopped rather than cut mid-frame, the
@@ -7962,7 +8027,9 @@ static audio_source_t ui_source_of_action(board_input_action_t action)
     case BOARD_INPUT_ACTION_SOURCE_USB: return AUDIO_SOURCE_USB;
     case BOARD_INPUT_ACTION_SOURCE_SD: return AUDIO_SOURCE_SD;
     case BOARD_INPUT_ACTION_SOURCE_BLUETOOTH: return AUDIO_SOURCE_BLUETOOTH;
+#if BOARD_HAS_YANDEX_MUSIC
     case BOARD_INPUT_ACTION_SOURCE_YANDEX: return AUDIO_SOURCE_YANDEX;
+#endif
     case BOARD_INPUT_ACTION_SOURCE_DLNA: return AUDIO_SOURCE_DLNA;
     case BOARD_INPUT_ACTION_SOURCE_FM: return AUDIO_SOURCE_FM;
     default: return AUDIO_SOURCE_NONE;
@@ -7991,6 +8058,14 @@ static bool ui_volume_resume_file(audio_source_t source, char *out, size_t size)
         out, size);
 }
 
+static bool ui_autoplay_is_network_action(ui_autoplay_action_t action)
+{
+#if BOARD_HAS_YANDEX_MUSIC
+    if (action == UI_AUTOPLAY_YANDEX) return true;
+#endif
+    return action == UI_AUTOPLAY_RADIO || action == UI_AUTOPLAY_DLNA;
+}
+
 static void ui_remote_open_source(audio_source_t source)
 {
     s_playback_menu_open = false;
@@ -8008,8 +8083,7 @@ static void ui_remote_open_source(audio_source_t source)
     const ui_autoplay_action_t action = ui_autoplay_decide_for(
         &s_device_settings, source, volume_has_file, snapshot.usb_media, snapshot.sd_media, true,
         BOARD_HAS_YANDEX_MUSIC, BOARD_HAS_DLNA, board_has_bluetooth(), ui_fm_tuner_answered());
-    const bool network = action == UI_AUTOPLAY_RADIO || action == UI_AUTOPLAY_YANDEX ||
-                         action == UI_AUTOPLAY_DLNA;
+    const bool network = ui_autoplay_is_network_action(action);
     const bool resume = network || action == UI_AUTOPLAY_FILE;
     if (!resume || (network && !snapshot.wifi_connected) ||
         snapshot.active_source == source) {
@@ -8083,12 +8157,14 @@ static bool ui_handle_remote_action(board_input_action_t action)
         ESP_LOGI(TAG, "remote: sleep timer %u min", (unsigned)next);
         return true;
     }
+#if BOARD_HAS_YANDEX_MUSIC
     case BOARD_INPUT_ACTION_LIKE:
         ui_submit_like_press(false);
         return true;
     case BOARD_INPUT_ACTION_DISLIKE:
         ui_submit_like_press(true);
         return true;
+#endif
     default:
         break;
     }
@@ -8143,7 +8219,10 @@ static board_input_action_t ui_remote_keys_apply(board_input_action_t action)
     } else if (screen == s_source_screen) {
         kind = UI_REMOTE_SCREEN_PLAYER;
     } else if (screen == s_menu_screen || screen == s_feed_screen ||
-               screen == s_station_list_screen || screen == s_yandex_screen) {
+#if BOARD_HAS_YANDEX_MUSIC
+               screen == s_yandex_screen ||
+#endif
+               screen == s_station_list_screen) {
         kind = UI_REMOTE_SCREEN_CHOOSER;
     }
     const ui_remote_step_t step = ui_remote_keys_translate(action, kind);
@@ -8202,8 +8281,10 @@ static void ui_panel_menu_back(void)
         } else {
             ui_close_settings();
         }
+#if BOARD_HAS_YANDEX_MUSIC
     } else if (s_yandex_open) {
         ui_close_yandex();
+#endif
     } else if (s_playback_menu_open) {
         s_playback_menu_open = false;
         if (ui_player_state_view(&s_player_ui) != UI_PLAYER_VIEW_MENU) ui_render_player_state();
@@ -8215,7 +8296,9 @@ static void ui_panel_menu_back(void)
         ui_end_seek();
         ui_end_fm_tune(true);
         ui_click_gesture_cancel(&s_player_click);
+#if BOARD_HAS_YANDEX_MUSIC
         ui_click_gesture_cancel(&s_like_click);
+#endif
         s_playback_menu_open = true;
         ui_load_menu_screen();
     }
@@ -8358,10 +8441,7 @@ static void ui_handle_input(board_input_action_t action)
         return;
     }
 
-    // Settings sits outside the player's view state: it shows no source and
-    // starts nothing, so making it a fourth view would put an entry in every
-    // transition table for no gain. The way out is the long press, and it
-    // returns to the main screen.
+#if BOARD_HAS_YANDEX_MUSIC
     if (s_yandex_open) {
         station_list_note_activity(&s_yandex_list, ui_tick_get_ms());
         if (action == BOARD_INPUT_ACTION_ENCODER_LONG) {
@@ -8389,6 +8469,11 @@ static void ui_handle_input(board_input_action_t action)
         }
         return;
     }
+#endif
+    // Settings sits outside the player's view state: it shows no source and
+    // starts nothing, so making it a fourth view would put an entry in every
+    // transition table for no gain. The way out is the long press, and it
+    // returns to the main screen.
     if (s_settings_open) {
         if (s_about_open) {
             /* One thing on screen and one way off it, like the QR overlay:
@@ -8629,7 +8714,9 @@ static void ui_handle_input(board_input_action_t action)
             // Leaving the screen entirely, so a click waiting out its window
             // must not land on the home screen.
             ui_click_gesture_cancel(&s_player_click);
+#if BOARD_HAS_YANDEX_MUSIC
             ui_click_gesture_cancel(&s_like_click);
+#endif
             ui_show_menu();
         } else if (action == BOARD_INPUT_ACTION_ENCODER_BUTTON) {
             /* Every press, whether or not this screen has a list behind it.
@@ -8684,6 +8771,7 @@ static void ui_handle_input(board_input_action_t action)
                 .source = source,
                 .item_index = PLAYER_ITEM_NONE,
             };
+#if BOARD_HAS_YANDEX_MUSIC
             if (source == AUDIO_SOURCE_YANDEX) {
                 /* The rotor's chain runs one way only - there is no previous
                  * track to go back to - so on this source the two keys are not
@@ -8700,8 +8788,9 @@ static void ui_handle_input(board_input_action_t action)
                     return;
                 }
                 command.kind = PLAYER_COMMAND_NEXT_TRACK;
-            } else if (has_list || source == AUDIO_SOURCE_BLUETOOTH ||
-                       source == AUDIO_SOURCE_FM) {
+            } else
+#endif
+            if (has_list || source == AUDIO_SOURCE_BLUETOOTH || source == AUDIO_SOURCE_FM) {
                 /* The phone's queue has both directions, and no list on this
                  * side to page through: the keys go straight to it. On the
                  * tuner they seek up and down the band. */
@@ -8730,11 +8819,13 @@ static void ui_handle_input(board_input_action_t action)
                 ui_show_settings();
             } else if (ui_network_source_blocked((ui_menu_item_t)item, s_feed_notice)) {
                 return;
+#if BOARD_HAS_YANDEX_MUSIC
             } else if (item == UI_FEED_YANDEX) {
                 /* Not a source yet - the account is linked here, and playback
                  * arrives in a later step. */
                 ui_set_label_text_if_changed(s_feed_notice, "");
                 ui_show_yandex();
+#endif
             } else {
                 audio_source_t source = AUDIO_SOURCE_NONE;
                 if (!ui_feed_model_activate(item, &source)) {
@@ -8762,10 +8853,12 @@ static void ui_handle_input(board_input_action_t action)
                                       s_menu_notice)) {
             return;
         }
+#if BOARD_HAS_YANDEX_MUSIC
         if (ui_menu_selected_index(&s_menu) == (uint8_t)UI_MENU_ITEM_YANDEX_MUSIC) {
             ui_show_yandex();
             return;
         }
+#endif
         ui_show_source();
     }
 }
@@ -8796,10 +8889,12 @@ static void ui_scroll_tick(void)
         for (size_t row = 0; row < UI_STATION_LIST_MAX_ROWS; ++row) {
             ui_scroller_tick(&s_station_list_rows[row], mode, now);
         }
+#if BOARD_HAS_YANDEX_MUSIC
     } else if (active == s_yandex_screen) {
         for (size_t row = 0; row < UI_YANDEX_LIST_ROWS; ++row) {
             ui_scroller_tick(&s_yandex_rows[row], mode, now);
         }
+#endif
     }
 }
 
@@ -8821,6 +8916,7 @@ static void ui_remember_playing(const player_snapshot_t *snapshot)
         (void)device_settings_set_last_source(&s_device_settings,
                                               DEVICE_LAST_SOURCE_INTERNET_RADIO);
         return;
+#if BOARD_HAS_YANDEX_MUSIC
     case AUDIO_SOURCE_YANDEX: {
         /* The station by identity, asked of the controller for the reason the
          * file path is: the row on screen moves while a station plays on, and
@@ -8837,6 +8933,7 @@ static void ui_remember_playing(const player_snapshot_t *snapshot)
         (void)device_settings_set_last_yandex(&s_device_settings, id, name, from);
         return;
     }
+#endif
     case AUDIO_SOURCE_DLNA: {
         /* Where on the server, not which row: a listing is fetched fresh every
          * time and a server is free to renumber its rows, so the row that
@@ -8927,9 +9024,11 @@ static void ui_wait_for_network_on_player(audio_source_t source)
     // Already past the boot's wait: there is no lease on its way to wait for.
     s_autoplay_started_ms = ui_tick_get_ms() - UI_AUTOPLAY_NETWORK_WAIT_MS;
     s_autoplay_network_held = false;
-    ui_autoplay_hold_for_network(source == AUDIO_SOURCE_YANDEX ? UI_AUTOPLAY_YANDEX
-                                 : source == AUDIO_SOURCE_DLNA ? UI_AUTOPLAY_DLNA
-                                                               : UI_AUTOPLAY_RADIO);
+    ui_autoplay_hold_for_network(
+#if BOARD_HAS_YANDEX_MUSIC
+        source == AUDIO_SOURCE_YANDEX ? UI_AUTOPLAY_YANDEX :
+#endif
+        source == AUDIO_SOURCE_DLNA ? UI_AUTOPLAY_DLNA : UI_AUTOPLAY_RADIO);
 }
 
 static bool ui_network_lost_for_good(const player_snapshot_t *snapshot)
@@ -8951,7 +9050,9 @@ static bool ui_network_lost_for_good(const player_snapshot_t *snapshot)
     return !s_autoplay_network_held && !snapshot->wifi_connected &&
            snapshot->playback_state == PLAYER_PLAYBACK_ERROR &&
            (snapshot->active_source == AUDIO_SOURCE_INTERNET_RADIO ||
+#if BOARD_HAS_YANDEX_MUSIC
             snapshot->active_source == AUDIO_SOURCE_YANDEX ||
+#endif
             snapshot->active_source == AUDIO_SOURCE_DLNA);
 }
 
@@ -9058,7 +9159,9 @@ static void ui_sync_player_snapshot(const player_snapshot_t *snapshot)
         // The player screen went away on its own - a station finished
         // connecting, the source stopped - so a click waiting on it is stale.
         ui_click_gesture_cancel(&s_player_click);
+#if BOARD_HAS_YANDEX_MUSIC
         ui_click_gesture_cancel(&s_like_click);
+#endif
         ui_render_player_state();
     }
 
@@ -9277,9 +9380,11 @@ static void ui_autoplay_hold_for_network(ui_autoplay_action_t action)
         ESP_LOGI(TAG, "autoplay: dropped, the player was left while waiting for the network");
         return;
     }
-    const audio_source_t source = action == UI_AUTOPLAY_YANDEX ? AUDIO_SOURCE_YANDEX
-                                  : action == UI_AUTOPLAY_DLNA ? AUDIO_SOURCE_DLNA
-                                                               : AUDIO_SOURCE_INTERNET_RADIO;
+    const audio_source_t source =
+#if BOARD_HAS_YANDEX_MUSIC
+        action == UI_AUTOPLAY_YANDEX ? AUDIO_SOURCE_YANDEX :
+#endif
+        action == UI_AUTOPLAY_DLNA ? AUDIO_SOURCE_DLNA : AUDIO_SOURCE_INTERNET_RADIO;
     s_radio_home_pending = false;
     ui_load_source_screen(source);
     // Nothing has been asked to play, so the "nothing to play" fallback could
@@ -9365,9 +9470,7 @@ static void ui_autoplay_step(const player_snapshot_t *snapshot)
      * is written, and takes the failed DNS lookup and its retry with it. */
     const bool waited_for_network =
         (uint32_t)(ui_tick_get_ms() - s_autoplay_started_ms) >= UI_AUTOPLAY_NETWORK_WAIT_MS;
-    if ((action == UI_AUTOPLAY_RADIO || action == UI_AUTOPLAY_YANDEX ||
-         action == UI_AUTOPLAY_DLNA) &&
-        !snapshot->wifi_connected) {
+    if (ui_autoplay_is_network_action(action) && !snapshot->wifi_connected) {
         if (waited_for_network) ui_autoplay_hold_for_network(action);
         return;
     }
@@ -9472,6 +9575,7 @@ static void ui_autoplay_step(const player_snapshot_t *snapshot)
         s_dlna_resume_started_ms = ui_tick_get_ms();
         return;
     }
+#if BOARD_HAS_YANDEX_MUSIC
     case UI_AUTOPLAY_YANDEX: {
         /* The same two commands the radio is resumed with, and in the same
          * order. What differs is the station: the radio keeps its own last URL
@@ -9504,6 +9608,7 @@ static void ui_autoplay_step(const player_snapshot_t *snapshot)
         s_waiting_for_source_item = false;
         return;
     }
+#endif
     case UI_AUTOPLAY_BLUETOOTH:
         // Handled above: it is the one action that outlives a single pass.
         return;
@@ -9791,7 +9896,9 @@ typedef enum {
     UI_TOUCH_TARGET_FEED,
     UI_TOUCH_TARGET_MENU,
     UI_TOUCH_TARGET_STATIONS,
+#if BOARD_HAS_YANDEX_MUSIC
     UI_TOUCH_TARGET_YANDEX,
+#endif
     UI_TOUCH_TARGET_SETTINGS,
     // The address's code or About over the settings: a touch only closes them.
     UI_TOUCH_TARGET_OVERLAY,
@@ -9835,8 +9942,10 @@ static bool s_touch_quick_bar;
 #define UI_TOUCH_STRIP_IDLE_MS 5000U
 static lv_obj_t *s_strip;
 static lv_obj_t *s_strip_label[UI_TOUCH_STRIP_MAX_ITEMS];
+#if BOARD_HAS_YANDEX_MUSIC
 // The two marks the footer already shows for a track, in place of a word.
 static lv_obj_t *s_strip_icon[UI_TOUCH_STRIP_MAX_ITEMS];
+#endif
 static lv_obj_t *s_strip_divider[UI_TOUCH_STRIP_MAX_ITEMS - 1U];
 static ui_touch_strip_item_t s_strip_items[UI_TOUCH_STRIP_MAX_ITEMS];
 static unsigned s_strip_count;
@@ -9863,6 +9972,7 @@ static void ui_strip_create(void)
         ui_paint(s_strip_label[index], UI_PAINT_TEXT, UI_ROLE_TEXT, 0);
         lv_label_set_text(s_strip_label[index], "");
 
+#if BOARD_HAS_YANDEX_MUSIC
         s_strip_icon[index] = lv_image_create(s_strip);
         lv_obj_remove_style_all(s_strip_icon[index]);
         lv_image_set_src(s_strip_icon[index], &ui_feed_icon_heart_16);
@@ -9871,6 +9981,7 @@ static void ui_strip_create(void)
         ui_paint(s_strip_icon[index], UI_PAINT_RECOLOR, UI_ROLE_TEXT, 0);
         lv_obj_set_style_image_recolor_opa(s_strip_icon[index], LV_OPA_COVER, 0);
         lv_obj_add_flag(s_strip_icon[index], LV_OBJ_FLAG_HIDDEN);
+#endif
     }
     for (unsigned index = 0U; index + 1U < UI_TOUCH_STRIP_MAX_ITEMS; ++index) {
         s_strip_divider[index] = lv_obj_create(s_strip);
@@ -9912,11 +10023,17 @@ static void ui_strip_open(void)
     const bool fm = source == AUDIO_SOURCE_FM;
     const bool tunable =
         fm && (playback == PLAYER_PLAYBACK_PLAYING || playback == PLAYER_PLAYBACK_PAUSED);
+#if BOARD_HAS_YANDEX_MUSIC
+    const bool can_rate = source == AUDIO_SOURCE_YANDEX;
+#else
+    const bool can_rate = false;
+#endif
     s_strip_count = ui_touch_strip_items(has_list, !fm && ui_seek_available(), tunable,
-                                         source == AUDIO_SOURCE_YANDEX, s_strip_items);
+                                         can_rate, s_strip_items);
     const int cell = TFT_WIDTH / (int)s_strip_count;
     for (unsigned index = 0U; index < UI_TOUCH_STRIP_MAX_ITEMS; ++index) {
         lv_obj_t *label = s_strip_label[index];
+#if BOARD_HAS_YANDEX_MUSIC
         lv_obj_t *icon = s_strip_icon[index];
         const bool has_icon =
             index < s_strip_count && (s_strip_items[index] == UI_TOUCH_STRIP_LIKE ||
@@ -9930,6 +10047,9 @@ static void ui_strip_open(void)
         } else {
             lv_obj_add_flag(icon, LV_OBJ_FLAG_HIDDEN);
         }
+#else
+        const bool has_icon = false;
+#endif
         if (index >= s_strip_count || has_icon) {
             lv_obj_add_flag(label, LV_OBJ_FLAG_HIDDEN);
         } else {
@@ -9970,10 +10090,14 @@ static void ui_touch_tap_strip(int x, int y)
         ui_begin_fm_tune();
         break;
     case UI_TOUCH_STRIP_LIKE:
+#if BOARD_HAS_YANDEX_MUSIC
         ui_submit_like_press(false);
+#endif
         break;
     case UI_TOUCH_STRIP_DISLIKE:
+#if BOARD_HAS_YANDEX_MUSIC
         ui_submit_like_press(true);
+#endif
         break;
     case UI_TOUCH_STRIP_EXIT:
         ui_handle_input(BOARD_INPUT_ACTION_ENCODER_LONG);
@@ -9987,7 +10111,9 @@ static ui_touch_target_t ui_touch_target(void)
 {
     if (s_ota_visible) return UI_TOUCH_TARGET_NONE;
     if (s_quick.open) return UI_TOUCH_TARGET_QUICK;
+#if BOARD_HAS_YANDEX_MUSIC
     if (s_yandex_open) return UI_TOUCH_TARGET_YANDEX;
+#endif
     if (s_settings_open) {
         return s_about_open || s_qr_open ? UI_TOUCH_TARGET_OVERLAY : UI_TOUCH_TARGET_SETTINGS;
     }
@@ -10118,12 +10244,13 @@ static void ui_touch_drag_player(const ui_touch_event_t *event)
                                  TFT_HEIGHT)) {
     case UI_TOUCH_PLAYER_SKIP:
         ui_touch_gesture_ignore(&s_touch);
-        /* Back is not a way on Yandex, where that button carries the like: a
-         * finger that only wanted the previous track would have marked this
-         * one. */
         if (steps < 0) {
             ui_handle_input(BOARD_INPUT_ACTION_BTN_NEXT);
-        } else if (ui_player_state_source(&s_player_ui) != AUDIO_SOURCE_YANDEX) {
+        } else {
+#if BOARD_HAS_YANDEX_MUSIC
+            /* A backwards swipe should not rate a track instead of skipping. */
+            if (ui_player_state_source(&s_player_ui) == AUDIO_SOURCE_YANDEX) break;
+#endif
             ui_handle_input(BOARD_INPUT_ACTION_BTN_PREV);
         }
         break;
@@ -10235,7 +10362,9 @@ static void ui_touch_drag(ui_touch_target_t target, const ui_touch_event_t *even
         break;
     case UI_TOUCH_TARGET_MENU:
     case UI_TOUCH_TARGET_STATIONS:
+#if BOARD_HAS_YANDEX_MUSIC
     case UI_TOUCH_TARGET_YANDEX:
+#endif
     case UI_TOUCH_TARGET_SETTINGS:
         // The list follows the finger: pushed up, the next rows come in.
         ui_touch_turn(steps, BOARD_INPUT_ACTION_ENCODER_LEFT, BOARD_INPUT_ACTION_ENCODER_RIGHT);
@@ -10389,7 +10518,9 @@ static void ui_touch_long(ui_touch_target_t target)
         }
         ui_handle_input(BOARD_INPUT_ACTION_ENCODER_LONG);
         break;
+#if BOARD_HAS_YANDEX_MUSIC
     case UI_TOUCH_TARGET_YANDEX:
+#endif
     case UI_TOUCH_TARGET_SETTINGS:
     case UI_TOUCH_TARGET_OVERLAY:
     case UI_TOUCH_TARGET_QUICK:
@@ -10499,9 +10630,11 @@ static void ui_touch_poll(void)
         case UI_TOUCH_TARGET_STATIONS:
             ui_touch_tap_list(&s_station_list, ui_update_station_list, event.y);
             break;
+#if BOARD_HAS_YANDEX_MUSIC
         case UI_TOUCH_TARGET_YANDEX:
             ui_touch_tap_list(&s_yandex_list, ui_update_yandex, event.y);
             break;
+#endif
         case UI_TOUCH_TARGET_SETTINGS:
             ui_touch_tap_settings(event.y);
             break;
@@ -10566,9 +10699,11 @@ static void ui_task(void *arg)
             }
         }
         ui_touch_poll();
+#if BOARD_HAS_YANDEX_MUSIC
         if (ui_click_gesture_poll(&s_like_click, ui_tick_get_ms()) == UI_CLICK_SINGLE) {
             ui_submit_like_press(false);
         }
+#endif
         ui_fm_tune_tick();
         switch (ui_click_gesture_poll(&s_player_click, ui_tick_get_ms())) {
         case UI_CLICK_SINGLE:
@@ -10666,7 +10801,9 @@ static void ui_task(void *arg)
                                        : active == s_menu_screen         ? &s_menu_strip
                                        : active == s_feed_screen         ? &s_feed_strip
                                        : active == s_station_list_screen ? &s_list_strip
+#if BOARD_HAS_YANDEX_MUSIC
                                        : active == s_yandex_screen       ? &s_yandex_strip
+#endif
                                                                          : NULL;
             ui_status_strip_update(strip, &snapshot);
         }
@@ -10711,6 +10848,7 @@ static void ui_task(void *arg)
             } else {
                 ui_update_settings();
             }
+#if BOARD_HAS_YANDEX_MUSIC
         } else if (s_yandex_open) {
             /* Asked before the snapshot is applied, which is what moves the
              * mark it compares against - and only when this screen is not in
@@ -10749,6 +10887,7 @@ static void ui_task(void *arg)
                     ui_close_yandex();
                 }
             }
+#endif
         } else {
             ui_sync_player_snapshot(&snapshot);
             /* After the sync, not before: it is the snapshot that clears the
@@ -10786,7 +10925,9 @@ static void ui_task(void *arg)
                          : active == s_feed_screen    ? "feed"
                          : active == s_menu_screen    ? "menu"
                          : active == s_settings_screen ? "settings"
+#if BOARD_HAS_YANDEX_MUSIC
                          : active == s_yandex_screen  ? "yandex"
+#endif
                          : active == s_station_list_screen ? "list"
                                                        : "other");
             }
@@ -10832,7 +10973,9 @@ static void ui_apply_theme(void)
     lv_obj_refresh_style(lv_layer_top(), LV_PART_ANY, LV_STYLE_PROP_ANY);
 
     s_saver_recolour = true;
+#if BOARD_HAS_YANDEX_MUSIC
     s_source_like_shown = -2;
+#endif
     s_fm_marks_stereo = -1;
     s_fm_marks_signal = -1;
     s_quick_cursor_shown = UI_QUICK_CURSOR_NONE;
@@ -10840,7 +10983,9 @@ static void ui_apply_theme(void)
     ui_update_menu_highlight();
     ui_update_feed_screen();
     ui_update_station_list();
+#if BOARD_HAS_YANDEX_MUSIC
     ui_update_yandex_rows();
+#endif
     ui_update_settings();
     ui_quick_refresh();
 }
@@ -10894,7 +11039,9 @@ esp_err_t ui_init(void)
     ui_menu_init(&s_menu);
     ui_player_state_init(&s_player_ui);
     ui_click_gesture_init(&s_player_click);
+#if BOARD_HAS_YANDEX_MUSIC
     ui_click_gesture_init(&s_like_click);
+#endif
     ui_vu_meter_init(&s_vu_state[0]);
     ui_vu_meter_init(&s_vu_state[1]);
     s_vu_updated_ms = ui_tick_get_ms();
@@ -10940,7 +11087,9 @@ esp_err_t ui_init(void)
     ui_create_menu_screen();
     ui_create_feed_screen();
     ui_create_settings_screen();
+#if BOARD_HAS_YANDEX_MUSIC
     ui_create_yandex_screen();
+#endif
     ui_create_source_screen();
     ui_create_station_list_screen();
     ui_create_screensaver();

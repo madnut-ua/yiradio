@@ -8,13 +8,14 @@ which `idf.py flash` leaves out on purpose and so flasher_args.json does not
 name. flasher/flasher_core.js reads exactly these keys.
 
 Usage: flasher_manifest.py --flasher-args build/flasher_args.json
-           --partitions partitions.csv --version v1.4.0
+           --partitions partitions.csv --version v1.4.0 --builds builds
            --display st7796s_480_320 [--display ...] --out site/manifest.json
 """
 
 import argparse
 import csv
 import json
+from ota_manifest import release_profile
 
 
 def littlefs_offset(partitions_path):
@@ -31,6 +32,7 @@ def main():
     parser.add_argument("--flasher-args", required=True)
     parser.add_argument("--partitions", required=True)
     parser.add_argument("--version", required=True)
+    parser.add_argument("--builds", required=True)
     parser.add_argument("--display", action="append", required=True)
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
@@ -40,6 +42,7 @@ def main():
     offset = lambda name: int(flasher_args[name]["offset"], 0)  # noqa: E731
     manifest = {
         "version": args.version,
+        "profile": release_profile(args.builds, ["firmware-" + display for display in args.display]),
         "displays": args.display,
         "offsets": {
             "bootloader": offset("bootloader"),

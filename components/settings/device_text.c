@@ -1,4 +1,5 @@
 #include "device_text.h"
+#include "board_features.h"
 
 #include <stddef.h>
 
@@ -17,7 +18,9 @@ static const device_text_entry_t k_text[DEVICE_TEXT_COUNT] = {
     [DEVICE_TEXT_SOURCE_INTERNET_RADIO] = {"Интернет-радио", "Internet radio"},
     [DEVICE_TEXT_SOURCE_USB] = {"USB-плеер", "USB player"},
     [DEVICE_TEXT_SOURCE_SD] = {"SD-карта", "SD card"},
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
     [DEVICE_TEXT_SOURCE_YANDEX] = {"ЯМузыка", "Ya.Music"},
+#endif
     /* Not translated, and not "Медиасервер": DLNA is what the protocol is
      * called in both languages, it is the word on the switch in Settings, and
      * it is what the user asked for. The sentences about a media server -
@@ -27,7 +30,9 @@ static const device_text_entry_t k_text[DEVICE_TEXT_COUNT] = {
     [DEVICE_TEXT_SOURCE_FM] = {"FM-радио", "FM radio"},
     [DEVICE_TEXT_SOURCE_BLUETOOTH] = {"Bluetooth", "Bluetooth"},
     [DEVICE_TEXT_SOURCE_UNKNOWN] = {"Неизвестный режим", "Unknown mode"},
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
     [DEVICE_TEXT_YANDEX_LONG] = {"Яндекс Музыка", "Yandex Music"},
+#endif
 
     [DEVICE_TEXT_STATE_STOPPED] = {"Остановлено", "Stopped"},
     [DEVICE_TEXT_STATE_CONNECTING] = {"Подключение", "Connecting"},
@@ -61,7 +66,9 @@ static const device_text_entry_t k_text[DEVICE_TEXT_COUNT] = {
     [DEVICE_TEXT_ROW_FILES_END] = {"Конец папки", "End of folder"},
     [DEVICE_TEXT_FILES_END_STOP] = {"Стоп", "Stop"},
     [DEVICE_TEXT_FILES_END_REPEAT] = {"Сначала", "Start over"},
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
     [DEVICE_TEXT_ROW_YANDEX] = {"Яндекс Музыка", "Yandex Music"},
+#endif
     [DEVICE_TEXT_ROW_WEATHER] = {"Погода", "Weather"},
     [DEVICE_TEXT_ROW_BT_OUTPUT] = {"Звук на Bluetooth", "Sound over Bluetooth"},
     [DEVICE_TEXT_ROW_DLNA] = {"DLNA", "DLNA"},
@@ -181,13 +188,16 @@ static const device_text_entry_t k_text[DEVICE_TEXT_COUNT] = {
     [DEVICE_TEXT_ERROR_FOLDER_FAILED] = {"Папка не открылась", "The folder would not open"},
     [DEVICE_TEXT_ERROR_BT_MODULE_OLD] = {"Обновите прошивку модуля Bluetooth",
      "Update the Bluetooth module's firmware"},
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
     [DEVICE_TEXT_ERROR_YANDEX_SUBSCRIPTION] = {"Нужна подписка Яндекс Музыки",
      "A Yandex Music subscription is needed"},
     [DEVICE_TEXT_ERROR_YANDEX_REFRESH] = {"Обновить станции", "Refresh the stations"},
+#endif
     [DEVICE_TEXT_ERROR_BAD_COMMAND] = {"Некорректная команда", "Malformed command"},
     [DEVICE_TEXT_ERROR_DEVICE_BUSY] = {"Устройство занято", "The device is busy"},
     [DEVICE_TEXT_ERROR_FM_TUNER] = {"FM-тюнер не отвечает", "The FM tuner does not answer"},
 
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
     [DEVICE_TEXT_YANDEX_NOT_LINKED] = {"Аккаунт не привязан", "Account not linked"},
     [DEVICE_TEXT_YANDEX_LINKED] = {"Аккаунт привязан", "Account linked"},
     [DEVICE_TEXT_YANDEX_ENTER_CODE] = {"Введите код на сайте", "Enter the code on the site"},
@@ -202,6 +212,7 @@ static const device_text_entry_t k_text[DEVICE_TEXT_COUNT] = {
     [DEVICE_TEXT_YANDEX_LIST_FAILED] = {"Не удалось получить станции",
      "Could not fetch the stations"},
     [DEVICE_TEXT_YANDEX_LIST_EMPTY] = {"Станций нет", "No stations"},
+#endif
     /* The gesture, not a button: F2 used to do this and no longer exists, so
      * the hints name the hold, which is what actually leaves a screen. */
     [DEVICE_TEXT_HINT_BACK] = {"удержание - назад", "hold - back"},

@@ -28,9 +28,16 @@
 /* "YYYY-MM-DD", or the app header's "Mmm dd yyyy". */
 #define VERSION_INFO_DATE_MAX 16U
 
+typedef enum {
+    VERSION_INFO_PROFILE_UNKNOWN = 0,
+    VERSION_INFO_PROFILE_BASE = 1,
+    VERSION_INFO_PROFILE_EXTENDED = 2,
+} version_info_profile_t;
+
 typedef struct {
     char version[VERSION_INFO_STRING_MAX + 1U];
     char built[VERSION_INFO_DATE_MAX + 1U];
+    version_info_profile_t profile;
     /* False when the web stamp could not be read at all - an image flashed
      * before this existed, or a partition that has never been written. The
      * strings are empty then, and the difference matters: "unknown" is a
@@ -48,6 +55,7 @@ typedef struct {
 /* Reads both. The web half touches the filesystem, so this is not for the
  * refresh loop - call it when the About screen opens or a request arrives. */
 void version_info_read(version_info_t *info);
+version_info_profile_t version_info_current_profile(void);
 
 /* Whether the two halves came from the same build. False when the web stamp is
  * missing: unknown is not a match. */

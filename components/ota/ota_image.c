@@ -56,6 +56,7 @@ ota_image_result_t ota_image_check(const uint8_t *head, size_t length,
         return OTA_IMAGE_NO_MARK;
     }
     found.display = read_u16(head + MARK_AT + 4U);
+    found.profile = read_u16(head + MARK_AT + 6U);
     if (info != NULL) *info = found;
     return found.display == expected_display ? OTA_IMAGE_OK : OTA_IMAGE_WRONG_DISPLAY;
 }

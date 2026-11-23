@@ -5,7 +5,9 @@
 
 #include "cJSON.h"
 
-#define OTA_OFFER_FORMAT_KNOWN 1
+#include "version_info.h"
+
+#define OTA_OFFER_FORMAT_KNOWN 2
 
 static bool copy_string(char *out, size_t size, const cJSON *item)
 {
@@ -99,10 +101,15 @@ ota_offer_result_t ota_offer_parse(const char *json, size_t length, const char *
     ota_offer_result_t result = OTA_OFFER_OK;
     const cJSON *format = cJSON_GetObjectItemCaseSensitive(root, "format");
     const cJSON *firmware = cJSON_GetObjectItemCaseSensitive(root, "firmware");
+    const cJSON *profile = cJSON_GetObjectItemCaseSensitive(root, "profile");
     if (!cJSON_IsNumber(format) || !cJSON_IsObject(firmware)) {
         result = OTA_OFFER_MALFORMED;
-    } else if (format->valueint != OTA_OFFER_FORMAT_KNOWN) {
+    } else if (format->valuedouble != OTA_OFFER_FORMAT_KNOWN) {
         result = OTA_OFFER_FORMAT;
+    } else if (!cJSON_IsNumber(profile) ||
+               (profile->valuedouble != VERSION_INFO_PROFILE_BASE &&
+                profile->valuedouble != VERSION_INFO_PROFILE_EXTENDED)) {
+        result = OTA_OFFER_MALFORMED;
     } else if (!copy_string(offer->version, sizeof(offer->version),
                             cJSON_GetObjectItemCaseSensitive(root, "version"))) {
         result = OTA_OFFER_MALFORMED;
@@ -112,6 +119,7 @@ ota_offer_result_t ota_offer_parse(const char *json, size_t length, const char *
                !read_file(cJSON_GetObjectItemCaseSensitive(root, "www"), &offer->www)) {
         result = OTA_OFFER_MALFORMED;
     } else {
+        offer->profile = (unsigned)profile->valueint;
         result = read_history(cJSON_GetObjectItemCaseSensitive(root, "history"),
                               running != NULL ? running : "", offer);
     }

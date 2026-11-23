@@ -23,7 +23,10 @@
 #include "player_control.h"
 #include "station_catalog.h"
 #include "web_server.h"
+#include "board_features.h"
+#if BOARD_HAS_YANDEX_MUSIC
 #include "yandex_catalog.h"
+#endif
 #endif
 
 /* Only the device half wipes buffers: everything it clears is a saved network,
@@ -144,10 +147,12 @@ static void write_capabilities(web_json_writer_t *writer,
     }
     /* Only while an account is linked, for the same reason the capability is:
      * without one the source can do nothing but fail. */
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
     if ((player->capabilities & PLAYER_CAP_YANDEX) != 0U) {
         write_capability(writer, &written, "yandex", AUDIO_SOURCE_YANDEX, "stations",
                          language);
     }
+#endif
     /* Offered whenever the build has it, unlike the volumes: whether a server
      * is on the network is only discovered by searching, and that happens when
      * the source is chosen. A tree of containers browses the way a directory
@@ -207,12 +212,14 @@ static void write_player(web_json_writer_t *writer,
      * UI draw an empty heart on a radio station, offering a button that would
      * be refused. This is the section that carries the titles, so it costs as
      * few bytes as it can. */
+#if !defined(ESP_PLATFORM) || BOARD_HAS_YANDEX_MUSIC
     if (player->track_likeable) {
         web_json_literal(writer, ",\"liked\":");
         web_json_literal(writer, player->track_liked ? "true" : "false");
         web_json_literal(writer, ",\"disliked\":");
         web_json_literal(writer, player->track_disliked ? "true" : "false");
     }
+#endif
     web_json_literal(writer, ",\"error\":");
     web_json_string(writer, player->error);
     web_json_literal(writer, "}");
@@ -832,12 +839,15 @@ static void capture_now_playing(const player_snapshot_t *player,
          * what the flag would have chosen anyway with no list entry to prefer. */
         const char *list_name = NULL;
         bool name_from_list = true;
+#if BOARD_HAS_YANDEX_MUSIC
         if (player->active_source == AUDIO_SOURCE_YANDEX) {
             yandex_station_t station;
             if (yandex_catalog_station_at(player->active_item_index, &station)) {
                 list_name = station.name;
             }
-        } else {
+        } else
+#endif
+        {
             const station_catalog_entry_t *entry =
                 player_control_station_at(player->active_item_index);
             if (entry != NULL) {

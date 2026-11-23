@@ -25,7 +25,10 @@
 #include "player_control.h"
 #include "station_catalog.h"
 #include "wifi_settings.h"
+#include "board_features.h"
+#if BOARD_HAS_YANDEX_MUSIC
 #include "yandex_token_store.h"
+#endif
 
 #define WEB_BACKUP_CONFIG_DIR "/littlefs/config"
 /* One file at a time is held in RAM. wifi.json is the largest of the seven at
@@ -129,6 +132,71 @@ static void web_backup_path(char *path, size_t size, config_archive_member_t mem
     snprintf(path, size, WEB_BACKUP_CONFIG_DIR "/%s", config_archive_member_file(member));
 }
 
+static bool web_backup_member_available(config_archive_member_t member)
+{
+    return member != CONFIG_ARCHIVE_MEMBER_UNKNOWN &&
+           (BOARD_HAS_YANDEX_MUSIC || member != CONFIG_ARCHIVE_MEMBER_YANDEX);
+}
+
+#if !BOARD_HAS_YANDEX_MUSIC
+static bool web_backup_csv_has_inactive_rows(config_archive_member_t member)
+{
+    return member == CONFIG_ARCHIVE_MEMBER_SETTINGS || member == CONFIG_ARCHIVE_MEMBER_REMOTE;
+}
+
+static bool csv_field_is(const char *field, size_t length, const char *name)
+{
+    while (length > 0U && (*field == ' ' || *field == '\t')) {
+        ++field;
+        --length;
+    }
+    while (length > 0U && (field[length - 1U] == ' ' || field[length - 1U] == '\t' ||
+                           field[length - 1U] == '\r')) {
+        --length;
+    }
+    return strlen(name) == length && memcmp(field, name, length) == 0;
+}
+
+/* Preserve private dormant records in place on the device, but do not let
+ * them cross the backup/restore boundary in either direction. */
+static size_t web_backup_csv_filter(config_archive_member_t member, char *data, size_t size,
+                                    bool keep_inactive)
+{
+    if (!web_backup_csv_has_inactive_rows(member) || size == 0U) return size;
+    char *end = data + size;
+    char *dest = data;
+    for (char *row = data; row < end;) {
+        char *newline = memchr(row, '\n', end - row);
+        char *stop = newline != NULL ? newline : end;
+        char *comma = memchr(row, ',', stop - row);
+        bool inactive = false;
+        if (comma != NULL && member == CONFIG_ARCHIVE_MEMBER_SETTINGS) {
+            const size_t key_len = (size_t)(comma - row);
+            inactive = csv_field_is(row, key_len, "yandex_music") ||
+                       csv_field_is(row, key_len, "last_yandex") ||
+                       (csv_field_is(row, key_len, "last_source") &&
+                        csv_field_is(comma + 1, (size_t)(stop - comma - 1), "yandex"));
+            if (keep_inactive && csv_field_is(row, key_len, "last_source")) {
+                inactive = false;
+            }
+        } else if (comma != NULL) {
+            const size_t key_len = (size_t)(comma - row);
+            inactive = csv_field_is(row, key_len, "source_yandex") ||
+                       csv_field_is(row, key_len, "like") ||
+                       csv_field_is(row, key_len, "dislike");
+        }
+        char *next = newline != NULL ? newline + 1 : end;
+        if (inactive == keep_inactive) {
+            const size_t length = (size_t)(next - row);
+            memmove(dest, row, length);
+            dest += length;
+        }
+        row = next;
+    }
+    return (size_t)(dest - data);
+}
+#endif
+
 /* Bytes read, or 0 for "no such file" as well as for "empty" - which are the
  * same thing to a backup: a device that was never linked to Yandex has no
  * yandex.json, and neither case belongs in the archive. */
@@ -228,7 +296,11 @@ esp_err_t web_backup_get(httpd_req_t *request)
     size_t configuration_files = 0U;
     for (config_archive_member_t kind = CONFIG_ARCHIVE_MEMBER_FIRST;
          kind <= CONFIG_ARCHIVE_MEMBER_LAST; ++kind) {
-        const size_t size = web_backup_read_member(kind, member, WEB_BACKUP_MEMBER_MAX_LEN);
+        if (!web_backup_member_available(kind)) continue;
+        size_t size = web_backup_read_member(kind, member, WEB_BACKUP_MEMBER_MAX_LEN);
+#if !BOARD_HAS_YANDEX_MUSIC
+        size = web_backup_csv_filter(kind, (char *)member, size, false);
+#endif
         if (size == 0U) continue;
         if (!config_archive_writer_add(writer, config_archive_member_file(kind), member, size)) {
             ESP_LOGE(TAG, "%s did not fit the archive", config_archive_member_file(kind));
@@ -412,10 +484,37 @@ static bool web_backup_write_member(config_archive_member_t member, const void *
         ESP_LOGE(TAG, "cannot open %s: %s", temp, strerror(errno));
         return false;
     }
-    const size_t written = fwrite(data, 1U, size, file);
+    bool written = fwrite(data, 1U, size, file) == size;
+#if !BOARD_HAS_YANDEX_MUSIC
+    if (written && web_backup_csv_has_inactive_rows(member)) {
+        FILE *old = fopen(path, "rb");
+        if (old != NULL) {
+            char *saved = malloc(WEB_BACKUP_MEMBER_MAX_LEN);
+            if (saved != NULL) {
+                const size_t count = fread(saved, 1U, WEB_BACKUP_MEMBER_MAX_LEN, old);
+                written = (count < WEB_BACKUP_MEMBER_MAX_LEN || fgetc(old) == EOF) &&
+                          !ferror(old);
+                const size_t keep = web_backup_csv_filter(member, saved, count, true);
+                if (written && keep > 0U) {
+                    const bool separator = size > 0U && ((const char *)data)[size - 1U] != '\n';
+                    written = size + keep + separator <= WEB_BACKUP_MEMBER_MAX_LEN &&
+                              (!separator || fputc('\n', file) != EOF) &&
+                              fwrite(saved, 1U, keep, file) == keep;
+                }
+                web_backup_secure_zero(saved, count);
+                free(saved);
+            } else {
+                written = false;
+            }
+            fclose(old);
+        } else if (errno != ENOENT) {
+            written = false;
+        }
+    }
+#endif
     const bool flushed = fflush(file) == 0;
     fclose(file);
-    if (written != size || !flushed) {
+    if (!written || !flushed) {
         ESP_LOGE(TAG, "cannot write %s: %s", temp, strerror(errno));
         unlink(temp);
         return false;
@@ -444,6 +543,7 @@ static bool web_backup_member_loads(config_archive_member_t member)
         free(settings);
         return loaded;
     }
+#if BOARD_HAS_YANDEX_MUSIC
     if (member == CONFIG_ARCHIVE_MEMBER_YANDEX) {
         yandex_token_t *token = malloc(sizeof(*token));
         if (token == NULL) return true;
@@ -453,6 +553,7 @@ static bool web_backup_member_loads(config_archive_member_t member)
         free(token);
         return loaded;
     }
+#endif
     /* settings.csv has no loader that can fail: every key it does not
      * understand is skipped and every key it wants has a default. weather.json
      * degrades the same way - a key it cannot read is a key it has not got,
@@ -582,7 +683,7 @@ esp_err_t web_backup_restore_post(httpd_req_t *request)
                 continue;
             }
             const config_archive_member_t member = config_archive_member_from_file(entry.name);
-            if (member == CONFIG_ARCHIVE_MEMBER_UNKNOWN) continue;
+            if (!web_backup_member_available(member)) continue;
             /* An archive that names the same file twice is somebody's edit, not
              * something this device wrote; the first copy wins so that the
              * result does not depend on the order a tool happened to pack. */
@@ -609,13 +710,11 @@ esp_err_t web_backup_restore_post(httpd_req_t *request)
         }
         if (refusal == NULL && count == 0U && picture_count == 0U) {
             refusal = "empty";
-            refusal_reason =
-                "no wifi.json, settings.csv, yandex.json, weather.json, remote.csv, "
-                "fm_presets.csv or levels.csv inside";
+            refusal_reason = "no supported files inside";
         }
     } else {
         const config_archive_member_t member = config_archive_member_from_file(name);
-        if (member == CONFIG_ARCHIVE_MEMBER_UNKNOWN) {
+        if (!web_backup_member_available(member)) {
             refusal = "unknown-file";
             refusal_reason = "neither an archive nor a file this device keeps";
         } else {
@@ -644,6 +743,25 @@ esp_err_t web_backup_restore_post(httpd_req_t *request)
             refusal = "contents";
             refusal_reason = config_archive_member_file(pending[index].member);
         }
+#if !BOARD_HAS_YANDEX_MUSIC
+        if (refusal == NULL && web_backup_csv_has_inactive_rows(pending[index].member)) {
+            if (pending[index].owned == NULL) {
+                pending[index].owned = malloc(pending[index].size + 1U);
+                if (pending[index].owned == NULL) {
+                    refusal = "write";
+                    refusal_reason = "not enough memory to prepare settings";
+                    break;
+                }
+                memcpy(pending[index].owned, pending[index].data, pending[index].size);
+                pending[index].data = pending[index].owned;
+            }
+            const size_t original_size = pending[index].size;
+            pending[index].size = web_backup_csv_filter(pending[index].member,
+                (char *)pending[index].owned, original_size, false);
+            web_backup_secure_zero((char *)pending[index].owned + pending[index].size,
+                                   original_size - pending[index].size);
+        }
+#endif
     }
 
     if (refusal != NULL) {

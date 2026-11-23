@@ -4,6 +4,8 @@
 #include <string.h>
 
 #include "board_display_profile.h"
+#include "board_features.h"
+#include "version_info.h"
 #include "esp_log.h"
 #include "esp_heap_caps.h"
 #include "esp_image_format.h"
@@ -31,7 +33,7 @@ static const char *TAG = "ota";
 const __attribute__((section(".rodata_custom_desc"), used)) ota_image_mark_t ota_image_mark = {
     .magic = OTA_IMAGE_MARK_MAGIC,
     .display = DISPLAY,
-    .reserved = 0,
+    .profile = BOARD_HAS_YANDEX_MUSIC ? VERSION_INFO_PROFILE_EXTENDED : VERSION_INFO_PROFILE_BASE,
 };
 
 static portMUX_TYPE s_lock = portMUX_INITIALIZER_UNLOCKED;
@@ -55,6 +57,7 @@ static esp_timer_handle_t s_restart_timer;
 static bool s_app_ready;
 static bool s_www_ready;
 static char s_www_version[32];
+static unsigned s_www_profile;
 /* In PSRAM, and only while an archive is coming in: it holds a tar block
  * and a path, internal RAM is short, and it is idle all the rest of the
  * time. Only the HTTP worker touches it. */
@@ -113,6 +116,7 @@ static void drop_staged(void)
     if (s_www_ready) ota_www_discard(OTA_FS_ROOT);
     s_www_ready = false;
     s_www_version[0] = '\0';
+    s_www_profile = VERSION_INFO_PROFILE_UNKNOWN;
 }
 
 /* The sound goes first, for either half. The flash is written with the
@@ -130,7 +134,7 @@ static void stop_sound(void)
     if (!player_control_post(&stop)) ESP_LOGW(TAG, "stop for the update was not queued");
 }
 
-esp_err_t ota_update_begin(const uint8_t *head, size_t head_length, size_t total,
+esp_err_t ota_update_begin(const uint8_t *head, size_t head_length, size_t total, bool online,
                            ota_image_result_t *why)
 {
     *why = OTA_IMAGE_OK;
@@ -151,8 +155,14 @@ esp_err_t ota_update_begin(const uint8_t *head, size_t head_length, size_t total
     /* Pages unpacked for another version would leave the two halves
      * disagreeing - the very thing the archive is for. Dropped, so the same
      * firmware sent again on its own goes through. */
-    if (*why == OTA_IMAGE_OK && s_www_ready && strcmp(s_www_version, info.version) != 0) {
-        ESP_LOGW(TAG, "web files are %s, the firmware %s", s_www_version, info.version);
+    const unsigned current_profile = version_info_current_profile();
+    const bool mismatched = s_www_ready && (strcmp(s_www_version, info.version) != 0 ||
+                                            s_www_profile != info.profile);
+    const bool wrong_online_profile =
+        online && (!s_www_ready || info.profile != current_profile || s_www_profile != current_profile);
+    if (*why == OTA_IMAGE_OK && (mismatched || wrong_online_profile)) {
+        ESP_LOGW(TAG, "web files %s/%u, firmware %s/%u, current profile %u", s_www_version,
+                 s_www_profile, info.version, info.profile, current_profile);
         drop_staged();
         *why = OTA_IMAGE_WEB_MISMATCH;
     }
@@ -294,6 +304,7 @@ ota_tar_result_t ota_update_www_finish(bool app_follows)
     }
     s_www_ready = true;
     memcpy(s_www_version, s_www->version, sizeof(s_www_version));
+    s_www_profile = s_www->profile;
     portENTER_CRITICAL(&s_lock);
     memcpy(s_status.version, s_www_version, sizeof(s_status.version));
     portEXIT_CRITICAL(&s_lock);

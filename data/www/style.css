@@ -585,6 +585,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
     linear-gradient(var(--muted) 0 0) no-repeat 0 7.4px / 12px 1.6px;
 }
 
+/* YA_MUSIC_BEGIN */
 /* Beside a name rather than in the meta column: it qualifies the name. */
 .list-item-note {
   margin-left: .5em;
@@ -592,6 +593,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
   font-size: .85em;
   color: var(--muted);
 }
+/* YA_MUSIC_END */
 
 .list-item-meta {
   flex: none;
@@ -844,6 +846,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .play-toggle.is-playing .icon-play { display: none; }
 .play-toggle.is-playing .icon-pause { display: block; }
 
+/* YA_MUSIC_BEGIN */
 .like-track svg,
 .dislike-track svg {
   fill: none;
@@ -863,6 +866,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
    bitmap erases before it strikes. */
 .dislike-track .slash-gap { stroke: var(--surface-2); stroke-width: 4; }
 .dislike-track .slash { stroke: currentColor; stroke-width: 1.7; }
+/* YA_MUSIC_END */
 
 .track-progress {
   display: flex;
@@ -1736,6 +1740,7 @@ a.secondary-button { text-decoration: none; color: inherit; }
   overflow-wrap: anywhere;
 }
 
+/* YA_MUSIC_BEGIN */
 .yandex-code { padding: .6rem .8rem; display: grid; gap: .3rem; }
 .yandex-code-lead { font-size: .85rem; }
 .yandex-code a { color: var(--accent-2); }
@@ -1747,6 +1752,7 @@ a.secondary-button { text-decoration: none; color: inherit; }
   letter-spacing: .18em;
   color: var(--text);
 }
+/* YA_MUSIC_END */
 
 /* --------------------------------------------------------- playlist editor */
 
@@ -2177,8 +2183,10 @@ a.secondary-button { text-decoration: none; color: inherit; }
   .player-bar:not(.is-expanded) .volume-control,
   .player-bar:not(.is-expanded) .stream-details,
   .player-bar:not(.is-expanded) .track-context,
+  /* YA_MUSIC_BEGIN */
   .player-bar:not(.is-expanded) .like-track,
   .player-bar:not(.is-expanded) .dislike-track,
+  /* YA_MUSIC_END */
   .player-bar:not(.is-expanded) .step-item { display: none; }
 
   .player-bar.is-expanded .player-main {

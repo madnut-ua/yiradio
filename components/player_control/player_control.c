@@ -31,10 +31,12 @@
 #include "dlna_source.h"
 #include "internet_radio.h"
 #include "station_catalog.h"
+#if BOARD_HAS_YANDEX_MUSIC
 #include "yandex_auth.h"
 #include "yandex_catalog.h"
 #include "yandex_likes.h"
 #include "yandex_rotor.h"
+#endif
 #include "file_browser.h"
 #include "file_storage.h"
 #include "file_player.h"
@@ -599,6 +601,7 @@ static void player_file_cue_track_changed(size_t track)
 // stopping a player that is already stopped costs one atomic read - trusting
 // this task's bookkeeping instead would turn any drift in it into a read of
 // freed FATFS state.
+#if BOARD_HAS_YANDEX_MUSIC
 /* Which row of the Yandex list is playing. The radio status cannot answer for
  * it: a chain of tracks has no index in the station catalog, and reports
  * SIZE_MAX on purpose so that a reconnect never tries to reopen it by one. */
@@ -714,6 +717,7 @@ static bool player_yandex_start_remembered(void)
     if (!known || station.id[0] == '\0') return false;
     return player_yandex_start_station(&station, player_yandex_row_of(station.id));
 }
+#endif
 
 static void player_file_media_removing(void)
 {
@@ -1657,6 +1661,7 @@ static bool player_stop_active_source(audio_source_t source)
             s_stop_unfinished = true;
             return false;
         }
+#if BOARD_HAS_YANDEX_MUSIC
         if (source == AUDIO_SOURCE_YANDEX) {
             /* After the decoder has stopped, so nothing is inside a call that
              * reads the rotor's buffer while it is being freed. The chain's
@@ -1669,6 +1674,7 @@ static bool player_stop_active_source(audio_source_t source)
             atomic_store_explicit(&s_yandex_item_index, PLAYER_ITEM_NONE,
                                   memory_order_release);
         }
+#endif
     } else if (source == AUDIO_SOURCE_DLNA) {
         /* A media server's tracks play through the radio's own path - they are
          * HTTP streams that end - so this stops the same way a station does.
@@ -2002,6 +2008,7 @@ static void player_control_task(void *arg)
              * screen, and a click on a row selected that index in the new
              * catalogue instead. */
             atomic_fetch_add_explicit(&s_listing_revision, 1U, memory_order_release);
+#if BOARD_HAS_YANDEX_MUSIC
             /* The rotor's station list is not stored anywhere: it lives in
              * memory and is fetched by whoever is about to show it. On the
              * device the screen does that as it opens; the web page only draws
@@ -2013,6 +2020,7 @@ static void player_control_task(void *arg)
             if (command.source == AUDIO_SOURCE_YANDEX) {
                 (void)yandex_catalog_request_refresh();
             }
+#endif
             /* The one source that plays on being chosen: there is nothing to
              * pick after it - no list, no phone - so choosing FM is choosing
              * to hear it. A tuner that does not answer stays the source, in
@@ -2110,8 +2118,10 @@ static void player_control_task(void *arg)
                     activated == DLNA_ACTIVATE_BROWSE_FAILED) {
                     atomic_fetch_add_explicit(&s_listing_revision, 1U, memory_order_release);
                 }
+#if BOARD_HAS_YANDEX_MUSIC
             } else if (snapshot.active_source == AUDIO_SOURCE_YANDEX) {
                 (void)player_yandex_start(command.item_index);
+#endif
             } else if (snapshot.active_source == AUDIO_SOURCE_FM) {
                 fm_preset_t preset;
                 if (player_control_fm_preset_at(command.item_index, &preset)) {
@@ -2159,6 +2169,7 @@ static void player_control_task(void *arg)
             bool started = false;
             switch (snapshot.active_source) {
             case AUDIO_SOURCE_YANDEX:
+#if BOARD_HAS_YANDEX_MUSIC
                 /* The radio's saved station belongs to a different source, so
                  * play again means the station last chosen here - by identity,
                  * because the row it sat on outlives neither a reordered
@@ -2166,6 +2177,7 @@ static void player_control_task(void *arg)
                  * point, put here by autoplay before it asked for this; with
                  * none, the top of the account's own list. */
                 started = player_yandex_start_remembered() || player_yandex_start(0U);
+#endif
                 break;
             case AUDIO_SOURCE_USB:
             case AUDIO_SOURCE_SD:
@@ -2272,9 +2284,11 @@ static void player_control_task(void *arg)
                 (void)bt_link_passthrough(JBT_KEY_NEXT);
                 break;
             }
+#if BOARD_HAS_YANDEX_MUSIC
             if (snapshot.active_source == AUDIO_SOURCE_YANDEX) {
                 yandex_rotor_note_skip();
             }
+#endif
             if (!internet_radio_skip_track()) {
                 ESP_LOGW(TAG, "nothing to skip");
             }
@@ -2344,6 +2358,7 @@ static void player_control_task(void *arg)
         }
         case PLAYER_OPERATION_TOGGLE_LIKE:
         case PLAYER_OPERATION_TOGGLE_DISLIKE: {
+#if BOARD_HAS_YANDEX_MUSIC
             /* Blocks on one POST, on the task that already blocks on three of
              * them to open a station. The mark is only moved once the API has
              * taken it: a heart that fills in and then quietly disagrees with
@@ -2369,6 +2384,7 @@ static void player_control_task(void *arg)
             }
             if (dislike) yandex_rotor_set_playing_disliked(set);
             else yandex_rotor_set_playing_liked(set);
+#endif
             break;
         }
         case PLAYER_OPERATION_BROWSE_UP:
@@ -2625,8 +2641,10 @@ void player_control_get_snapshot(player_snapshot_t *snapshot)
      * of order. Which of the two moved does not matter: either means the names
      * it is holding may be stale, and re-fetching the list it is already
      * showing costs one GET. */
-    snapshot->listing_revision =
-        player_control_listing_revision() + yandex_catalog_revision();
+    snapshot->listing_revision = player_control_listing_revision();
+#if BOARD_HAS_YANDEX_MUSIC
+    snapshot->listing_revision += yandex_catalog_revision();
+#endif
     snapshot->files_entry_count = file_storage_entry_count();
     if (board_has_usb() && usb_storage_is_mounted()) {
         snapshot->capabilities |= PLAYER_CAP_USB;
@@ -2647,12 +2665,16 @@ void player_control_get_snapshot(player_snapshot_t *snapshot)
      * from the copy the UI publishes, and until it has published anything both
      * sources count as present - a source that vanishes for the first second
      * after boot is worse than one that appears. */
-    bool yandex_enabled = true;
     bool dlna_enabled = true;
+#if BOARD_HAS_YANDEX_MUSIC
+    bool yandex_enabled = true;
     (void)device_settings_published_switches(&yandex_enabled, &dlna_enabled);
-    if (BOARD_HAS_YANDEX_MUSIC && yandex_enabled && yandex_auth_is_authorized()) {
+    if (yandex_enabled && yandex_auth_is_authorized()) {
         snapshot->capabilities |= PLAYER_CAP_YANDEX;
     }
+#else
+    (void)device_settings_published_switches(NULL, &dlna_enabled);
+#endif
     // Always, when the build has it and the switch is on: see PLAYER_CAP_DLNA.
     // Whether a server answered is discovered by selecting the source, not
     // before.
@@ -2807,6 +2829,7 @@ void player_control_get_snapshot(player_snapshot_t *snapshot)
     internet_radio_status_t radio_status;
     internet_radio_get_status(&radio_status);
     snapshot->playback_state = player_playback_from_radio(radio_status.state);
+#if BOARD_HAS_YANDEX_MUSIC
     if (snapshot->active_source == AUDIO_SOURCE_YANDEX) {
         /* The rotor's list, and the row this task remembers starting: the
          * radio status reports SIZE_MAX for a chain by design. */
@@ -2851,7 +2874,9 @@ void player_control_get_snapshot(player_snapshot_t *snapshot)
             snapshot->track_liked = liked;
             snapshot->track_disliked = disliked;
         }
-    } else if (snapshot->active_source == AUDIO_SOURCE_DLNA) {
+    } else
+#endif
+    if (snapshot->active_source == AUDIO_SOURCE_DLNA) {
         /* The server's listing, and the row inside it that is playing. The
          * radio status reports SIZE_MAX for a chain by design, exactly as it
          * does for the rotor, so the row comes from the source instead.
@@ -2884,6 +2909,7 @@ void player_control_get_snapshot(player_snapshot_t *snapshot)
     snapshot->bitrate_kbps = radio_status.bitrate_kbps;
     snapshot->sample_rate_hz = radio_status.sample_rate_hz;
     if (radio_status.state == INTERNET_RADIO_STATE_ERROR) {
+#if BOARD_HAS_YANDEX_MUSIC
         /* An account without an active subscription gets preview variants only,
          * and that is worth saying: everything else about it looks exactly
          * like a station that would not open. */
@@ -2891,10 +2917,11 @@ void player_control_get_snapshot(player_snapshot_t *snapshot)
             yandex_rotor_last_error() == ESP_ERR_NOT_SUPPORTED) {
             snprintf(snapshot->error, sizeof(snapshot->error), "%s",
                      player_text(DEVICE_TEXT_ERROR_YANDEX_SUBSCRIPTION));
-        } else {
-            snprintf(snapshot->error, sizeof(snapshot->error),
-                     "%s", player_text(DEVICE_TEXT_ERROR_STATION_FAILED));
+            return;
         }
+#endif
+        snprintf(snapshot->error, sizeof(snapshot->error),
+                 "%s", player_text(DEVICE_TEXT_ERROR_STATION_FAILED));
     }
 }
 
@@ -2997,6 +3024,7 @@ bool player_control_file_entry_at(size_t index, file_browser_entry_t *entry)
     return file_storage_entry_at(index, entry);
 }
 
+#if BOARD_HAS_YANDEX_MUSIC
 static bool copy_field(char *out, size_t out_size, const char *value)
 {
     if (out == NULL) return true;  // the caller did not ask for this one
@@ -3034,6 +3062,7 @@ void player_control_set_yandex_station(const char *id, const char *name, const c
     }
     player_yandex_remember(&station);
 }
+#endif
 
 /* "/usb0/LP/album.cue#7": the sheet and the track's number in it - see
  * player_control_playing_file_path(). Opens the folder the sheet is in, where

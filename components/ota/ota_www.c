@@ -1,4 +1,5 @@
 #include "ota_www.h"
+#include "version_info.h"
 
 #include <dirent.h>
 #include <errno.h>
@@ -130,6 +131,9 @@ ota_tar_result_t ota_www_finish(ota_www_t *www)
         }
         if (!ota_www_stamp_version(stamp, length, www->version, sizeof(www->version))) {
             result = OTA_TAR_NO_VERSION;
+        } else {
+            version_info_part_t part;
+            if (version_info_parse(stamp, length, &part)) www->profile = part.profile;
         }
     }
     if (result != OTA_TAR_OK) ota_www_abort(www);

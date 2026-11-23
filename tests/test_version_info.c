@@ -15,12 +15,14 @@ static void test_it_reads_what_the_generator_writes(void)
 {
     /* Byte for byte what tools/stamp_version.py emits: compact separators, no
        spaces, a trailing newline. */
-    const char json[] = "{\"version\":\"v1.2.0-3-gabc1234\",\"built\":\"2026-09-06\"}\n";
+    const char json[] =
+        "{\"version\":\"v1.2.0-3-gabc1234\",\"built\":\"2026-09-06\",\"profile\":\"2\"}\n";
     version_info_part_t part;
     assert(version_info_parse(json, strlen(json), &part));
     assert(part.present);
     assert(strcmp(part.version, "v1.2.0-3-gabc1234") == 0);
     assert(strcmp(part.built, "2026-09-06") == 0);
+    assert(part.profile == VERSION_INFO_PROFILE_EXTENDED);
 }
 
 static void test_it_survives_the_shapes_a_hand_written_file_takes(void)
@@ -113,6 +115,11 @@ static void test_a_missing_web_stamp_is_not_a_match(void)
     snprintf(info.web.version, sizeof(info.web.version), "abc1234");
     info.web.present = true;
     assert(version_info_matched(&info));
+    info.firmware.profile = VERSION_INFO_PROFILE_BASE;
+    info.web.profile = VERSION_INFO_PROFILE_EXTENDED;
+    assert(!version_info_matched(&info));
+    info.web.profile = VERSION_INFO_PROFILE_UNKNOWN;
+    assert(version_info_matched(&info));  /* legacy stamp, as before */
 
     snprintf(info.web.version, sizeof(info.web.version), "def5678");
     assert(!version_info_matched(&info));

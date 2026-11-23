@@ -88,6 +88,9 @@ function render() {
   const name = String(wiring.values.board_name || '').trim();
   if (name) add(t('hw.f.board_name'), name);
   add(t('hw.dev.tft'), t(`hw.opt.${wiring.values.display}`));
+  if (manifest && (manifest.profile === 1 || manifest.profile === 2)) {
+    add(t('fl.firmware_feature'), manifest.profile === 2 ? t('fl.included') : t('fl.not_included'));
+  }
   const parts = ['ir', 'amp', 'power', 'usb', 'sd', 'bluetooth']
     .filter((device) => hw.deviceEnabled(wiring.values, device))
     .map((device) => t(`hw.dev.${device}`));
@@ -253,7 +256,12 @@ async function write(parts, eraseAll, done, checkLayout) {
 function flashFirmware() {
   if (blockers().length > 0) return;
   const csv = hw.toCsv(wiring.values);
-  const parts = fl.firmwareParts(manifest, String(wiring.values.display), fl.boardBlob(csv));
+  // The downloaded app fixes this feature; a draft is still useful when
+  // exporting a header for a source build, but cannot change a prebuilt app.
+  const installed = manifest.profile === 1 || manifest.profile === 2
+    ? hw.toCsv({...wiring.values, yandex_music: manifest.profile === 2 ? 1 : 0})
+    : csv;
+  const parts = fl.firmwareParts(manifest, String(wiring.values.display), fl.boardBlob(installed));
   write(parts, $('fl-erase').checked, t('fl.done_firmware', {version: manifest.version || ''}),
         true);
 }

@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+#include "board_features.h"
+
 /* A finger coming down wanders: twelve presses aimed at one 20 px icon on the
  * bench's ST7796S landed over 44 px of height, though each one held still once
  * it was down. Below this it is still a touch. */
@@ -217,10 +219,14 @@ unsigned ui_touch_strip_items(bool has_list, bool can_seek, bool can_tune, bool 
     if (has_list) items[count++] = UI_TOUCH_STRIP_LIST;
     if (can_seek) items[count++] = UI_TOUCH_STRIP_SEEK;
     if (can_tune) items[count++] = UI_TOUCH_STRIP_TUNE;
+#if BOARD_HAS_YANDEX_MUSIC
     if (can_rate) {
         items[count++] = UI_TOUCH_STRIP_LIKE;
         items[count++] = UI_TOUCH_STRIP_DISLIKE;
     }
+#else
+    (void)can_rate;
+#endif
     // There always is a way out, and it stands last: furthest from a slip.
     if (count < UI_TOUCH_STRIP_MAX_ITEMS) items[count++] = UI_TOUCH_STRIP_EXIT;
     return count;

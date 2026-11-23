@@ -17,9 +17,11 @@
   const playToggle = document.querySelector('#play-toggle');
   const previousItem = document.querySelector('#previous-item');
   const nextItem = document.querySelector('#next-item');
+  /* YA_MUSIC_BEGIN */
   const nextTrack = document.querySelector('#next-track');
   const likeTrack = document.querySelector('#like-track');
   const dislikeTrack = document.querySelector('#dislike-track');
+  /* YA_MUSIC_END */
   const trackCover = document.querySelector('#track-cover');
   const trackProgress = document.querySelector('#track-progress');
   const trackElapsed = document.querySelector('#track-elapsed');
@@ -130,11 +132,8 @@
   // The kind is tracked beside the revision because the two lists share one
   // counter: switching between them without it looks like the revision the
   // browser already has, and the new list would never be fetched.
-  // The source is tracked beside the kind: internet radio and the rotor share
-  // one kind ("stations"), so on the kind alone a move from one catalogue to
-  // the other is indistinguishable from "the same list" - the previous
-  // source's stations stayed on screen, and a click on a row selected that
-  // index in the new catalogue.
+  // Sources can share a kind, so track the source too: a move from one
+  // catalogue to another must not leave the previous source's rows in place.
   let listFetchKind = null;
   let listFetchSource = null;
   let listFetchRevision = null;
@@ -195,6 +194,7 @@
     if (Number.isInteger(player.wifi_rssi_dbm)) {
       normalized.wifi_rssi_dbm = player.wifi_rssi_dbm;
     }
+    /* YA_MUSIC_BEGIN */
     /* Absent unless the track belongs to an account's library, which is the
        device's way of saying there is no mark to draw - so it stays absent
        here rather than becoming a false "not liked". */
@@ -205,6 +205,7 @@
          heart rather than nothing. */
       normalized.disliked = player.disliked === true;
     }
+    /* YA_MUSIC_END */
     return normalized;
   }
 
@@ -260,13 +261,8 @@
       }));
   }
 
-  /* The same marks the device's home-screen carousel uses, redrawn as SVG:
-     the antenna for internet radio, the flash drive standing up, the card and
-     the rotor's spark. The spark's outline is the device's own geometry -
-     twelve graded rays measured off the service's icon, the numbers copied
-     from tools/gen_feed_icons.py - so the two faces show one shape.
-
-     They replace the labels on a phone, where four words of Russian do not fit
+  /* The device's home-screen carousel marks, redrawn as SVG. They replace
+     the labels on a phone, where four words of Russian do not fit
      across the header. Ours, never the device's strings, so they are safe to
      hand to innerHTML. */
   const sourceIcons = Object.freeze({
@@ -309,12 +305,14 @@
     bluetooth:
       '<svg class="source-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
       '<path class="stroke" d="M7 7.5l9 9-4.5 4.5V3l4.5 4.5-9 9"/></svg>',
+    /* YA_MUSIC_BEGIN */
     yandex:
       '<svg class="source-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
       '<path d="M20.43 12.93 16.86 12.18 19.55 16.11 15.83 13.15 17.02 18.79 14.26 13.63' +
       ' 11.74 20.37 12.21 13.07 4.94 16.88 10.86 11.29 3.57 10.24 10.79 9.42 5.90 5.89' +
       ' 11.52 8.02 9.50 3.93 12.84 7.09 13.27 3.62 14.64 6.90 16.71 4.86 16.30 7.68' +
       ' 19.05 6.89 17.28 9.11 20.27 9.70 17.43 10.77Z"/></svg>',
+    /* YA_MUSIC_END */
   });
 
   /* The sources that need the network, named in one place: the strip, the list
@@ -322,7 +320,10 @@
      the LAN rather than on the internet, but with no join there is nothing to
      search for and nothing to stream. */
   function needsNetworkSource(source) {
-    return source === 'internet_radio' || source === 'yandex' || source === 'dlna';
+    /* YA_MUSIC_BEGIN */
+    if (source === 'yandex') return true;
+    /* YA_MUSIC_END */
+    return source === 'internet_radio' || source === 'dlna';
   }
 
   function renderSources() {
@@ -886,26 +887,23 @@
 
   function renderCover(cover) {
     const present = isObject(cover) && cover.present === true;
-    /* Where the device hands over an address - the rotor's tracks, whose
-       pictures the service serves at any size - the browser fetches it
-       itself and gets one drawn for this screen rather than the 96 px the
-       panel decoded. Everything else comes from the device.
-
-       The device's own pictures are named in the query string by their
+    /* The device's own pictures are named in the query string by their
        signature - a checksum of the bytes they were decoded from - so the
        browser fetches one exactly when it changes and takes it from its cache
        the rest of the time; 27 KB once a second would be the alternative.
        The generation is only the fallback: it counts from zero at every boot,
        so the same ?g= meant a different picture after a restart, and the
        day-long cache handed back whichever one that browser saw first. */
-    const remote = present && typeof cover.url === 'string' &&
-                   cover.url.indexOf('http://') === 0 ? cover.url : '';
     let url = '';
     if (present) {
       const signature = safeInteger(cover.signature);
-      url = remote || (signature > 0
+      url = signature > 0
         ? `/api/cover?s=${signature}`
-        : `/api/cover?g=${safeInteger(cover.generation)}`);
+        : `/api/cover?g=${safeInteger(cover.generation)}`;
+      /* YA_MUSIC_BEGIN */
+      // Fetch the service's full-size artwork instead of the device thumbnail.
+      if (typeof cover.url === 'string' && cover.url.indexOf('http://') === 0) url = cover.url;
+      /* YA_MUSIC_END */
     }
     if (url !== progress.coverUrl) {
       progress.coverUrl = url;
@@ -1049,6 +1047,7 @@
     // The context repeats the title on a station that sends nothing else.
     trackContext.textContent = context === trackTitle.textContent ? '' : context;
 
+    /* YA_MUSIC_BEGIN */
     /* Only the rotor has a next track. A station has none, and a file list
        advances on its own when a track ends. */
     const skippable = state.activeSource === 'yandex';
@@ -1080,15 +1079,14 @@
     dislikeTrack.disabled = !markable;
     dislikeTrack.classList.toggle('is-disliked', markable && player.disliked === true);
     dislikeTrack.setAttribute('aria-pressed', String(markable && player.disliked === true));
+    /* YA_MUSIC_END */
 
     /* The two track keys, the browser's copy of the buttons on the front of
        the device. They move what is playing along the list it came from - the
        neighbouring file in the directory, the neighbouring station in the
        catalog, the neighbouring track of an open container on a media server -
-       so they belong to the sources that are a list. The rotor is
-       not one: its next track is the skip button above, and it has no previous
-       one at all. Nothing wraps, so at either end of the list the key does
-       nothing; the device refuses it rather than rolling over. The tuner has
+       so they belong to the sources that are a list. Nothing wraps, so at
+       either end the key does nothing; the device refuses it. The tuner has
        them too, as on the device: there they search the band for the nearest
        station down or up, which is the chip's own seek. And a phone over
        Bluetooth, whose own previous and next they become - the remote's keys
@@ -1190,19 +1188,22 @@
       }));
   }
 
-  /* Pictures belong to the radio's stations and the FM presets. Yandex's
-     stations have none and never will, so their rows get no tile at all -
-     a column of empty ones would only push every name to the right. */
   function normalizeStationEntries(payload, activeSource) {
     if (!isObject(payload) || !Array.isArray(payload.items)) return null;
-    const pictured = activeSource !== 'yandex';
     return payload.items
       .filter((item) => isObject(item) && Number.isSafeInteger(item.index) &&
                         typeof item.label === 'string')
-      .map((item) => ({index: item.index, label: item.label, meta: '',
-                       note: item.note === 'artist' ? t('list.note_artist') : '',
-                       icon: !pictured ? undefined
-                         : typeof item.icon === 'string' ? item.icon : ''}));
+      .map((item) => {
+        /* YA_MUSIC_BEGIN */
+        // These stations have no pictures, so do not allocate empty tiles.
+        if (activeSource === 'yandex') {
+          return {index: item.index, label: item.label, meta: '',
+                  note: item.note === 'artist' ? t('list.note_artist') : ''};
+        }
+        /* YA_MUSIC_END */
+        return {index: item.index, label: item.label, meta: '',
+                icon: typeof item.icon === 'string' ? item.icon : ''};
+      });
   }
 
   /* Two kinds of list, and for the browsable one the address depends on which
@@ -1248,9 +1249,8 @@
       // The device may have moved on while this was in flight. Trust the
       // revision the response carries, not the one that triggered the fetch.
       if (state.list.kind !== kind) return;
-      /* And the source too: the device fetches the rotor's catalogue over the
-         network, so a reply to a request sent before the switch arrives after
-         it. The reply names the source it belongs to.
+      /* And the source too: a listing request sent before the switch can
+         arrive afterwards. The reply names the source it belongs to.
 
          Until a source is selected there is nothing to compare against: the
          device serves the radio catalogue under its own name while the page
@@ -1455,6 +1455,7 @@
       button.dataset.index = String(item.index);
       label.className = 'list-item-label';
       label.textContent = item.label || t('player.untitled');
+      /* YA_MUSIC_BEGIN */
       /* Yandex names a wave "in the style of" an artist after the artist
          alone; said beside the name, in grey, so it is not read as theirs. */
       if (safeString(item.note) !== '') {
@@ -1463,6 +1464,7 @@
         note.textContent = item.note;
         label.append(note);
       }
+      /* YA_MUSIC_END */
       marker.className = 'active-marker';
       // A directory is opened, never played, so the playing marker would be
       // meaningless on one.
@@ -1560,19 +1562,17 @@
     // A subdirectory with no playable files still offers the way back, so the
     // list is only truly empty when there is nothing to click at all.
     const rowCount = state.list.items.length + (state.list.has_parent ? 1 : 0);
-    /* The rotor's stations are fetched from the service after the source is
-       selected, so an empty list right after the switch means the device is
-       still asking - not that there is nothing. The other sources are read
-       from the device itself and are empty only when they really are. */
     const browsing = listIsBusy();
     /* The device is still looking for a server. It says so itself rather than
        being guessed at from an empty list, because the search takes a second
        or two and used to look exactly like a network with nothing on it. */
     const searching = state.list.searching === true;
-    const waiting = browsing || searching ||
-      (rowCount === 0 && state.connected && state.activeSource === 'yandex');
-    /* With no network these two have nothing to offer: the stations cannot be
-       played and the rotor's list was never fetched. Judged by the kind rather
+    let waiting = browsing || searching;
+    /* YA_MUSIC_BEGIN */
+    // An empty catalogue right after the switch means it is still being fetched.
+    waiting ||= rowCount === 0 && state.connected && state.activeSource === 'yandex';
+    /* YA_MUSIC_END */
+    /* Network sources have nothing to offer offline. Judged by the kind rather
        than by the active source, because the page opens before any source is
        chosen and the device still describes the station catalogue there - which
        is exactly how a device with no Wi-Fi came to be greeted by a full list
@@ -1845,7 +1845,9 @@
   playToggle.addEventListener('click', () => sendCommand('player.toggle'));
   previousItem.addEventListener('click', () => sendCommand('player.previous_item'));
   nextItem.addEventListener('click', () => sendCommand('player.next_item'));
+  /* YA_MUSIC_BEGIN */
   nextTrack.addEventListener('click', () => sendCommand('player.next'));
+  /* YA_MUSIC_END */
   // input fires all the way through a drag, change once it is let go: the bar
   // follows the handle, and only the release is worth a command.
   progressSeek.addEventListener('input', beginSeek);
@@ -1864,8 +1866,10 @@
     playerExpand.setAttribute('aria-label',
       expanded ? t('player.collapse') : t('player.expand'));
   });
+  /* YA_MUSIC_BEGIN */
   likeTrack.addEventListener('click', () => sendCommand('player.like'));
   dislikeTrack.addEventListener('click', () => sendCommand('player.dislike'));
+  /* YA_MUSIC_END */
   renderSources();
   updatePlaylistLink();
   renderSleep();

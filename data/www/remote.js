@@ -13,11 +13,18 @@
   const GROUPS = [
     ['sound', ['volume_up', 'volume_down', 'mute', 'play_pause', 'prev', 'next']],
     ['navigate', ['up', 'down', 'ok', 'back', 'menu', 'quick', 'list']],
-    ['extras', ['power', 'sleep', 'peek', 'like', 'dislike']],
+    ['extras', ['power', 'sleep', 'peek',
+                /* YA_MUSIC_BEGIN */
+                'like', 'dislike',
+                /* YA_MUSIC_END */
+    ]],
     ['digits', ['digit_0', 'digit_1', 'digit_2', 'digit_3', 'digit_4',
                 'digit_5', 'digit_6', 'digit_7', 'digit_8', 'digit_9']],
     ['sources', ['source_radio', 'source_usb', 'source_sd', 'source_bluetooth',
-                 'source_yandex', 'source_dlna', 'source_fm']],
+                 /* YA_MUSIC_BEGIN */
+                 'source_yandex',
+                 /* YA_MUSIC_END */
+                 'source_dlna', 'source_fm']],
   ];
 
   /* The page asks the device four times a second while it is in front of

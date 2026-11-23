@@ -2,12 +2,16 @@
 
 #include <stddef.h>
 
+#include "board_features.h"
+
 audio_source_t ui_autoplay_source(const device_settings_t *settings)
 {
     if (settings == NULL) return AUDIO_SOURCE_NONE;
     switch (settings->last_source) {
     case DEVICE_LAST_SOURCE_INTERNET_RADIO: return AUDIO_SOURCE_INTERNET_RADIO;
+#if BOARD_HAS_YANDEX_MUSIC
     case DEVICE_LAST_SOURCE_YANDEX: return AUDIO_SOURCE_YANDEX;
+#endif
     case DEVICE_LAST_SOURCE_DLNA: return AUDIO_SOURCE_DLNA;
     case DEVICE_LAST_SOURCE_BLUETOOTH: return AUDIO_SOURCE_BLUETOOTH;
     case DEVICE_LAST_SOURCE_FM: return AUDIO_SOURCE_FM;
@@ -51,6 +55,9 @@ ui_autoplay_action_t ui_autoplay_decide_resume(const device_settings_t *settings
                                                bool dlna_built, bool bluetooth_built,
                                                bool fm_built)
 {
+#if !BOARD_HAS_YANDEX_MUSIC
+    (void)yandex_built;
+#endif
     if (settings == NULL) return UI_AUTOPLAY_HOME;
 
     switch (settings->last_source) {
@@ -59,6 +66,7 @@ ui_autoplay_action_t ui_autoplay_decide_resume(const device_settings_t *settings
          * at the top of the catalogue, which is still a player screen with
          * sound - closer to what autoplay promises than the home screen. */
         return UI_AUTOPLAY_RADIO;
+#if BOARD_HAS_YANDEX_MUSIC
     case DEVICE_LAST_SOURCE_YANDEX:
         /* Nothing to resume without an identity to start: a station is opened
          * by id, name and idForFrom together, and the id is what says the
@@ -68,6 +76,7 @@ ui_autoplay_action_t ui_autoplay_decide_resume(const device_settings_t *settings
             return UI_AUTOPLAY_HOME;
         }
         return UI_AUTOPLAY_YANDEX;
+#endif
     case DEVICE_LAST_SOURCE_DLNA:
         /* The server is searched for again at every open - nothing announces
          * itself as having gone - so what is remembered is where on it the
@@ -116,14 +125,19 @@ ui_autoplay_action_t ui_autoplay_decide_for(const device_settings_t *settings,
                                             bool dlna_built, bool bluetooth_built,
                                             bool fm_built)
 {
+#if !BOARD_HAS_YANDEX_MUSIC
+    (void)yandex_built;
+#endif
     if (settings == NULL) return UI_AUTOPLAY_HOME;
     switch (source) {
     case AUDIO_SOURCE_INTERNET_RADIO: return UI_AUTOPLAY_RADIO;
+#if BOARD_HAS_YANDEX_MUSIC
     case AUDIO_SOURCE_YANDEX:
         if (!yandex_built || !settings->yandex_music || settings->last_yandex_id[0] == '\0') {
             return UI_AUTOPLAY_HOME;
         }
         return UI_AUTOPLAY_YANDEX;
+#endif
     case AUDIO_SOURCE_DLNA:
         if (!dlna_built || !settings->dlna || settings->last_dlna_container[0] == '\0') {
             return UI_AUTOPLAY_HOME;

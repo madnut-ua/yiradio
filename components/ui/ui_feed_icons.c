@@ -27,7 +27,9 @@ static const lv_image_dsc_t *const s_icons[UI_FEED_ITEM_COUNT][UI_FEED_ICON_SIZE
     [UI_FEED_BLUETOOTH] = UI_FEED_ICON_SET(bluetooth),
     [UI_FEED_FM] = UI_FEED_ICON_SET(radio),
     [UI_FEED_DLNA] = UI_FEED_ICON_SET(dlna),
+#if BOARD_HAS_YANDEX_MUSIC
     [UI_FEED_YANDEX] = UI_FEED_ICON_SET(spark),
+#endif
     [UI_FEED_SETTINGS] = UI_FEED_ICON_SET(settings),
 };
 
@@ -40,7 +42,9 @@ static const lv_image_dsc_t *const s_row_icons[UI_FEED_ITEM_COUNT] = {
     [UI_FEED_BLUETOOTH] = UI_FEED_ICON_ROW(bluetooth),
     [UI_FEED_FM] = UI_FEED_ICON_ROW(radio),
     [UI_FEED_DLNA] = UI_FEED_ICON_ROW(dlna),
+#if BOARD_HAS_YANDEX_MUSIC
     [UI_FEED_YANDEX] = UI_FEED_ICON_ROW(spark),
+#endif
     [UI_FEED_SETTINGS] = NULL,
 };
 

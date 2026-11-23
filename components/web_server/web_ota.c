@@ -147,7 +147,7 @@ esp_err_t web_ota_app_post(httpd_req_t *request)
         failure = "upload";
     } else {
         ota_image_result_t why = OTA_IMAGE_OK;
-        result = ota_update_begin(piece, OTA_IMAGE_HEAD_SIZE, total, &why);
+        result = ota_update_begin(piece, OTA_IMAGE_HEAD_SIZE, total, false, &why);
         if (why != OTA_IMAGE_OK) {
             free(piece);
             return send_refusal(request, "400 Bad Request", ota_image_result_code(why));

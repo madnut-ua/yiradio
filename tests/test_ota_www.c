@@ -69,6 +69,7 @@ static void fresh_device(void)
     write_file("www/gone.js", "a page the new version no longer has");
     write_file("config/version.json", "{\"version\":\"v1.5.5\",\"built\":\"2026-10-06\"}");
     write_file("config/wifi.json", "{\"networks\":[]}");
+    write_file("config/yandex.json", "{\"token\":\"test-placeholder\"}");
 }
 
 static void remove_device(void)
@@ -104,7 +105,8 @@ static void add_entry(archive_t *archive, const char *name, const char *body)
 static archive_t *new_version_archive(int with_update_page)
 {
     archive_t *archive = calloc(1, sizeof(*archive));
-    add_entry(archive, "version.json", "{\"version\":\"v1.6.0\",\"built\":\"2026-10-20\"}");
+    add_entry(archive, "version.json",
+              "{\"version\":\"v1.6.0\",\"built\":\"2026-10-20\",\"profile\":\"1\"}");
     add_entry(archive, "www/index.html", "new index");
     add_entry(archive, "www/settings.html", "new settings");
     if (with_update_page) add_entry(archive, "www/update.js", "new update");
@@ -129,6 +131,7 @@ static void test_an_archive_waits_beside_the_live_pages_until_applied(void)
     static ota_www_t www;
     assert(upload(archive, &www) == OTA_TAR_OK);
     assert(strcmp(www.version, "v1.6.0") == 0);
+    assert(www.profile == 1U);
     /* Nothing live has changed yet: a declined update leaves the old pages. */
     char body[128];
     assert(read_file("www/index.html", body, sizeof(body)) && strcmp(body, "old index") == 0);
@@ -144,6 +147,8 @@ static void test_an_archive_waits_beside_the_live_pages_until_applied(void)
     /* And what the archive never names is untouched. */
     assert(read_file("config/wifi.json", body, sizeof(body)) &&
            strcmp(body, "{\"networks\":[]}") == 0);
+    assert(read_file("config/yandex.json", body, sizeof(body)) &&
+           strcmp(body, "{\"token\":\"test-placeholder\"}") == 0);
     assert(!present("www.new") && !present("www.old"));
     free(archive);
     remove_device();

@@ -59,9 +59,11 @@ static void web_server_secure_zero(void *memory, size_t size)
 #include "web_json.h"
 #include "web_ota.h"
 #include "web_settings.h"
+#if BOARD_HAS_YANDEX_MUSIC
 #include "yandex_auth.h"
 #include "yandex_catalog.h"
 #include "yandex_rotor.h"
+#endif
 
 #define WEB_SERVER_MOUNT_PATH "/littlefs"
 #define WEB_SERVER_WEB_ROOT "www"
@@ -678,6 +680,7 @@ static esp_err_t web_server_wifi_scan_get(httpd_req_t *request)
  * The path and revision are echoed back deliberately: the browser can open two
  * directories in quick succession, and without them a late reply for the first
  * would overwrite the second on screen. */
+#if BOARD_HAS_YANDEX_MUSIC
 static const char *web_server_yandex_state_name(yandex_auth_state_t state)
 {
     switch (state) {
@@ -728,6 +731,7 @@ static const char *web_server_yandex_catalog_name(yandex_catalog_state_t state)
         return "empty";
     }
 }
+#endif
 
 /* What this device is running: the firmware's version and the web assets'
  * version, which are two answers because they are flashed by two commands.
@@ -782,6 +786,7 @@ static esp_err_t web_server_about_get(httpd_req_t *request)
     return err;
 }
 
+#if BOARD_HAS_YANDEX_MUSIC
 static esp_err_t web_server_yandex_get(httpd_req_t *request)
 {
     const yandex_auth_status_t status = yandex_auth_get_status();
@@ -889,6 +894,7 @@ static esp_err_t web_server_yandex_post(httpd_req_t *request)
     httpd_resp_set_status(request, "202 Accepted");
     return httpd_resp_send(request, NULL, 0);
 }
+#endif
 
 static esp_err_t web_server_files_get(httpd_req_t *request)
 {
@@ -993,7 +999,9 @@ static esp_err_t web_server_stations_get(httpd_req_t *request)
 {
     player_snapshot_t snapshot;
     player_control_get_snapshot(&snapshot);
+#if BOARD_HAS_YANDEX_MUSIC
     bool rotor = snapshot.active_source == AUDIO_SOURCE_YANDEX;
+#endif
     /* The tuner's presets are a list of stations too, drawn and chosen the
      * same way; a row is a preset's index, as on the panel. */
     bool fm = snapshot.active_source == AUDIO_SOURCE_FM;
@@ -1005,19 +1013,22 @@ static esp_err_t web_server_stations_get(httpd_req_t *request)
     if (httpd_req_get_url_query_str(request, query, sizeof(query)) == ESP_OK) {
         char value[24];
         if (httpd_query_key_value(query, "source", value, sizeof(value)) == ESP_OK) {
+#if BOARD_HAS_YANDEX_MUSIC
+            if (strcmp(value, "internet_radio") == 0 || strcmp(value, "fm") == 0) rotor = false;
+#endif
             if (strcmp(value, "internet_radio") == 0) {
-                rotor = false;
                 fm = false;
             } else if (strcmp(value, "fm") == 0) {
                 // The tuner's presets, for the alarm's FM picker, the same way.
-                rotor = false;
                 fm = true;
             }
         }
     }
-    const size_t count = fm      ? player_control_fm_preset_count()
-                         : rotor ? yandex_catalog_count()
-                                 : internet_radio_station_count();
+    const size_t count = fm ? player_control_fm_preset_count()
+#if BOARD_HAS_YANDEX_MUSIC
+                            : rotor ? yandex_catalog_count()
+#endif
+                                    : internet_radio_station_count();
 
     web_json_writer_t writer;
     web_json_init(&writer, s_file_chunk_buffer, sizeof(s_file_chunk_buffer),
@@ -1026,7 +1037,11 @@ static esp_err_t web_server_stations_get(httpd_req_t *request)
      * kind, and the rotor's catalogue is fetched over the network - a reply to
      * a request sent before the switch arrives after it. */
     web_json_literal(&writer, "{\"kind\":\"stations\",\"source\":");
-    web_json_string(&writer, fm ? "fm" : rotor ? "yandex" : "internet_radio");
+    web_json_string(&writer, fm ? "fm"
+#if BOARD_HAS_YANDEX_MUSIC
+                               : rotor ? "yandex"
+#endif
+                                       : "internet_radio");
     web_json_literal(&writer, ",\"revision\":");
     web_json_format(&writer, "%u", snapshot.listing_revision);
     web_json_literal(&writer, ",\"count\":");
@@ -1044,7 +1059,9 @@ static esp_err_t web_server_stations_get(httpd_req_t *request)
     for (size_t index = 0U; index < count; ++index) {
         const char *label = "";
         const char *icon = "";
+#if BOARD_HAS_YANDEX_MUSIC
         yandex_station_t station;
+#endif
         fm_preset_t preset;
         char frequency[FM_PRESET_NAME_MAX_LEN + 12U];  // "88.3 " and a name
         if (fm) {
@@ -1053,9 +1070,11 @@ static esp_err_t web_server_stations_get(httpd_req_t *request)
             player_fm_list_label(preset.khz, preset.name, frequency, sizeof(frequency));
             label = frequency;
             icon = preset.icon;
+#if BOARD_HAS_YANDEX_MUSIC
         } else if (rotor) {
             if (!yandex_catalog_station_at(index, &station)) break;
             label = station.name;
+#endif
         } else {
             const station_catalog_entry_t *entry = internet_radio_station_at(index);
             if (entry == NULL) break;
@@ -1076,9 +1095,11 @@ static esp_err_t web_server_stations_get(httpd_req_t *request)
         /* A Yandex wave named for an artist plays music like theirs, not
          * theirs; the page says so beside the name. A word, not the text, so
          * the page puts it in its own language. */
+#if BOARD_HAS_YANDEX_MUSIC
         if (rotor && yandex_station_is_artist_wave(station.id)) {
             web_json_literal(&writer, ",\"note\":\"artist\"");
         }
+#endif
         web_json_literal(&writer, "}");
         if (!web_json_valid(&writer)) {
             ESP_LOGE(TAG, "station %u did not fit the chunk buffer", (unsigned)index);
@@ -1516,7 +1537,7 @@ static void web_server_remote_write_last(web_json_writer_t *writer)
     char code[24];
     ir_code_format(&last.code, code, sizeof(code));
     web_json_literal(writer, "{\"function\":");
-    if (last.function == REMOTE_FUNCTION_COUNT) {
+    if (!remote_function_available(last.function)) {
         web_json_literal(writer, "null");
     } else {
         web_json_literal(writer, "\"");
@@ -1555,8 +1576,11 @@ static esp_err_t web_server_remote_get(httpd_req_t *request)
     web_json_literal(&writer, ",\"revision\":");
     web_json_format(&writer, "%u", (unsigned)remote_control_revision());
     web_json_literal(&writer, ",\"keys\":{");
+    bool wrote_key = false;
     for (unsigned index = 0U; index < (unsigned)REMOTE_FUNCTION_COUNT; ++index) {
-        if (index > 0U) web_json_literal(&writer, ",");
+        if (!remote_function_available((remote_function_t)index)) continue;
+        if (wrote_key) web_json_literal(&writer, ",");
+        wrote_key = true;
         web_json_literal(&writer, "\"");
         web_json_literal(&writer, remote_function_name((remote_function_t)index));
         web_json_literal(&writer, "\":");
@@ -2091,6 +2115,7 @@ static esp_err_t web_server_progress_get(httpd_req_t *request)
      * so the page is given the address and fetches it at the size it draws,
      * instead of stretching the 96 px the panel decoded. Nothing else has an
      * address to give: a station icon and a file's tag live on the device. */
+#if BOARD_HAS_YANDEX_MUSIC
     char cover_url[YANDEX_COVER_URL_MAX + 1U];
     /* No source check beside it: the rotor answers only while it is the one
      * playing, and reading the snapshot here would copy it onto the http
@@ -2099,6 +2124,7 @@ static esp_err_t web_server_progress_get(httpd_req_t *request)
         web_json_literal(&writer, ",\"url\":");
         web_json_string(&writer, cover_url);
     }
+#endif
     web_json_literal(&writer, "}}");
     if (!web_json_valid(&writer)) {
         httpd_resp_send_err(request, HTTPD_500_INTERNAL_SERVER_ERROR,
@@ -2521,8 +2547,10 @@ esp_err_t web_server_start(void)
             {.uri = "/api/playlist", .method = HTTP_GET, .handler = web_server_playlist_get},
             {.uri = "/api/playlist", .method = HTTP_POST, .handler = web_server_playlist_post},
             {.uri = "/api/about", .method = HTTP_GET, .handler = web_server_about_get},
+#if BOARD_HAS_YANDEX_MUSIC
             {.uri = "/api/yandex", .method = HTTP_GET, .handler = web_server_yandex_get},
             {.uri = "/api/yandex", .method = HTTP_POST, .handler = web_server_yandex_post},
+#endif
             {.uri = "/api/settings", .method = HTTP_GET, .handler = web_server_settings_api_get},
             {.uri = "/api/settings", .method = HTTP_POST, .handler = web_server_settings_api_post},
             {.uri = "/api/station-test", .method = HTTP_POST, .handler = web_server_station_test_post},

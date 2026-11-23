@@ -1,4 +1,5 @@
 #include "remote_map.h"
+#include "board_features.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -96,6 +97,15 @@ const char *remote_function_name(remote_function_t function)
 {
     if ((unsigned)function >= (unsigned)REMOTE_FUNCTION_COUNT) return NULL;
     return k_names[function];
+}
+
+bool remote_function_available(remote_function_t function)
+{
+#if defined(ESP_PLATFORM) && !BOARD_HAS_YANDEX_MUSIC
+    if (function == REMOTE_SOURCE_YANDEX || function == REMOTE_LIKE ||
+        function == REMOTE_DISLIKE) return false;
+#endif
+    return (unsigned)function < REMOTE_FUNCTION_COUNT;
 }
 
 bool remote_function_from_name(const char *name, remote_function_t *function)

@@ -18,6 +18,7 @@
 #include "freertos/task.h"
 #include "mbedtls/sha256.h"
 #include "ota_offer.h"
+#include "version_info.h"
 #include "ota_update.h"
 #include "player_control.h"
 #include "settings_csv.h"
@@ -192,6 +193,12 @@ static void run_check(void)
         set_error(OTA_CHECK_FAILED, ota_offer_result_code(result));
         return;
     }
+    if (offer.profile != version_info_current_profile()) {
+        ESP_LOGW(TAG, "ota.json: release build profile is different");
+        ota_offer_free(&offer);
+        set_error(OTA_CHECK_FAILED, "profile");
+        return;
+    }
     xSemaphoreTake(s_offer_lock, portMAX_DELAY);
     ota_offer_free(&s_offer);
     s_offer = offer;
@@ -252,7 +259,7 @@ static const char *download(const ota_offer_file_t *file, bool is_app)
         mbedtls_sha256_update(&sha, piece, got);
         if (is_app && !begun) {
             ota_image_result_t why = OTA_IMAGE_OK;
-            if (ota_update_begin(piece, got, file->size, &why) != ESP_OK) {
+            if (ota_update_begin(piece, got, file->size, true, &why) != ESP_OK) {
                 failure = why != OTA_IMAGE_OK ? ota_image_result_code(why) : "flash";
             }
             begun = true;

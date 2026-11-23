@@ -323,7 +323,16 @@ static void test_what_is_wired_is_what_the_firmware_offers(void)
     /* A feature has nothing to wire, so it says so directly - and the two
      * spellings of off, the line deleted and the line set to FEATURE_OFF,
      * have to mean the same thing. */
+#if defined(DLNA)
     assert(BOARD_HAS_DLNA == (DLNA == FEATURE_ON));
+#else
+    assert(BOARD_HAS_DLNA == 0);
+#endif
+#if defined(YANDEX_MUSIC)
+    assert(BOARD_HAS_YANDEX_MUSIC == (YANDEX_MUSIC == FEATURE_ON));
+#else
+    assert(BOARD_HAS_YANDEX_MUSIC == 0);
+#endif
 }
 
 static void test_no_pin_is_claimed_by_two_devices(void)
