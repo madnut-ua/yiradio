@@ -381,7 +381,7 @@ static void test_apply_writes_through_to_the_file(void)
     assert(reloaded.buffer_view == DEVICE_BUFFER_VIEW_GRAPH);
     assert(reloaded.weather_provider == DEVICE_WEATHER_WTTR);
     assert(strcmp(reloaded.weather_latitude, "59.93") == 0);
-    assert(strcmp(reloaded.weather_longitude, "37.62") == 0);
+    assert(strcmp(reloaded.weather_longitude, "30.52") == 0);
     assert(reloaded.screensaver == DEVICE_SCREENSAVER_CLOCK);
     assert(reloaded.screensaver_seconds == 600);
     assert(reloaded.screensaver_brightness == 10);
@@ -516,8 +516,8 @@ static void test_document_names_what_the_build_has(void)
     /* The weather: the service in the live part, the rest only here. The
        key is reported as set or not and never as itself. */
     assert(strstr(document, "\"weather\":\"off\"") != NULL);
-    assert(strstr(document, "\"weather_latitude\":\"55.75\"") != NULL);
-    assert(strstr(document, "\"weather_longitude\":\"37.62\"") != NULL);
+    assert(strstr(document, "\"weather_latitude\":\"50.45\"") != NULL);
+    assert(strstr(document, "\"weather_longitude\":\"30.52\"") != NULL);
     assert(strstr(document, "\"openweathermap_key_set\":true") != NULL);
     assert(strstr(document, "\"openweathermap_key\":") == NULL);
     assert(strstr(document, "\"weather_state\":\"ok\"") != NULL);

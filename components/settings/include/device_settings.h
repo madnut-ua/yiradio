@@ -201,8 +201,8 @@ typedef enum {
  * default time zone is on, so the two defaults agree with each other. The
  * device cannot find itself - this network's exit resolves to Amsterdam - and
  * a wrong city with the right time is easier to notice than the reverse. */
-#define DEVICE_WEATHER_LATITUDE_DEFAULT "55.75"
-#define DEVICE_WEATHER_LONGITUDE_DEFAULT "37.62"
+#define DEVICE_WEATHER_LATITUDE_DEFAULT "50.45"
+#define DEVICE_WEATHER_LONGITUDE_DEFAULT "30.52"
 
 /* The alarm before anyone has set it: seven in the morning, every day, the
  * first station, and quieter than the device's own default - being woken is

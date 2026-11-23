@@ -507,8 +507,8 @@ static void test_the_weather_settings_persist_and_are_checked(void)
     /* Off until somebody says otherwise, and pointed at the same city the
      * default time zone is on, so the two defaults do not contradict. */
     assert(settings.weather_provider == DEVICE_WEATHER_OFF);
-    assert(strcmp(settings.weather_latitude, "55.75") == 0);
-    assert(strcmp(settings.weather_longitude, "37.62") == 0);
+    assert(strcmp(settings.weather_latitude, "50.45") == 0);
+    assert(strcmp(settings.weather_longitude, "30.52") == 0);
 
     assert(device_settings_set_weather_provider(&settings, DEVICE_WEATHER_WTTR));
     assert(device_settings_set_weather_latitude(&settings, "-33.8688"));
@@ -571,15 +571,15 @@ static void test_the_weather_settings_persist_and_are_checked(void)
     /* An empty field puts the default back, like the time server's. */
     assert(device_settings_set_weather_latitude(&settings, ""));
     assert(device_settings_set_weather_longitude(&settings, NULL));
-    assert(strcmp(settings.weather_latitude, "55.75") == 0);
-    assert(strcmp(settings.weather_longitude, "37.62") == 0);
+    assert(strcmp(settings.weather_latitude, "50.45") == 0);
+    assert(strcmp(settings.weather_longitude, "30.52") == 0);
 
     /* A file with a coordinate that would not pass the setter - somebody's
      * edit - leaves the default standing rather than half a number. */
     assert(settings_csv_set(test_path, "weather_latitude", "north"));
     assert(settings_csv_set(test_path, "weather", "accuweather"));
     assert(device_settings_init_at(&reloaded, test_path));
-    assert(strcmp(reloaded.weather_latitude, "55.75") == 0);
+    assert(strcmp(reloaded.weather_latitude, "50.45") == 0);
     assert(reloaded.weather_provider == DEVICE_WEATHER_OFF);
 
     /* A file from before the service was remembered: the provider that is

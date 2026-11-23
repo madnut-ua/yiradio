@@ -528,7 +528,7 @@ from the network a couple of seconds after Wi-Fi connects.
 The temperature and a sky icon next to the clock on every screen and on the
 screensaver. The source is your choice: **Open-Meteo** (no key), **wttr.in**
 (no key) or **OpenWeatherMap** (a key is needed). The coordinates are typed
-in - latitude and longitude in degrees, as a map writes them; Moscow by
+in - latitude and longitude in degrees, as a map writes them; Kyiv by
 default. The icon tells day from night. Polled every fifteen minutes; under
 the source choice the page shows what the panel shows, or the reason nothing
 is there.
