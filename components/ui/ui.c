@@ -9991,6 +9991,7 @@ static ui_touch_target_t ui_touch_target(void)
     if (s_settings_open) {
         return s_about_open || s_qr_open ? UI_TOUCH_TARGET_OVERLAY : UI_TOUCH_TARGET_SETTINGS;
     }
+    if (s_playback_menu_open) return UI_TOUCH_TARGET_MENU;
     const ui_player_view_t view = ui_player_state_view(&s_player_ui);
     if (view == UI_PLAYER_VIEW_STATION_LIST) return UI_TOUCH_TARGET_STATIONS;
     if (view == UI_PLAYER_VIEW_SOURCE) {
