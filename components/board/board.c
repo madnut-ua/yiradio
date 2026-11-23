@@ -842,13 +842,6 @@ static void board_audio_park_pin(int8_t pin)
 
 static esp_err_t board_audio_create_channel(uint32_t sample_rate)
 {
-    if (board_dac_is_max98357a()) {
-        max98357a_rate_t rate;
-        if (!max98357a_rate_plan(sample_rate, &rate)) return ESP_ERR_NOT_SUPPORTED;
-        max98357a_output_reset(&s_max_output, rate,
-                                max98357a_ceiling_gain(AUDIO_MAX98357A_CEILING_DBFS));
-        sample_rate = rate.bus_hz;
-    }
     i2s_chan_config_t channel_config = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
     channel_config.dma_frame_num = I2S_DMA_FRAME_NUM;
     /* Full duplex while the input is in use: one controller, one pair of
@@ -887,6 +880,14 @@ static esp_err_t board_audio_create_channel(uint32_t sample_rate)
         channel_config.dma_frame_num = I2S_DMA_FRAME_NUM;
         channel_config.auto_clear_after_cb = I2S_AUTO_CLEAR_AFTER_CB != 0;
     }
+    uint32_t bus_rate = sample_rate;
+    if (!s_spdif_on && board_dac_is_max98357a()) {
+        max98357a_rate_t rate;
+        if (!max98357a_rate_plan(sample_rate, &rate)) return ESP_ERR_NOT_SUPPORTED;
+        max98357a_output_reset(&s_max_output, rate,
+                                max98357a_ceiling_gain(AUDIO_MAX98357A_CEILING_DBFS));
+        bus_rate = rate.bus_hz;
+    }
     /* S/PDIF's clocks are twice the rate and wider than any input's, so the
      * input moves to the other controller, which clocks the tuner or the
      * module on the DAC's pins, idle while S/PDIF plays. */
@@ -920,7 +921,7 @@ static esp_err_t board_audio_create_channel(uint32_t sample_rate)
                         TAG, "register I2S TX callbacks failed");
 
     i2s_std_config_t std_config = {
-        .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(sample_rate),
+        .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(bus_rate),
         /* Both DACs here take the Philips I2S timing: audio data is delayed
          * by one BCLK after the LRCK edge. MSB/left-justified timing shifts
          * every sample by one bit and is not the interface selected on this
@@ -988,7 +989,7 @@ static esp_err_t board_audio_create_channel(uint32_t sample_rate)
     if (capture) {
         /* The same format both ways - the tuner is set to send what the DAC
          * is sent: Philips, 16-bit stereo - with the data line the other way. */
-        input_config.clk_cfg = board_audio_input_clock(sample_rate);
+        input_config.clk_cfg = board_audio_input_clock(bus_rate);
         input_config.gpio_cfg.dout = I2S_GPIO_UNUSED;
         input_config.gpio_cfg.din = wired(board_audio_capture_pin());
         ESP_RETURN_ON_ERROR(i2s_channel_init_std_mode(s_i2s_rx, &input_config), TAG,
