@@ -42,11 +42,11 @@
  * choice decides. */
 /* #define DISPLAY DISPLAY_ILI9341_320_240 */
 /* #define DISPLAY DISPLAY_ILI9341_240_320 */
-/* #define DISPLAY DISPLAY_ST7789_320_240 */
+#define DISPLAY DISPLAY_ST7789_320_240
 /* #define DISPLAY DISPLAY_ST7789_240_320 */
 /* #define DISPLAY DISPLAY_ILI9488_480_320 */
 /* #define DISPLAY DISPLAY_ILI9488_320_480 */
-#define DISPLAY DISPLAY_ST7796S_480_320
+/* #define DISPLAY DISPLAY_ST7796S_480_320 */
 /* #define DISPLAY DISPLAY_ST7796S_320_480 */
 /* The 1.9" module, landscape only - see board_parts.h. */
 /* #define DISPLAY DISPLAY_ST7789_320_170 */
@@ -69,7 +69,7 @@
  * controller comes up initialised only some of the time, which reads as an
  * intermittently dead panel rather than as a missing wire. Wire it and
  * uncomment this line; left out, the driver is told there is none. */
-/* #define TFT_RESET_GPIO 4 */
+#define TFT_RESET_GPIO 4
 
 /* ======================================================================
  * Display backlight - PWM on a single pin
@@ -80,6 +80,7 @@
 /* ======================================================================
  * Controls - rotary encoder with push button, plus four function buttons
  * ====================================================================== */
+#define CONTROLS CONTROLS_DUAL_ENCODER
 
 #define ENCODER_RIGHT_GPIO 5
 #define ENCODER_LEFT_GPIO 7
@@ -89,6 +90,12 @@
  * They do what a turn and a push do; held, + and - repeat, faster the longer
  * they are held. Asked for by users who would rather not fit an encoder. */
 #define ENCODER_AS_BUTTONS 0
+
+#define VOLUME_ENCODER_A_GPIO 13
+#define VOLUME_ENCODER_B_GPIO 14
+
+#define ENCODER_EDGES_PER_DETENT 4
+#define VOLUME_ENCODER_EDGES_PER_DETENT 4
 
 /* Three of the four are named for what they do rather than for the
  * silkscreen: the third and fourth buttons are the track keys everywhere they
@@ -106,10 +113,11 @@
  * the S3 has RTC_GPIO 0-21 - because only those can wake the chip. F1 and F2
  * were swapped on the bench for exactly that, 2026-09-16; anywhere else and
  * the board is simply never offered the sleep. */
-#define BUTTON_SLEEP_GPIO 21
+//#define BUTTON_SLEEP_GPIO 21
+#define BUTTON_MENU_GPIO 21
 #define BUTTON_QUICK_MENU_GPIO 45
 #define BUTTON_PREV_GPIO 46
-#define BUTTON_NEXT_GPIO 9
+//#define BUTTON_NEXT_GPIO 3
 
 /* The internal pull-ups are always on, for the encoder and the buttons alike
  * (2026-10-20). They were a choice per group, and users who wired a button
@@ -127,7 +135,10 @@
 /* DAC_NONE for a board with S/PDIF alone (AUDIO_SPDIF_GPIO below, then
  * required): the sound always goes out there. The I2S pins are still wanted
  * for a tuner over I2S or the Bluetooth module, which run on that bus. */
-#define AUDIO_DAC DAC_PCM5102
+#define AUDIO_DAC DAC_MAX98357A
+/* Alternative: DAC_MAX98357A, Philips I2S without I2C.
+ * GAIN and mono are hardware straps. Q1: AMP_GPIO15, ON_LEVEL0. */
+#define AUDIO_MAX98357A_CEILING_DBFS (-12)
 
 #define I2S_DOUT_GPIO 16
 #define I2S_BCLK_GPIO 18
@@ -151,8 +162,8 @@
  * This is not AUDIO_DAC_MUTE_GPIO below: that one is the DAC's own soft mute
  * and is asserted when the sound is being sent to a Bluetooth speaker. Both
  * can be wired at once, and then a muted DAC mutes the amplifier too. */
-/* #define AUDIO_AMP_GPIO 39 */
-/* #define AUDIO_AMP_ON_LEVEL 1 */
+#define AUDIO_AMP_GPIO 15
+#define AUDIO_AMP_ON_LEVEL 0
 
 /* An SSM3582 instead of the DAC - AUDIO_DAC DAC_SSM3582 above: a class-D
  * amplifier with an I2S input, on the same three I2S wires and set up over
@@ -191,8 +202,8 @@
  * USB host - flash drive, internal PHY
  * ====================================================================== */
 
-#define USB_DM_GPIO 19
-#define USB_DP_GPIO 20
+//#define USB_DM_GPIO 19
+//#define USB_DP_GPIO 20
 /* VBUS is permanently powered and not switched by firmware, so there is no
  * pin for it. A drive left attached across an ESP32 reset is recovered by
  * power-cycling the root port logically (usb_host_lib_set_root_port_power),
@@ -207,10 +218,10 @@
  * a card cannot work without, and the display driver owns its bus with its own
  * transactions - a card on it would have to interleave with every frame. */
 
-#define SDC_CS_GPIO 1
-#define SDC_SCK_GPIO 41
-#define SDC_MISO_GPIO 40
-#define SDC_MOSI_GPIO 42
+//#define SDC_CS_GPIO 1
+//#define SDC_SCK_GPIO 41
+//#define SDC_MISO_GPIO 40
+//#define SDC_MOSI_GPIO 42
 /* GPIO 40, 41 and 42 are MTDO/MTDI/MTMS, so the bus takes over the external
  * JTAG header. No loss in practice: the built-in USB Serial/JTAG shares its
  * pins with the USB host port, which is already wired to the drive socket. */
@@ -231,10 +242,10 @@
  *
  * The bus is its own, not the card's: SPI3 has no spare pins left, and a
  * tuner is an I2C part anyway. */
-// #define FM_TUNER FM_TUNER_RDA5807
-// #define FM_I2C_PERIPHERAL 0
-// #define FM_I2C_SDA_GPIO 8
-// #define FM_I2C_SCL_GPIO 3
+#define FM_TUNER FM_TUNER_RDA5807
+#define FM_I2C_PERIPHERAL 0
+#define FM_I2C_SDA_GPIO 8
+#define FM_I2C_SCL_GPIO 9
 
 /* The tuner's sound, by one of three ways.
  *
@@ -249,8 +260,8 @@
  * VU meter and the health log all work as they do for the radio. The data
  * line is the one new wire, into a pin of its own - 39 is the amplifier's
  * enable above, so when both are fitted take another free one. */
-// #define FM_I2S_PERIPHERAL 0
-// #define I2S_DIN_GPIO 39
+#define FM_I2S_PERIPHERAL 0
+#define I2S_DIN_GPIO 39
 
 /* Or, the third way: the RDA5807M has no I2S output, only an analogue one.
  * Its sound can still come through the DAC's path like any source's, by way
@@ -365,7 +376,7 @@
  * without it.
  *
  * FEATURE_OFF and deleting the line mean the same thing. */
-#define YANDEX_MUSIC FEATURE_ON
+//#define YANDEX_MUSIC FEATURE_ON
 
 /* DLNA: browse a media server on the LAN and play from it.
  *
@@ -380,7 +391,7 @@
  * On. What it costs when no server is on the network is one SSDP search when
  * the source is selected, and a line on the browser screen saying nothing
  * answered. */
-#define DLNA FEATURE_ON
+//#define DLNA FEATURE_ON
 
 /* A bench override, if the build has one - see the root CMakeLists.txt. */
 #if __has_include("board_options.local.h")
