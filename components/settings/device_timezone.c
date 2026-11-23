@@ -106,8 +106,11 @@ static int64_t transition(const tz_date_t *rule, int64_t year, int32_t old_offse
         day = first + (rule->weekday + 7 - (first + 4) % 7) % 7 + 7 * (rule->week - 1);
         if (day >= next) day -= 7;
     } else {
-        day += rule->day;
-        if (rule->kind == 2) day += (is_leap(year) && rule->day >= 60) - 1;
+        if (rule->kind == 2) {
+            day += rule->day - 1 + (is_leap(year) && rule->day >= 60);
+        } else {
+            day += rule->day;
+        }
     }
     return day * 86400 + rule->seconds - old_offset;
 }
