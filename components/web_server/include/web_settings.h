@@ -180,11 +180,8 @@ typedef struct web_settings_view {
     /* As device_theme_t. Live, since the panel's own row changes it; the
      * custom colours are not - see the document. */
     uint8_t theme;
-    /* The zone as its row in device_timezone.h rather than its id: this view
-     * is kept per queued WebSocket frame and compared on every pass, and a
-     * string here would cost every frame the whole id. Past the end means the
-     * card names a zone this build does not have. */
-    uint8_t timezone;
+    /* Canonical catalog index; a full ID would be copied into every frame. */
+    uint16_t timezone;
     /* The weather service, as device_weather_provider_t. The coordinates and
      * the key stay out of the live diff with the time server: typed once. */
     uint8_t weather;

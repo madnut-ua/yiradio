@@ -412,7 +412,7 @@ void web_settings_make_view(web_settings_view_t *view,
         .fm_gain = (int8_t)settings->fm_gain,
         .balance = (int8_t)settings->balance,
         .theme = (uint8_t)settings->theme,
-        .timezone = (uint8_t)device_timezone_index_of(settings->timezone),
+        .timezone = (uint16_t)device_timezone_index_of(settings->timezone),
         .weather = (uint8_t)settings->weather_provider,
         .screensaver = (uint8_t)settings->screensaver,
         .screensaver_seconds = settings->screensaver_seconds,
@@ -690,9 +690,6 @@ size_t web_settings_serialize(char *output, size_t output_size,
     web_json_writer_t writer;
     web_json_init(&writer, output, output_size, output_size);
     if (view == NULL || document == NULL) return 0U;
-    /* Out of the document being written rather than off the card: the zone
-     * names have to be in the same language as the labels beside them. */
-    const device_language_t language = (device_language_t)view->language;
     web_json_literal(&writer, "{");
     write_body(&writer, view);
     /* Only in the document, not in the live diff: a time server and a pair of
@@ -746,17 +743,13 @@ size_t web_settings_serialize(char *output, size_t output_size,
             web_json_string(&writer, color);
         }
     }
-    web_json_literal(&writer, ",\"timezones\":[");
-    for (size_t index = 0U; index < device_timezone_count(); ++index) {
-        const device_timezone_t *const zone = device_timezone_at(index);
-        if (index > 0U) web_json_literal(&writer, ",");
-        web_json_literal(&writer, "{\"id\":");
-        web_json_string(&writer, zone->id);
-        web_json_literal(&writer, ",\"label\":");
-        web_json_string(&writer, device_timezone_label(zone, language));
-        web_json_literal(&writer, "}");
-    }
-    web_json_literal(&writer, "]}");
+    web_json_literal(&writer, ",\"tzdb\":");
+    web_json_string(&writer, device_timezone_version());
+    /* An older web package can still display the current choice. The complete
+     * catalog is served separately instead of taking up the response buffer. */
+    web_json_literal(&writer, ",\"timezones\":[{\"id\":");
+    web_json_string(&writer, view_timezone_id(view));
+    web_json_literal(&writer, "}]}");
     if (!web_json_valid(&writer)) {
         web_json_truncate(&writer);
         return 0U;

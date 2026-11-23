@@ -19,6 +19,7 @@
 #include "miniz.h"
 
 #include "config_archive.h"
+#include "device_clock.h"
 #include "device_settings.h"
 #include "settings_nvs.h"
 #include "settings_csv.h"
@@ -158,7 +159,7 @@ static void web_backup_stamp(uint16_t *date, uint16_t *time_of_day)
      * every reader accepts. */
     const time_t now = time(NULL);
     struct tm local;
-    if (localtime_r(&now, &local) == NULL) {
+    if (!device_clock_localtime(now, &local)) {
         *date = CONFIG_ARCHIVE_DOS_DATE_MIN;
         *time_of_day = 0U;
         return;
@@ -171,7 +172,7 @@ static void web_backup_filename(char *name, size_t size)
 {
     const time_t now = time(NULL);
     struct tm local;
-    if (localtime_r(&now, &local) != NULL && local.tm_year + 1900 >= 2020) {
+    if (device_clock_localtime(now, &local) && local.tm_year + 1900 >= 2020) {
         snprintf(name, size, "attachment; filename=\"jradio-%04d%02d%02d.zip\"",
                  local.tm_year + 1900, local.tm_mon + 1, local.tm_mday);
         return;

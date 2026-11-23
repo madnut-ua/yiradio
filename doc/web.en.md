@@ -133,6 +133,14 @@ the version stamp first; other paths, links and an archive without the main
 pages are refused. A firmware and an archive of different versions are not
 installed together.
 
+## Time zones
+
+The device settings offer searchable IANA time zone IDs such as `Europe/Kyiv`
+and `Asia/Tokyo`, grouped by region. New and reset devices use `Europe/Kyiv`.
+An existing saved zone keeps its previous clock rules until a new zone is
+selected. After clock synchronization, time zone rules work offline; corrections
+to the IANA data arrive with firmware updates.
+
 ## API
 
 | Endpoint | Purpose |
@@ -147,7 +155,8 @@ installed together.
 | `GET /api/dlna` | The open folder of the media server; `searching` - the server is still being looked for |
 | `GET /api/progress` | Position in the track, the buffer, the cover's signature, the sleep timer's remainder |
 | `GET /api/cover` | The current cover, 96×96, BMP |
-| `GET /api/settings` | The device's settings, the time zone list, the time server |
+| `GET /api/settings` | The device's settings, including the selected time zone ID, `tzdb` version, and time server |
+| `GET /timezones.json` | The matching IANA catalog: `{"version":"…","zones":["…"]}` |
 | `POST /api/settings` | One setting: `{"field":…,"value":…}` - including `timezone`, `ntp_server`, `weather*`, `screensaver*`, `alarm_*`, `fm_gain` (dB, -6 to +12), `theme` (`standard`/`contrast`/`custom`), the custom theme's colours `theme_ground`, `theme_text`, `theme_artist`, `theme_secondary`, `theme_dim`, `theme_accent`, `theme_saver` (`"#rrggbb"`) and `theme_reset` (`true` puts back the standard ones). The colours come only in the `GET`, not in the diffs |
 | `POST /api/sleep-timer` | `{"minutes":45}`, zero switches it off |
 | `GET /api/about` | The firmware, web interface and ESP-IDF versions |

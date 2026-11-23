@@ -1323,6 +1323,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 
 select,
 input[type="text"],
+input[type="search"],
 input[type="password"] {
   height: 30px;
   padding: 0 .5rem;
@@ -1343,11 +1344,14 @@ input[type="password"] { width: 100%; }
    to the Wi-Fi form, and in this flex row it pushed the label out of the
    card. */
 .device-row input[type="text"],
+.device-row input[type="search"],
 .device-row input[type="password"] {
   width: auto;
   flex: 0 1 10rem;
   min-width: 0;
 }
+
+#device-timezone { min-width: 0; max-width: 65%; }
 
 /* The field and the button that reveals it, on one line: underneath it would
    read as a second control rather than as part of the field. The input keeps

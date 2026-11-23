@@ -46,6 +46,13 @@
   const yandexStationsEmpty = document.querySelector('#yandex-stations-empty');
   const deviceStatus = document.querySelector('#device-status');
   const deviceTimezone = document.querySelector('#device-timezone');
+  const timezoneFilter = document.querySelector('#device-timezone-filter');
+  const timezoneSearch = document.querySelector('#device-timezone-search');
+  const timezoneError = document.querySelector('#device-timezone-error');
+  let timezoneVersion;
+  let timezoneCatalog = null;
+  let timezoneSelected = '';
+  let timezoneUnavailable = false;
   const sleepSelect = document.querySelector('#sleep-select');
   const alarmDayChips = Array.from(document.querySelectorAll('#device-alarm-days [data-day]'));
   const alarmOffDayChips =
@@ -952,15 +959,12 @@
 
   function setDeviceDisabled(disabled) {
     for (const entry of deviceFields) entry.node.disabled = disabled;
+    updateTimezoneControls(disabled);
     sleepSelect.disabled = disabled;
     for (const chip of alarmDayChips) chip.disabled = disabled;
     for (const chip of alarmOffDayChips) chip.disabled = disabled;
   }
 
-  /* The zones come from the device rather than sitting in the markup: the list
-     lives in the firmware, and a page carrying its own copy would offer a zone
-     the device cannot translate the day one is added. Only the REST document
-     carries it - a live update leaves the options alone. */
   function fillTimezones(zones) {
     if (!Array.isArray(zones) || zones.length === 0) return;
     const ids = zones.map((zone) => zone && zone.id).join('\n');
@@ -973,6 +977,80 @@
       return option;
     }));
   }
+
+  function updateTimezoneControls(disabled = deviceBusy) {
+    const loading = Boolean(timezoneVersion && !timezoneCatalog);
+    deviceTimezone.disabled = disabled || loading || !timezoneSelected;
+    if (timezoneSearch) timezoneSearch.disabled = disabled || loading;
+    if (timezoneFilter) timezoneFilter.hidden = !timezoneCatalog;
+    if (timezoneError) timezoneError.hidden = !timezoneUnavailable;
+  }
+
+  function renderTimezoneCatalog() {
+    if (!timezoneCatalog) return;
+    const query = (timezoneSearch?.value || '').trim().toLowerCase().replace(/_/g, ' ');
+    const groups = new Map();
+    for (const id of timezoneCatalog) {
+      if (id !== timezoneSelected && !id.toLowerCase().replace(/_/g, ' ').includes(query)) continue;
+      const region = id.includes('/') ? id.split('/')[0] : 'Etc';
+      if (!groups.has(region)) {
+        const group = document.createElement('optgroup');
+        group.label = region;
+        groups.set(region, group);
+      }
+      const option = document.createElement('option');
+      option.value = id;
+      option.textContent = id;
+      groups.get(region).append(option);
+    }
+    deviceTimezone.replaceChildren(...groups.values());
+    delete deviceTimezone.dataset.zones;
+    deviceTimezone.value = timezoneSelected;
+  }
+
+  function applyTimezones(payload) {
+    const changed = typeof payload.timezone === 'string' && timezoneSelected !== payload.timezone;
+    if (changed) timezoneSelected = payload.timezone;
+    // Live updates have the selected ID but not the catalog version.
+    if (typeof payload.tzdb !== 'string' && !timezoneVersion) {
+      fillTimezones(payload.timezones);
+      updateTimezoneControls();
+      return;
+    }
+    if (typeof payload.tzdb === 'string' && payload.tzdb !== timezoneVersion) {
+      const version = timezoneVersion = payload.tzdb;
+      timezoneCatalog = null;
+      timezoneUnavailable = false;
+      window.fetch('/timezones.json')
+        .then((response) => {
+          if (!response || !response.ok) throw new Error('timezone catalog unavailable');
+          return response.json();
+        })
+        .then((catalog) => {
+          if (version !== timezoneVersion) return;
+          if (!catalog || catalog.version !== version || !Array.isArray(catalog.zones) ||
+              !catalog.zones.every((id) => typeof id === 'string') ||
+              !catalog.zones.includes(timezoneSelected)) throw new Error('invalid timezone catalog');
+          timezoneCatalog = catalog.zones;
+          renderTimezoneCatalog();
+          updateTimezoneControls();
+        })
+        .catch(() => {
+          if (version !== timezoneVersion) return;
+          timezoneUnavailable = true;
+          updateTimezoneControls();
+        });
+    }
+    if (timezoneCatalog) {
+      if (changed && timezoneSearch) timezoneSearch.value = '';
+      if (changed) renderTimezoneCatalog();
+    } else if (timezoneSelected) {
+      fillTimezones([{id: timezoneSelected}]);
+    }
+    updateTimezoneControls();
+  }
+
+  if (timezoneSearch) timezoneSearch.addEventListener('input', renderTimezoneCatalog);
 
   /* The waits the device offers, as it names them. The page carries a
      default list so it is usable before the answer arrives; the device's
@@ -1226,8 +1304,7 @@
     applyLanguage(payload);
     applySleepTimer(payload.sleep);
     const available = isObject(payload.available) ? payload.available : {};
-    // Before the values below, or the zone would be set on an empty list.
-    fillTimezones(payload.timezones);
+    applyTimezones(payload);
     fillSecondsChoices(payload.screensaver_seconds_choices);
     if (Number.isSafeInteger(payload.idle_brightness_min) &&
         Number.isSafeInteger(payload.idle_brightness_max)) {

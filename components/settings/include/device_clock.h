@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <time.h>
 
 /* Wall-clock time, kept by SNTP.
  *
@@ -27,6 +28,7 @@ void device_clock_apply(const char *server, const char *timezone_id);
  * sleep and must not bring up SNTP - it has no network and is about to go
  * back down. */
 void device_clock_set_timezone(const char *timezone_id);
+bool device_clock_localtime(time_t utc, struct tm *local);
 
 /* Local hour and minute. False until the first synchronisation, and it stays
  * true afterwards even if the network goes away - the oscillator keeps
