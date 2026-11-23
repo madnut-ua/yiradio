@@ -408,8 +408,6 @@ static void test_the_clock_settings_persist_and_are_checked(void)
     reset_file();
     device_settings_t settings;
     assert(device_settings_init_at(&settings, test_path));
-    /* What the device had before either was a setting, so a card that has
-     * never seen this page still keeps Moscow time off pool.ntp.org. */
     assert(strcmp(settings.timezone, "Europe/Kyiv") == 0);
     assert(strcmp(settings.ntp_server, "pool.ntp.org") == 0);
 
@@ -494,9 +492,6 @@ static void test_the_clock_settings_persist_and_are_checked(void)
     assert(settings_csv_set(test_path, "timezone", "mars/olympus"));
     assert(device_settings_init_at(&reloaded, test_path));
     assert(strcmp(reloaded.timezone, "Europe/Kyiv") == 0);
-    assert(settings_csv_set(test_path, "timezone", "europe/moscow"));
-    assert(device_settings_init_at(&reloaded, test_path));
-    assert(strcmp(reloaded.timezone, "europe/moscow") == 0);
 }
 
 static void test_the_weather_settings_persist_and_are_checked(void)

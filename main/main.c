@@ -329,8 +329,7 @@ void app_main(void)
         // not depend on being connected - SNTP retries on its own and the clock
         // reads unset until an answer arrives.
         /* The zone and the server come off the card, and a card that would not
-         * read leaves both at their defaults - a clock on Moscow time is what
-         * this device had before either was a setting. */
+         * read leaves both at their defaults. */
         device_clock_init(settings_read ? boot_settings.ntp_server : NULL,
                           settings_read ? boot_settings.timezone : NULL);
     }
