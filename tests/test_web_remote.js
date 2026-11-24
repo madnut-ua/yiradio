@@ -6,6 +6,7 @@
 
 const assert = require('assert');
 const fs = require('fs');
+const {localeResponse, jsonResponse} = require('./web_locale_fixture');
 const path = require('path');
 const vm = require('vm');
 
@@ -68,11 +69,15 @@ const learns = [];
 const forgets = [];
 let fetches = 0;
 let polls = 0;
+let deviceLanguage = 'ru';
 /* setTimeout is captured, not run: the test decides when a poll fires. */
 const timers = new Map();
 let timerId = 0;
 
 function fakeFetch(url, options) {
+  if (url === '/api/settings') return jsonResponse({language: deviceLanguage});
+  const locale = localeResponse(url);
+  if (locale) return locale;
   const body = options && options.body ? JSON.parse(options.body) : null;
   if (url === '/api/remote/learn') {
     learns.push(body.function);
@@ -134,9 +139,11 @@ function loadPage() {
 
 const settle = () => new Promise((resolve) => setImmediate(resolve));
 function firePendingPolls() {
-  const pending = [...timers.values()];
-  timers.clear();
-  for (const timer of pending) timer.callback();
+  const pending = [...timers].filter(([, timer]) => timer.ms === 250);
+  for (const [id, timer] of pending) {
+    timers.delete(id);
+    timer.callback();
+  }
   return pending.length;
 }
 
@@ -220,7 +227,7 @@ async function main() {
   await settle();
   await settle();
   assert.strictEqual(fetches, fetchesArmed);
-  assert.strictEqual(timers.size, 1);
+  assert.strictEqual([...timers.values()].filter((timer) => timer.ms === 250).length, 1);
 
   /* The key arrives: the device's revision moves, the table is read again,
      the row shows the code and the status says so. */
@@ -279,10 +286,16 @@ async function main() {
   assert.strictEqual(row('volume_down').children[3].hidden, true);
 
   /* The language change reaches the rows the page built itself. */
-  i18n.setLanguage('en');
-  assert.strictEqual(row('volume_down').children[0].textContent, 'Volume down');
-  assert.strictEqual(row('volume_down').children[2].textContent, 'Learn');
-  i18n.setLanguage('ru');
+  deviceLanguage = 'uk';
+  document.hidden = true;
+  document.emit('visibilitychange');
+  assert.strictEqual(timers.size, 0);
+  document.hidden = false;
+  document.emit('visibilitychange');
+  await settle();
+  assert.strictEqual(document.documentElement.lang, 'uk');
+  assert.strictEqual(row('volume_down').children[0].textContent, 'Зменшити гучність');
+  assert.strictEqual(row('volume_down').children[2].textContent, 'Навчити');
 
   /* A build without a receiver says so instead of a table. */
   const missing = document.body.querySelector('#remote-missing');

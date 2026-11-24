@@ -2,6 +2,7 @@
 
 const assert = require('assert');
 const fs = require('fs');
+const {localeResponse} = require('./web_locale_fixture');
 const vm = require('vm');
 
 class ClassList {
@@ -37,6 +38,7 @@ class Element {
   }
   get value() { return this.currentValue; }
   setAttribute(name, value) { this.attributes[name] = String(value); }
+  removeAttribute(name) { delete this.attributes[name]; }
   getAttribute(name) { return Object.hasOwn(this.attributes, name) ? this.attributes[name] : null; }
   addEventListener(type, callback) { (this.listeners[type] ||= []).push(callback); }
   emit(type, event = {}) {
@@ -265,7 +267,7 @@ let restoreOk = true;
 let restoreFetchFails = false;
 
 const timerHandles = new Map();
-// What the browser remembers between loads: the language and the open section.
+// What the browser remembers between loads: the open section.
 const store = {};
 /* How wide the page is being looked at. The sections fold on a phone and stand
    open on a screen with room for the two columns, so both have to be drivable.
@@ -304,6 +306,8 @@ const context = {
       return confirmAnswer;
     },
     fetch(url, options) {
+      const locale = localeResponse(url);
+      if (locale) return locale;
       fetchCalls.push({url, options});
       if (String(url).startsWith('/api/wifi-scan')) {
         if (options && options.method === 'POST') {
@@ -431,17 +435,17 @@ assert.equal(elements['#saved-networks'].children.length, 1);
 
 // The field starts hidden, whatever the markup happened to say.
 assert.equal(elements['#wifi-password'].type, 'password');
-assert.equal(elements['#wifi-password-reveal'].textContent, 'Показать');
+assert.equal(elements['#wifi-password-reveal'].textContent, 'Show');
 assert.equal(elements['#wifi-password-reveal'].getAttribute('aria-pressed'), 'false');
 
 // And the button shows it, then hides it again.
 elements['#wifi-password-reveal'].emit('click');
 assert.equal(elements['#wifi-password'].type, 'text');
-assert.equal(elements['#wifi-password-reveal'].textContent, 'Скрыть');
+assert.equal(elements['#wifi-password-reveal'].textContent, 'Hide');
 assert.equal(elements['#wifi-password-reveal'].getAttribute('aria-pressed'), 'true');
 elements['#wifi-password-reveal'].emit('click');
 assert.equal(elements['#wifi-password'].type, 'password');
-assert.equal(elements['#wifi-password-reveal'].textContent, 'Показать');
+assert.equal(elements['#wifi-password-reveal'].textContent, 'Show');
 
 elements['#wifi-ssid'].value = 'new-ap';
 elements['#wifi-password'].value = 'topsecret42';
@@ -455,7 +459,7 @@ assert.equal(elements['#wifi-password'].value, '');
 assert.equal(elements['#wifi-password'].type, 'password');
 assert.equal(elements['#wifi-password-reveal'].getAttribute('aria-pressed'), 'false');
 assert.equal(elements['#wifi-submit'].disabled, true);
-assert.equal(elements['#wifi-status'].textContent, 'Проверка…');
+assert.equal(elements['#wifi-status'].textContent, 'Checking…');
 assert.deepEqual(JSON.parse(first.sent.at(-1)), {
   type: 'command', id: 'settings-1', action: 'wifi.save',
   ssid: 'new-ap', password: 'topsecret42',
@@ -472,7 +476,7 @@ sendEvent(first, {
   wifi: {mode: 'sta_connecting', active_ssid: 'new-ap', ip: '',
     save_pending: true, last_error: 0, saved: [{ssid: 'home', blocked: false}]},
 });
-assert.equal(elements['#wifi-status'].textContent, 'Подключение…');
+assert.equal(elements['#wifi-status'].textContent, 'Connecting…');
 assert.equal(elements['#wifi-submit'].disabled, true);
 
 sendEvent(first, {
@@ -480,7 +484,7 @@ sendEvent(first, {
   wifi: {mode: 'sta_connected', active_ssid: 'new-ap', ip: '192.168.1.20',
     save_pending: false, last_error: 0, saved: [{ssid: 'home', blocked: false}, {ssid: 'new-ap', blocked: false}]},
 });
-assert.equal(elements['#wifi-status'].textContent, 'Сохранено');
+assert.equal(elements['#wifi-status'].textContent, 'Saved');
 assert.equal(elements['#wifi-submit'].disabled, false);
 
 elements['#wifi-ssid'].value = 'bad-ap';
@@ -492,7 +496,7 @@ sendEvent(first, {
   wifi: {mode: 'sta_connected', active_ssid: 'home', ip: '192.168.1.10',
     save_pending: false, last_error: 202, saved: [{ssid: 'home', blocked: false}, {ssid: 'new-ap', blocked: false}]},
 });
-assert.match(elements['#wifi-status'].textContent, /парол/i);
+assert.match(elements['#wifi-status'].textContent, /password/i);
 assert.equal(elements['#wifi-submit'].disabled, false);
 
 sendEvent(first, {
@@ -523,7 +527,7 @@ sendEvent(second, {
   wifi: {mode: 'sta_connected', active_ssid: 'other', ip: '192.168.1.11',
     save_pending: false, last_error: 0, saved: [{ssid: 'home', blocked: false}, {ssid: 'other', blocked: false}]},
 });
-assert.equal(elements['#wifi-status'].textContent, 'Сохранено');
+assert.equal(elements['#wifi-status'].textContent, 'Saved');
 assert.equal(elements['#wifi-submit'].disabled, false);
 sendEvent(first, snapshot(99, {
   mode: 'sta_connected', active_ssid: 'old-socket', ip: '',
@@ -1235,6 +1239,19 @@ function lastYandexTimer() {
   assert.equal(elements['#device-status'].textContent, 'Saved');
   assert.equal(documentRef.documentElement.lang, 'en');
 
+  const languagePicker = elements['#device-language'];
+  assert.equal(languagePicker.disabled, false);
+  assert.deepEqual(languagePicker.children.map(({value, textContent}) => [value, textContent]),
+    [['en', 'English'], ['ru', 'Русский'], ['uk', 'Українська']]);
+  settingsReply = {...settingsReply, language: 'uk'};
+  languagePicker.value = 'uk';
+  languagePicker.emit('change');
+  await settle();
+  assert.deepEqual(JSON.parse(fetchCalls.filter((call) => call.url === '/api/settings' &&
+    call.options?.method === 'POST').at(-1).options.body), {field: 'language', value: 'uk'});
+  assert.equal(documentRef.documentElement.lang, 'uk');
+  assert.equal(elements['#device-status'].textContent, 'Збережено');
+
   // Back to Russian, which is the language the rest of this file is written in.
   settingsReply = {...settingsReply, language: 'ru'};
   elements['#device-language'].value = 'ru';
@@ -1730,6 +1747,7 @@ function lastYandexTimer() {
     type: 'settings.update', revision: 91,
     settings: {...settingsReply, language: 'ru'},
   });
+  await settle();
   assert.equal(documentRef.documentElement.lang, 'ru');
 
   /* The page folds away into five headings, which is what makes it a page a

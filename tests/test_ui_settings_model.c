@@ -528,9 +528,7 @@ static void test_the_volume_step_moves_one_percent_and_stops_at_the_ends(void)
 
 static void test_the_longest_list_needs_the_window(void)
 {
-    /* Six rows is what ui.c draws. General is deeper than that now, so the
-     * screen scrolls again - which is fine, and is why the window exists, but
-     * it is a fact worth failing on rather than discovering on the panel. */
+    const size_t visible_rows = 6U;
     ui_settings_model_t model;
     size_t longest = 0U;
     for (ui_settings_group_t group = UI_SETTINGS_GROUP_LANGUAGE;
@@ -539,17 +537,13 @@ static void test_the_longest_list_needs_the_window(void)
         model.expanded_group = (int)group;
         const size_t count = ui_settings_model_row_count(&model);
         if (count > longest) longest = count;
+        for (size_t cursor = 0U; cursor < count; ++cursor) {
+            model.cursor = cursor;
+            const size_t top = ui_settings_model_window_top(&model, visible_rows);
+            assert(cursor >= top && cursor < top + visible_rows);
+        }
     }
-    /* Four headings, the deepest group's fields, and About. */
-    assert(longest == 12U + BOARD_HAS_YANDEX_MUSIC + BOARD_HAS_DLNA + BOARD_HAS_BLUETOOTH);
-    /* Whatever the longest is, every row of it is reachable with the window. */
-    ui_settings_model_init(&model, true);
-    model.expanded_group = (int)UI_SETTINGS_GROUP_GENERAL;
-    for (size_t cursor = 0U; cursor < longest; ++cursor) {
-        model.cursor = cursor;
-        const size_t top = ui_settings_model_window_top(&model, 6U);
-        assert(cursor >= top && cursor < top + 6U);
-    }
+    assert(longest > visible_rows);
 }
 
 int main(void)

@@ -1,3 +1,4 @@
+#include "locale_fixture.h"
 #include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -437,7 +438,7 @@ static void test_every_row_is_named_in_both_languages(void)
     for (unsigned int item = 0U; item < (unsigned int)UI_QUICK_ITEM_COUNT; ++item) {
         for (int language = 0; language < 2; ++language) {
             const char *label = ui_quick_item_label((ui_quick_item_t)item,
-                                                    language == 0 ? DEVICE_LANGUAGE_RU
+                                                    language == 0 ? test_locale("ru")
                                                                   : DEVICE_LANGUAGE_EN);
             assert(label != NULL);
             assert(label[0] != '\0');

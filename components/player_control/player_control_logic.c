@@ -104,7 +104,7 @@ bool player_snapshot_equal(const player_snapshot_t *left,
            left->fm_khz == right->fm_khz &&
            left->fm_stereo == right->fm_stereo && left->fm_signal == right->fm_signal &&
            left->fm_rds == right->fm_rds && left->fm_scanning == right->fm_scanning &&
-           memcmp(left->error, right->error, sizeof(left->error)) == 0;
+           left->error_text_id == right->error_text_id;
 }
 
 /* Nothing that streams from the internet can be started without one, and the

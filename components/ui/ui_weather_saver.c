@@ -2,6 +2,8 @@
 
 #include <stdio.h>
 
+#include "device_text.h"
+
 static bool known(int value)
 {
     return value != WEATHER_UNKNOWN;
@@ -10,6 +12,15 @@ static bool known(int value)
 static void empty(char *out, size_t size)
 {
     if (out != NULL && size > 0U) out[0] = '\0';
+}
+
+static void format_number(char *out, size_t size, device_text_id_t id,
+                          device_language_t language, const char *name, int value)
+{
+    char number[12];
+    snprintf(number, sizeof(number), "%d", value);
+    const device_text_arg_t arg = {name, number};
+    device_text_format(out, size, id, language, &arg, 1U);
 }
 
 void ui_wx_temperature_text(char *out, size_t size, int celsius)
@@ -36,10 +47,10 @@ void ui_wx_feels_text(char *out, size_t size, device_language_t language,
     }
     char degrees[16];
     ui_wx_temperature_text(degrees, sizeof(degrees), report->feels_like_c);
-    const bool english = language == DEVICE_LANGUAGE_EN;
-    snprintf(out, size, "%s %s",
-             brief ? (english ? "feels" : "ощущ.") : (english ? "feels like" : "ощущается"),
-             degrees);
+    const device_text_arg_t arg = {"temperature", degrees};
+    device_text_format(out, size,
+                       brief ? DEVICE_TEXT_WEATHER_FEELS_BRIEF : DEVICE_TEXT_WEATHER_FEELS,
+                       language, &arg, 1U);
 }
 
 void ui_wx_humidity_text(char *out, size_t size, const weather_report_t *report)
@@ -60,31 +71,41 @@ void ui_wx_pressure_text(char *out, size_t size, device_language_t language,
         empty(out, size);
         return;
     }
-    snprintf(out, size, "%d %s", report->pressure_mmhg,
-             language == DEVICE_LANGUAGE_EN ? "mmHg" : "мм");
+    format_number(out, size, DEVICE_TEXT_WEATHER_PRESSURE_VALUE, language,
+                  "value", report->pressure_mmhg);
 }
 
 void ui_wx_wind_text(char *out, size_t size, device_language_t language,
                      const weather_report_t *report, bool point_shown)
 {
-    static const char *const ru[] = {"С", "СВ", "В", "ЮВ", "Ю", "ЮЗ", "З", "СЗ"};
-    static const char *const en[] = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
+    static const device_text_id_t directions[] = {
+        DEVICE_TEXT_WEATHER_WIND_N, DEVICE_TEXT_WEATHER_WIND_NE,
+        DEVICE_TEXT_WEATHER_WIND_E, DEVICE_TEXT_WEATHER_WIND_SE,
+        DEVICE_TEXT_WEATHER_WIND_S, DEVICE_TEXT_WEATHER_WIND_SW,
+        DEVICE_TEXT_WEATHER_WIND_W, DEVICE_TEXT_WEATHER_WIND_NW,
+    };
     if (out == NULL || size == 0U) return;
     if (report == NULL || !known(report->wind_ms)) {
         empty(out, size);
         return;
     }
-    const bool english = language == DEVICE_LANGUAGE_EN;
     if (report->wind_ms == 0) {
-        snprintf(out, size, "%s", english ? "calm" : "штиль");
+        device_text_format(out, size, DEVICE_TEXT_WEATHER_WIND_CALM, language, NULL, 0U);
         return;
     }
     const int point = point_shown ? weather_wind_point(report->wind_from_deg) : -1;
     if (point < 0) {
-        snprintf(out, size, "%d %s", report->wind_ms, english ? "m/s" : "м/с");
+        format_number(out, size, DEVICE_TEXT_WEATHER_WIND_VALUE, language,
+                      "speed", report->wind_ms);
     } else {
-        snprintf(out, size, "%d %s %s", report->wind_ms, english ? "m/s" : "м/с",
-                 english ? en[point] : ru[point]);
+        char speed[12];
+        snprintf(speed, sizeof(speed), "%d", report->wind_ms);
+        const device_text_arg_t args[] = {
+            {"speed", speed},
+            {"direction", device_text(directions[point], language)},
+        };
+        device_text_format(out, size, DEVICE_TEXT_WEATHER_WIND_DIRECTION_VALUE, language,
+                           args, sizeof(args) / sizeof(*args));
     }
 }
 
@@ -92,13 +113,12 @@ void ui_wx_wind_label(char *out, size_t size, device_language_t language,
                       const weather_report_t *report)
 {
     if (out == NULL || size == 0U) return;
-    const bool english = language == DEVICE_LANGUAGE_EN;
     if (report != NULL && known(report->wind_gust_ms) && known(report->wind_ms) &&
         report->wind_gust_ms > report->wind_ms) {
-        snprintf(out, size, "%s %d", english ? "wind, gusts" : "ветер, порывы",
-                 report->wind_gust_ms);
+        format_number(out, size, DEVICE_TEXT_WEATHER_WIND_GUSTS, language,
+                      "speed", report->wind_gust_ms);
     } else {
-        snprintf(out, size, "%s", english ? "wind" : "ветер");
+        device_text_format(out, size, DEVICE_TEXT_WEATHER_WIND, language, NULL, 0U);
     }
 }
 
@@ -112,48 +132,61 @@ void ui_wx_clock_text(char *out, size_t size, int minutes)
     snprintf(out, size, "%02d:%02d", minutes / 60, minutes % 60);
 }
 
+static void format_rain(char *out, size_t size, device_language_t language, int tenths)
+{
+    if (tenths <= 0) {
+        device_text_format(out, size, DEVICE_TEXT_WEATHER_NO_RAIN, language, NULL, 0U);
+        return;
+    }
+    char whole[12];
+    const char fraction[] = {(char)('0' + tenths % 10), '\0'};
+    snprintf(whole, sizeof(whole), "%d", tenths / 10);
+    const device_text_arg_t args[] = {{"whole", whole}, {"fraction", fraction}};
+    device_text_format(out, size, DEVICE_TEXT_WEATHER_RAIN, language,
+                       args, sizeof(args) / sizeof(*args));
+}
+
 void ui_wx_sky_text(char *out, size_t size, device_language_t language,
                     const weather_report_t *report)
 {
     if (out == NULL || size == 0U) return;
-    empty(out, size);
-    if (report == NULL) return;
-    const bool english = language == DEVICE_LANGUAGE_EN;
-    char clouds[32] = "";
-    char fallen[40] = "";
-    if (known(report->cloud_pct)) {
-        snprintf(clouds, sizeof(clouds), "%s %d%%", english ? "clouds" : "облачно",
-                 report->cloud_pct);
-    }
-    if (known(report->precipitation_tenths_mm)) {
-        if (report->precipitation_tenths_mm <= 0) {
-            snprintf(fallen, sizeof(fallen), "%s", english ? "no rain" : "осадков нет");
-        } else {
-            const int tenths = report->precipitation_tenths_mm;
-            snprintf(fallen, sizeof(fallen), "%s %d%s%d %s", english ? "rain" : "осадки",
-                     tenths / 10, english ? "." : ",", tenths % 10, english ? "mm" : "мм");
-        }
-    }
-    if (clouds[0] != '\0' && fallen[0] != '\0') {
-        snprintf(out, size, "%s \xC2\xB7 %s", clouds, fallen);
+    const bool have_clouds = report != NULL && known(report->cloud_pct);
+    const bool have_rain = report != NULL && known(report->precipitation_tenths_mm);
+    if (have_clouds && have_rain) {
+        char clouds[64];
+        char rain[64];
+        format_number(clouds, sizeof(clouds), DEVICE_TEXT_WEATHER_CLOUDS, language,
+                      "percent", report->cloud_pct);
+        format_rain(rain, sizeof(rain), language, report->precipitation_tenths_mm);
+        const device_text_arg_t args[] = {{"clouds", clouds}, {"rain", rain}};
+        device_text_format(out, size, DEVICE_TEXT_WEATHER_SKY, language,
+                           args, sizeof(args) / sizeof(*args));
+    } else if (have_clouds) {
+        format_number(out, size, DEVICE_TEXT_WEATHER_CLOUDS, language,
+                      "percent", report->cloud_pct);
+    } else if (have_rain) {
+        format_rain(out, size, language, report->precipitation_tenths_mm);
     } else {
-        snprintf(out, size, "%s%s", clouds, fallen);
+        empty(out, size);
     }
 }
 
 void ui_wx_day_name(char *out, size_t size, device_language_t language, int index,
                     const weather_day_t *day)
 {
-    static const char *const ru[] = {"Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"};
-    static const char *const en[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+    static const device_text_id_t weekdays[] = {
+        DEVICE_TEXT_WEEKDAY_SHORT_SUNDAY,    DEVICE_TEXT_WEEKDAY_SHORT_MONDAY,
+        DEVICE_TEXT_WEEKDAY_SHORT_TUESDAY,   DEVICE_TEXT_WEEKDAY_SHORT_WEDNESDAY,
+        DEVICE_TEXT_WEEKDAY_SHORT_THURSDAY,  DEVICE_TEXT_WEEKDAY_SHORT_FRIDAY,
+        DEVICE_TEXT_WEEKDAY_SHORT_SATURDAY,
+    };
     if (out == NULL || size == 0U) return;
-    const bool english = language == DEVICE_LANGUAGE_EN;
     if (index == 0) {
-        snprintf(out, size, "%s", english ? "Today" : "Сегодня");
+        device_text_format(out, size, DEVICE_TEXT_WEATHER_TODAY, language, NULL, 0U);
     } else if (day == NULL || !day->valid || day->weekday > 6U) {
         empty(out, size);
     } else {
-        snprintf(out, size, "%s", english ? en[day->weekday] : ru[day->weekday]);
+        device_text_format(out, size, weekdays[day->weekday], language, NULL, 0U);
     }
 }
 

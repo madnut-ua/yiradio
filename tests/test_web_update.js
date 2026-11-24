@@ -5,6 +5,7 @@
 
 const assert = require('assert');
 const fs = require('fs');
+const {localeResponse} = require('./web_locale_fixture');
 const path = require('path');
 const vm = require('vm');
 
@@ -45,7 +46,7 @@ const BANNER = ['update-banner', 'update-banner-title', 'update-banner-more',
 
 /* `page` is which of the two pages: the settings page has the card and the
    notice, the player only the notice. */
-function load(otaAnswers, page = 'settings', hash = '') {
+function load(otaAnswers, page = 'settings', hash = '', language = 'ru') {
   const elements = {};
   for (const id of page === 'settings' ? CARD.concat(BANNER) : BANNER) {
     elements[`#${id}`] = new Element();
@@ -120,6 +121,8 @@ function load(otaAnswers, page = 'settings', hash = '') {
       addEventListener(type, callback) { (windowListeners[type] ||= []).push(callback); },
       setTimeout(callback, delay) { timers.push({callback, delay}); return timers.length; },
       fetch(url) {
+        const locale = localeResponse(url);
+        if (locale) return locale;
         state.fetched.push(url);
         if (url === '/api/ota') return answer(state.ota);
         if (url === '/api/about') return answer(state.about);
@@ -140,6 +143,7 @@ function load(otaAnswers, page = 'settings', hash = '') {
   context.window.window = context.window;
   vm.createContext(context);
   vm.runInContext(fs.readFileSync(path.join(root, 'data/www/i18n.js'), 'utf8'), context);
+  context.window.jradioI18n.setLanguage(language);
   vm.runInContext(fs.readFileSync(path.join(root, 'data/www/update.js'), 'utf8'), context);
   const runTimers = async () => {
     const due = timers.splice(0);
@@ -357,6 +361,17 @@ async function test_the_card_lists_every_version_the_update_brings() {
   assert.strictEqual(quietPage.elements['#update-history-block'].hidden, true);
 }
 
+async function test_notes_use_english_when_ukrainian_is_unavailable() {
+  const history = [...offering.history, {version: 'v1.5.0', uk: 'Нове:\n- Станції.', en: 'New:\n- Stations.'}];
+  const page = load([{...idle, check: {...offering, history}}], 'settings', '', 'uk');
+  await settle();
+  const parts = page.elements['#update-history'].children;
+  assert.deepStrictEqual(parts[1].children.map((item) => item.textContent), ['New:', 'Updates.']);
+  assert.deepStrictEqual(parts[3].children.map((item) => item.textContent), ['Исправлено:', 'Энкодер.']);
+  assert.deepStrictEqual(parts[5].children.map((item) => item.textContent), ['Нове:', 'Станції.']);
+  assert.match(page.elements['#update-changelog'].href, /changelog\.en\.md$/);
+}
+
 async function test_whats_new_unfolds_the_card() {
   const page = load([{...idle, check: offering}], 'settings', '#update');
   await settle();
@@ -507,6 +522,7 @@ async function test_auto_check_requires_opt_in() {
   await test_a_page_opened_during_the_question_joins_it();
   await test_the_notice_shows_a_new_release_on_the_player_too();
   await test_the_card_lists_every_version_the_update_brings();
+  await test_notes_use_english_when_ukrainian_is_unavailable();
   await test_whats_new_unfolds_the_card();
   await test_update_downloads_installs_and_comes_back_new();
   await test_the_card_follows_an_update_made_from_the_notice();

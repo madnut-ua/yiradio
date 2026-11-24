@@ -5,6 +5,7 @@
 
 #include "alarm_schedule.h"
 #include "cJSON.h"
+#include "device_locale.h"
 #include "device_timezone.h"
 #include "web_json.h"
 
@@ -46,7 +47,7 @@ static const char *const k_theme_color_names[DEVICE_THEME_COLORS] = {
 };
 
 static const field_descriptor_t k_fields[] = {
-    {"language", WEB_SETTINGS_FIELD_LANGUAGE, {"ru", "en"}, false, false},
+    {"language", WEB_SETTINGS_FIELD_LANGUAGE, {NULL}, false, true},
     {"home_screen", WEB_SETTINGS_FIELD_HOME_SCREEN, {"text", "feed"}, false, false},
     {"feed_reverse", WEB_SETTINGS_FIELD_FEED_REVERSE, {NULL}, false, false},
     {"power_restore", WEB_SETTINGS_FIELD_POWER_RESTORE, {NULL}, false, false},
@@ -137,6 +138,9 @@ static bool parse_value(const field_descriptor_t *descriptor, const cJSON *value
          * is checked against the firmware's table and a host name against what
          * a host name may contain, and neither belongs here. */
         strcpy(change->text, value->valuestring);
+        if (descriptor->field == WEB_SETTINGS_FIELD_LANGUAGE) {
+            return device_locale_find(change->text) != DEVICE_LOCALE_INVALID;
+        }
         /* A colour is the one text this layer can judge on its own: there is
          * no table to look it up in, only whether it is one. */
         if (descriptor->field >= WEB_SETTINGS_FIELD_THEME_GROUND &&
@@ -250,7 +254,7 @@ bool web_settings_apply(device_settings_t *settings,
     if (settings == NULL || change == NULL) return false;
     switch (change->field) {
     case WEB_SETTINGS_FIELD_LANGUAGE:
-        return device_settings_set_language(settings, (device_language_t)change->value);
+        return device_settings_set_language(settings, device_locale_find(change->text));
     case WEB_SETTINGS_FIELD_HOME_SCREEN:
         return device_settings_set_home_screen(settings,
                                                (device_home_screen_t)change->value);
@@ -514,7 +518,7 @@ static const char *view_timezone_id(const web_settings_view_t *view)
 static void write_body(web_json_writer_t *writer, const web_settings_view_t *view)
 {
     web_json_literal(writer, "\"language\":");
-    web_json_string(writer, view->language == DEVICE_LANGUAGE_EN ? "en" : "ru");
+    web_json_string(writer, device_locale_code(view->language));
     web_json_literal(writer, ",\"home_screen\":");
     web_json_string(writer,
                     view->home_screen == DEVICE_HOME_SCREEN_FEED ? "feed" : "text");

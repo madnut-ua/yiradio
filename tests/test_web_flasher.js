@@ -84,7 +84,7 @@ function test_every_message_is_in_the_dictionary() {
                    navigator: {language: 'ru'}};
   context.window.localStorage = {getItem: () => null, setItem() {}};
   vm.createContext(context);
-  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'data', 'www', 'i18n.js'), 'utf8'), context);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'flasher', 'i18n.js'), 'utf8'), context);
   const i18n = context.window.jradioI18n;
   const script = fs.readFileSync(path.join(FLASHER, 'flasher.js'), 'utf8');
   const keys = new Set();

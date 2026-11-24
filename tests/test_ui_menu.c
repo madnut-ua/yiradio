@@ -1,3 +1,4 @@
+#include "locale_fixture.h"
 #include <assert.h>
 #include <string.h>
 #include <stdbool.h>
@@ -82,10 +83,10 @@ static void test_settings_is_the_last_row_and_is_not_a_source(void)
     assert(ui_menu_activate(&state) == AUDIO_SOURCE_NONE);
     /* Both languages, because the home screen is where the translation used to
        stop: every row but Settings was English on a Russian device. */
-    assert(ui_menu_item_label(UI_MENU_ITEM_SETTINGS, DEVICE_LANGUAGE_RU)[0] != '\0');
-    assert(strcmp(ui_menu_item_label(UI_MENU_ITEM_SETTINGS, DEVICE_LANGUAGE_RU),
+    assert(ui_menu_item_label(UI_MENU_ITEM_SETTINGS, test_locale("ru"))[0] != '\0');
+    assert(strcmp(ui_menu_item_label(UI_MENU_ITEM_SETTINGS, test_locale("ru")),
                   ui_menu_item_label(UI_MENU_ITEM_SETTINGS, DEVICE_LANGUAGE_EN)) != 0);
-    assert(strcmp(ui_menu_item_label(UI_MENU_ITEM_INTERNET_RADIO, DEVICE_LANGUAGE_RU),
+    assert(strcmp(ui_menu_item_label(UI_MENU_ITEM_INTERNET_RADIO, test_locale("ru")),
                   ui_menu_item_label(UI_MENU_ITEM_INTERNET_RADIO, DEVICE_LANGUAGE_EN)) != 0);
 
     /* One step back leaves a source row, so the sources stay contiguous. */

@@ -25,9 +25,9 @@
  * tallest glyph in the face, and the 20 px one was built over a narrower
  * Cyrillic range that stops at 0x045F - it simply does not contain the letters
  * that make the others tall. The 14, 18 and 26 px faces all carry the range in
- * full, and their heights are a consistent 1.35 of the size. Which is the
- * better trade depends on the row: a face that drops a letter draws a box, and
- * the title face is what station names and track titles arrive in. */
+ * full, and their heights are a consistent 1.35 of the size. The 20 px face
+ * uses the 18 px face as a fallback for glyphs like Ukrainian Ґ/ґ, keeping
+ * this line height unchanged. */
 
 /* Two levels, so the argument is expanded before it is pasted: the roles below
  * are given a size macro, not a literal. */

@@ -22,6 +22,7 @@
 #include "ota_check.h"
 #include "ota_update.h"
 #include "device_settings.h"
+#include "device_locale.h"
 #include "internet_radio.h"
 #include "player_control.h"
 #include "remote_control.h"
@@ -285,7 +286,10 @@ void app_main(void)
      * files were being swapped when the power went is finished or undone
      * here, so the server never starts on half of each. A few stat() calls
      * when there is nothing to do. */
-    if (storage_mounted) ota_update_boot_cleanup();
+    if (storage_mounted) {
+        ota_update_boot_cleanup();
+        device_locale_init("/littlefs/www");
+    }
     const bool settings_read = storage_mounted && device_settings_init(&boot_settings);
     if (!settings_read) {
         ESP_LOGW(TAG, "settings unreadable at boot; splash drawn unflipped");

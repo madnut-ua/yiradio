@@ -7,6 +7,7 @@
 #include "device_settings.h"
 #include "settings_csv.h"
 #include "web_settings.h"
+#include "locale_fixture.h"
 
 static const char *test_path = "/tmp/jradio-web-settings.csv";
 
@@ -30,13 +31,16 @@ static bool parse_one(const char *body, web_settings_change_t *change)
 
 static void test_choices_are_named_not_numbered(void)
 {
+    (void)test_locale("ru");
     web_settings_change_t change;
     assert(parse_one("{\"field\":\"language\",\"value\":\"en\"}", &change));
     assert(change.field == WEB_SETTINGS_FIELD_LANGUAGE);
-    assert(change.value == DEVICE_LANGUAGE_EN);
+    assert(strcmp(change.text, "en") == 0);
 
     assert(parse_one("{\"field\":\"language\",\"value\":\"ru\"}", &change));
-    assert(change.value == DEVICE_LANGUAGE_RU);
+    assert(strcmp(change.text, "ru") == 0);
+    assert(parse_one("{\"field\":\"language\",\"value\":\"uk\"}", &change));
+    assert(strcmp(change.text, "uk") == 0);
 
     assert(parse_one("{\"field\":\"home_screen\",\"value\":\"feed\"}", &change));
     assert(change.field == WEB_SETTINGS_FIELD_HOME_SCREEN);
@@ -591,7 +595,7 @@ static void test_view_comparison_notices_every_field(void)
     other.theme = (uint8_t)(base.theme + 1U);
     assert(!web_settings_view_equal(&base, &other));
     other = base;
-    other.language = DEVICE_LANGUAGE_EN;
+    other.language = test_locale("uk");
     assert(!web_settings_view_equal(&base, &other));
     other = base;
     other.home_screen = DEVICE_HOME_SCREEN_FEED;

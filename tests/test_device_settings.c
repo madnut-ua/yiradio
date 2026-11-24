@@ -1,5 +1,6 @@
 #include "device_settings.h"
 #include "settings_csv.h"
+#include "locale_fixture.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -17,12 +18,33 @@ static void reset_file(void)
     fclose(file);
 }
 
+static void test_locale_codes_survive_reboot_and_missing_packages(void)
+{
+    reset_file();
+    const device_language_t russian = test_locale("ru");
+    const device_language_t ukrainian = test_locale("uk");
+    assert(settings_csv_set(test_path, "language", "ru"));
+    device_settings_t settings;
+    assert(device_settings_init_at(&settings, test_path));
+    assert(settings.language == russian);
+    assert(device_settings_set_language(&settings, ukrainian));
+    assert(device_settings_init_at(&settings, test_path));
+    assert(settings.language == ukrainian);
+    assert(settings_csv_set(test_path, "language", "pt-BR"));
+    assert(device_settings_init_at(&settings, test_path));
+    assert(settings.language == DEVICE_LANGUAGE_EN);
+    char value[32];
+    assert(settings_csv_get(test_path, "language", value, sizeof(value)));
+    assert(strcmp(value, "pt-BR") == 0);
+    reset_file();
+}
+
 static void test_defaults_and_load(void)
 {
     reset_file();
     device_settings_t settings;
     assert(device_settings_init_at(&settings, test_path));
-    assert(settings.language == DEVICE_LANGUAGE_RU);
+    assert(settings.language == DEVICE_LANGUAGE_EN);
     assert(settings.home_screen == DEVICE_HOME_SCREEN_TEXT);
     assert(!settings.flip_vertical && !settings.flip_horizontal);
     /* Off by default: the profile's measured inversion is the baseline, and
@@ -103,7 +125,7 @@ static void test_invalid_values_do_not_change_model(void)
     assert(!device_settings_set_buffer_view(&settings, (device_buffer_view_t)99));
     assert(!device_settings_set_files_end(&settings, (device_files_end_t)99));
     assert(settings.files_end == DEVICE_FILES_END_STOP);
-    assert(settings.language == DEVICE_LANGUAGE_RU);
+    assert(settings.language == DEVICE_LANGUAGE_EN);
     assert(settings.home_screen == DEVICE_HOME_SCREEN_TEXT);
     assert(!settings.flip_vertical);
     assert(settings.buffer_view == DEVICE_BUFFER_VIEW_TEXT);
@@ -1147,6 +1169,7 @@ static void test_tone_and_loudness_persist(void)
 
 int main(void)
 {
+    test_locale_codes_survive_reboot_and_missing_packages();
     test_tone_and_loudness_persist();
     test_the_fm_level_persists();
     test_the_balance_persists();
