@@ -696,6 +696,54 @@ const char *board_config_display_name(unsigned display)
     return NULL;
 }
 
+void board_config_build_summary(const board_config_t *config,
+                                char text[BOARD_BUILD_SUMMARY_SIZE])
+{
+    static const char *const displays[] = {
+        [DISPLAY_ILI9341_320_240] = "ILI9341", [DISPLAY_ILI9341_240_320] = "ILI9341",
+        [DISPLAY_ST7789_320_240] = "ST7789", [DISPLAY_ST7789_240_320] = "ST7789",
+        [DISPLAY_ST7789_320_170] = "ST7789", [DISPLAY_NV3007_428_142] = "NV3007",
+        [DISPLAY_ILI9488_480_320] = "ILI9488", [DISPLAY_ILI9488_320_480] = "ILI9488",
+        [DISPLAY_ST7796S_480_320] = "ST7796S", [DISPLAY_ST7796S_320_480] = "ST7796S",
+    };
+    static const char *const dacs[] = {
+        [DAC_PCM5102] = "PCM5102", [DAC_UDA1334A] = "UDA1334A",
+        [DAC_SSM3582] = "SSM3582", [DAC_MAX98357A] = "MAX98357A",
+    };
+    const char *const parts[] = {
+        config->display < sizeof(displays) / sizeof(displays[0]) ? displays[config->display] : NULL,
+        config->dac < sizeof(dacs) / sizeof(dacs[0]) ? dacs[config->dac] : NULL,
+        config->fm_tuner == FM_TUNER_RDA5807
+            ? (config->fm_i2s != BOARD_BUS_NONE ? "RDA5807FP" : "RDA5807") : NULL,
+        config->rtc == RTC_CHIP_DS3231 ? "DS3231" : config->rtc == RTC_CHIP_DS1307 ? "DS1307" : NULL,
+        config->adc == AUDIO_ADC_PCM1808 ? "PCM1808" : NULL,
+        config->touch == TOUCH_CHIP_FT6336U ? "FT6336U" : NULL,
+        config->bluetooth == BLUETOOTH_JRADIO_BT ? "jradio-bt" : NULL,
+        config->spdif_out >= 0 ? "SPDIF" : NULL,
+        config->sd_cs >= 0 ? "SD" : NULL,
+        config->usb_dp >= 0 && config->usb_dm >= 0 ? "USB" : NULL,
+        config->ir_receiver >= 0 ? "IR" : NULL,
+        config->dlna == 1U ? "DLNA" : NULL,
+        config->yandex_music == 1U ? "Yandex Music" : NULL,
+    };
+    _Static_assert(sizeof("ST7796S/MAX98357A/RDA5807FP/DS3231/PCM1808/FT6336U/"
+                          "jradio-bt/SPDIF/SD/USB/IR/DLNA/Yandex Music") <= BOARD_BUILD_SUMMARY_SIZE,
+                   "Build summary buffer is too small");
+    char *end = text;
+    for (size_t i = 0U; i < sizeof(parts) / sizeof(parts[0]); ++i) {
+        if (parts[i] == NULL) continue;
+        const size_t len = strlen(parts[i]);
+        if (len + (end != text) >= BOARD_BUILD_SUMMARY_SIZE - (size_t)(end - text)) {
+            *end = '\0';
+            return;
+        }
+        if (end != text) *end++ = '/';
+        memcpy(end, parts[i], len);
+        end += len;
+    }
+    *end = '\0';
+}
+
 const char *board_config_issue_name(board_issue_code_t code)
 {
     switch (code) {

@@ -550,8 +550,9 @@ static lv_obj_t *s_settings_web_hint;
  * the settings loop is already running, so a screen of its own would mean a
  * second copy of everything that keeps one up to date. */
 static lv_obj_t *s_about_overlay;
+static lv_obj_t *s_about_body;
+enum { UI_ABOUT_ROWS = 7 };
 static lv_obj_t *s_about_rows[UI_ABOUT_ROWS];
-static lv_obj_t *s_about_author;
 static lv_obj_t *s_about_hint;
 static bool s_about_open;
 static uint32_t s_about_opened_ms;
@@ -4278,13 +4279,6 @@ static void ui_create_settings_screen(void)
     ui_create_about_overlay();
 }
 
-/* The About overlay: what the device is, and who to write to about it.
- *
- * Built once with the screen rather than on demand. LVGL's heap is 192 KB in
- * PSRAM since the pool moved there, and seven labels are nothing against it -
- * building and tearing down on every press would trade that for a chance of
- * failing at the moment somebody asked, and a failed lv_obj_create is a hang
- * in the refresh rather than an error anybody sees. */
 static void ui_create_about_overlay(void)
 {
     s_about_overlay = lv_obj_create(s_settings_screen);
@@ -4293,6 +4287,7 @@ static void ui_create_about_overlay(void)
     lv_obj_set_size(s_about_overlay, TFT_WIDTH, TFT_HEIGHT);
     ui_paint(s_about_overlay, UI_PAINT_BG, UI_ROLE_GROUND, 0);
     lv_obj_set_style_bg_opa(s_about_overlay, LV_OPA_COVER, 0);
+    lv_obj_remove_flag(s_about_overlay, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_flag(s_about_overlay, LV_OBJ_FLAG_HIDDEN);
 
     lv_obj_t *title = lv_label_create(s_about_overlay);
@@ -4301,18 +4296,25 @@ static void ui_create_about_overlay(void)
     lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_style_text_font(title, UI_FONT_TITLE, 0);
     ui_paint(title, UI_PAINT_TEXT, UI_ROLE_ACCENT, 0);
-    /* Not translated, and not "О устройстве": it is the name of the thing. */
-    lv_label_set_text(title, "jradio");
+    lv_label_set_text(title, "yiRadio");
+
+    s_about_body = lv_obj_create(s_about_overlay);
+    lv_obj_remove_style_all(s_about_body);
+    lv_obj_set_pos(s_about_body, UI_CONTENT_X, UI_ABOUT_ROW_Y);
+    lv_obj_set_size(s_about_body, UI_CONTENT_W, UI_ABOUT_BODY_H);
+    lv_obj_set_scroll_dir(s_about_body, LV_DIR_VER);
+    lv_obj_set_scrollbar_mode(s_about_body, LV_SCROLLBAR_MODE_AUTO);
+    lv_obj_set_style_width(s_about_body, 3, LV_PART_SCROLLBAR);
+    lv_obj_set_style_bg_opa(s_about_body, LV_OPA_COVER, LV_PART_SCROLLBAR);
+    ui_paint(s_about_body, UI_PAINT_BG, UI_ROLE_DIM, LV_PART_SCROLLBAR);
+    lv_obj_set_style_pad_right(s_about_body, 7, 0);
+    lv_obj_set_style_pad_row(s_about_body, 2, 0);
+    lv_obj_set_flex_flow(s_about_body, LV_FLEX_FLOW_COLUMN);
 
     for (size_t row = 0U; row < UI_ABOUT_ROWS; ++row) {
-        s_about_rows[row] = lv_label_create(s_about_overlay);
-        lv_obj_set_pos(s_about_rows[row], UI_CONTENT_X,
-                       UI_ABOUT_ROW_Y + (int)row * UI_ABOUT_ROW_PITCH);
-        lv_obj_set_width(s_about_rows[row], UI_CONTENT_W);
-        /* One line each, dotted rather than wrapped: a version that did not
-         * fit would otherwise push every row below it down. */
-        lv_obj_set_height(s_about_rows[row], UI_SRC_LINE_H);
-        lv_label_set_long_mode(s_about_rows[row], LV_LABEL_LONG_DOT);
+        s_about_rows[row] = lv_label_create(s_about_body);
+        lv_obj_set_width(s_about_rows[row], LV_PCT(100));
+        lv_label_set_long_mode(s_about_rows[row], LV_LABEL_LONG_WRAP);
         ui_paint(s_about_rows[row], UI_PAINT_TEXT, UI_ROLE_TEXT, 0);
         lv_label_set_text(s_about_rows[row], "");
     }
@@ -4320,13 +4322,11 @@ static void ui_create_about_overlay(void)
      * problem - so it is the only one that is not the ordinary text colour. */
     ui_paint(s_about_rows[UI_ABOUT_ROWS - 1U], UI_PAINT_TEXT, UI_ROLE_ACCENT, 0);
 
-    s_about_author = lv_label_create(s_about_overlay);
-    lv_obj_set_pos(s_about_author, UI_CONTENT_X, UI_ABOUT_AUTHOR_Y);
-    lv_obj_set_width(s_about_author, UI_CONTENT_W);
-    lv_obj_set_style_text_align(s_about_author, LV_TEXT_ALIGN_CENTER, 0);
-    lv_label_set_long_mode(s_about_author, LV_LABEL_LONG_DOT);
-    ui_paint(s_about_author, UI_PAINT_TEXT, UI_ROLE_SECONDARY, 0);
-    lv_label_set_text(s_about_author, VERSION_INFO_AUTHOR);
+    lv_obj_t *attribution = lv_label_create(s_about_body);
+    lv_obj_set_width(attribution, LV_PCT(100));
+    lv_label_set_long_mode(attribution, LV_LABEL_LONG_WRAP);
+    ui_paint(attribution, UI_PAINT_TEXT, UI_ROLE_SECONDARY, 0);
+    lv_label_set_text_static(attribution, VERSION_INFO_ATTRIBUTION);
 
     lv_obj_t *hint = lv_label_create(s_about_overlay);
     lv_obj_set_pos(hint, UI_CONTENT_X, UI_ABOUT_HINT_Y);
@@ -4613,11 +4613,13 @@ static void ui_render_about(void)
     ui_about_build(&info, s_device_settings.language, &lines);
 
     const char *const text[UI_ABOUT_ROWS] = {
-        lines.firmware, lines.built, lines.web, lines.idf, lines.notice,
+        lines.firmware, lines.build, lines.built, lines.web, lines.idf, lines.compiler, lines.notice,
     };
     for (size_t row = 0U; row < UI_ABOUT_ROWS; ++row) {
         lv_label_set_text(s_about_rows[row], text[row]);
     }
+    if (lines.notice[0] == '\0') lv_obj_add_flag(s_about_rows[UI_ABOUT_ROWS - 1U], LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_remove_flag(s_about_rows[UI_ABOUT_ROWS - 1U], LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(s_about_hint, ui_text(DEVICE_TEXT_PRESS_TO_RETURN));
 }
 
@@ -4628,6 +4630,15 @@ static void ui_show_about(void)
     s_about_opened_ms = ui_tick_get_ms();
     ui_render_about();
     lv_obj_clear_flag(s_about_overlay, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_update_layout(s_about_body);
+    lv_obj_scroll_to_y(s_about_body, 0, LV_ANIM_OFF);
+}
+
+/* Positive steps reveal later rows. */
+static void ui_scroll_about(int steps)
+{
+    s_about_opened_ms = ui_tick_get_ms();
+    lv_obj_scroll_by_bounded(s_about_body, 0, -steps * UI_SRC_LINE_H, LV_ANIM_OFF);
 }
 
 static void ui_hide_about(void)
@@ -8407,12 +8418,12 @@ static void ui_handle_input(board_input_action_t action)
     }
     if (s_settings_open) {
         if (s_about_open) {
-            /* One thing on screen and one way off it, like the QR overlay:
-             * the press or the hold returns, and the knob has nothing to
-             * move. */
             if (action == BOARD_INPUT_ACTION_ENCODER_BUTTON ||
                 action == BOARD_INPUT_ACTION_ENCODER_LONG) {
                 ui_hide_about();
+            } else if (action == BOARD_INPUT_ACTION_ENCODER_LEFT ||
+                       action == BOARD_INPUT_ACTION_ENCODER_RIGHT) {
+                ui_scroll_about(action == BOARD_INPUT_ACTION_ENCODER_RIGHT ? 1 : -1);
             }
             return;
         }
@@ -10196,6 +10207,11 @@ static void ui_touch_drag_quick(const ui_touch_event_t *event)
 
 static void ui_touch_drag(ui_touch_target_t target, const ui_touch_event_t *event)
 {
+    if (target == UI_TOUCH_TARGET_OVERLAY && s_about_open) {
+        if (event->coasting) ui_touch_gesture_stop_coast(&s_touch);
+        else if (event->axis == UI_TOUCH_AXIS_VERTICAL) ui_scroll_about(-event->steps);
+        return;
+    }
     if (target == UI_TOUCH_TARGET_PLAYER) {
         ui_touch_drag_player(event);
         return;

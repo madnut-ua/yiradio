@@ -27,6 +27,7 @@
 #define VERSION_INFO_STRING_MAX 32U
 /* "YYYY-MM-DD", or the app header's "Mmm dd yyyy". */
 #define VERSION_INFO_DATE_MAX 16U
+#define VERSION_INFO_BUILD_SIZE 128U
 
 typedef struct {
     char version[VERSION_INFO_STRING_MAX + 1U];
@@ -43,6 +44,8 @@ typedef struct {
     version_info_part_t web;
     /* The framework the firmware was built with, from the same app header. */
     char idf[VERSION_INFO_STRING_MAX + 1U];
+    char build[VERSION_INFO_BUILD_SIZE];
+    const char *compiler;
 } version_info_t;
 
 /* Reads both. The web half touches the filesystem, so this is not for the
@@ -53,10 +56,7 @@ void version_info_read(version_info_t *info);
  * missing: unknown is not a match. */
 bool version_info_matched(const version_info_t *info);
 
-/* The one contact address the device shows. Here rather than in the screen
- * that draws it, because the web page shows the same string and two copies
- * would eventually differ. */
-#define VERSION_INFO_AUTHOR "denis.zheleznov@gmail.com"
+#define VERSION_INFO_ATTRIBUTION "yiRadio is based on jRadio project."
 
 /* Parses the stamp tools/stamp_version.py writes: {"version":...,"built":...}.
  *

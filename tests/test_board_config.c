@@ -292,8 +292,44 @@ static void test_old_partition_does_not_inherit_the_dual_encoder_wiring(void)
     assert(config.volume_encoder_edges == 4);
 }
 
+static void test_about_build_summary(void)
+{
+    board_config_t config;
+    board_config_clear(&config);
+    config.dac = DAC_NONE;
+    char summary[BOARD_BUILD_SUMMARY_SIZE];
+    board_config_build_summary(&config, summary);
+    assert(strcmp(summary, "") == 0);
+
+    config.display = DISPLAY_ST7789_320_170;
+    config.dac = DAC_MAX98357A;
+    config.fm_tuner = FM_TUNER_RDA5807;
+    config.fm_i2s = 0;
+    board_config_build_summary(&config, summary);
+    assert(strcmp(summary, "ST7789/MAX98357A/RDA5807FP") == 0);
+
+    config.display = DISPLAY_ST7796S_320_480;
+    config.dac = DAC_UDA1334A;
+    config.fm_i2s = BOARD_BUS_NONE;
+    config.rtc = RTC_CHIP_DS1307;
+    config.adc = AUDIO_ADC_PCM1808;
+    config.touch = TOUCH_CHIP_FT6336U;
+    config.bluetooth = BLUETOOTH_JRADIO_BT;
+    config.spdif_out = 1;
+    config.sd_cs = 2;
+    config.usb_dp = 20;
+    config.usb_dm = 19;
+    config.ir_receiver = 3;
+    config.dlna = FEATURE_ON;
+    config.yandex_music = FEATURE_ON;
+    board_config_build_summary(&config, summary);
+    assert(strcmp(summary, "ST7796S/UDA1334A/RDA5807/DS1307/PCM1808/FT6336U/"
+                           "jradio-bt/SPDIF/SD/USB/IR/DLNA/Yandex Music") == 0);
+}
+
 int main(void)
 {
+    test_about_build_summary();
     test_old_partition_does_not_inherit_the_dual_encoder_wiring();
     test_which_dacs_a_binary_takes();
     test_pull_ups_off_in_an_old_file_are_read_past();

@@ -25,13 +25,14 @@
   const wifiChosenName = document.querySelector('#wifi-chosen-name');
   const wifiSsidRow = document.querySelector('#wifi-ssid-row');
   const aboutFirmware = document.querySelector('#about-firmware');
+  const aboutBuild = document.querySelector('#about-build');
   const aboutBuilt = document.querySelector('#about-built');
   const aboutWeb = document.querySelector('#about-web');
   const aboutIdf = document.querySelector('#about-idf');
+  const aboutCompiler = document.querySelector('#about-compiler');
   const aboutModuleLabel = document.querySelector('#about-module-label');
   const aboutModule = document.querySelector('#about-module');
   const aboutNotice = document.querySelector('#about-notice');
-  const aboutAuthor = document.querySelector('#about-author');
   const yandexStatus = document.querySelector('#yandex-status');
   const yandexCodeBlock = document.querySelector('#yandex-code-block');
   const yandexUrl = document.querySelector('#yandex-url');
@@ -1898,9 +1899,11 @@
     const web = isObject(payload.web) ? payload.web : {};
     const named = (value) => (typeof value === 'string' && value ? value : t('common.unknown'));
     aboutFirmware.textContent = named(firmware.version);
+    aboutBuild.textContent = named(payload.build);
     aboutBuilt.textContent = named(firmware.built);
     aboutWeb.textContent = named(web.version);
     aboutIdf.textContent = named(payload.idf);
+    aboutCompiler.textContent = named(payload.compiler);
     /* The Bluetooth module's firmware: a line only while a module answers,
        since a board without one has nothing to say here. */
     const module = isObject(payload.module) ? payload.module : {};
@@ -1917,10 +1920,6 @@
     aboutNotice.textContent = mismatched
       ? t('about.mismatch')
       : '';
-    if (typeof payload.author === 'string' && payload.author) {
-      aboutAuthor.textContent = payload.author;
-      aboutAuthor.href = `mailto:${payload.author}`;
-    }
   }
 
   function refreshAbout() {

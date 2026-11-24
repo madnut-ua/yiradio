@@ -164,8 +164,6 @@
  * the edge as they go. Five rows end at 127, a pixel above the author. */
 #define UI_ABOUT_TITLE_Y 4
 #define UI_ABOUT_ROW_Y 32
-#define UI_ABOUT_ROW_PITCH UI_SRC_LINE_H
-#define UI_ABOUT_AUTHOR_Y 128
 #define UI_ABOUT_HINT_Y 149
 
 /* The Yandex pairing screen: the status line right under the strip and the

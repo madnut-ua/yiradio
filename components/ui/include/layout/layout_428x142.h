@@ -146,8 +146,6 @@
  * allow, and the two bottom lines on the edge. */
 #define UI_ABOUT_TITLE_Y 2
 #define UI_ABOUT_ROW_Y 24
-#define UI_ABOUT_ROW_PITCH 16
-#define UI_ABOUT_AUTHOR_Y 104
 #define UI_ABOUT_HINT_Y 123
 
 /* Yandex pairing: the 320x170 arrangement, squeezed. */
