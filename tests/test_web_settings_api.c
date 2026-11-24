@@ -7,6 +7,7 @@
 #include "device_settings.h"
 #include "settings_csv.h"
 #include "web_settings.h"
+#include "locale_fixture.h"
 
 static const char *test_path = "/tmp/jradio-web-settings.csv";
 
@@ -30,13 +31,16 @@ static bool parse_one(const char *body, web_settings_change_t *change)
 
 static void test_choices_are_named_not_numbered(void)
 {
+    (void)test_locale("ru");
     web_settings_change_t change;
     assert(parse_one("{\"field\":\"language\",\"value\":\"en\"}", &change));
     assert(change.field == WEB_SETTINGS_FIELD_LANGUAGE);
-    assert(change.value == DEVICE_LANGUAGE_EN);
+    assert(strcmp(change.text, "en") == 0);
 
     assert(parse_one("{\"field\":\"language\",\"value\":\"ru\"}", &change));
-    assert(change.value == DEVICE_LANGUAGE_RU);
+    assert(strcmp(change.text, "ru") == 0);
+    assert(parse_one("{\"field\":\"language\",\"value\":\"uk\"}", &change));
+    assert(strcmp(change.text, "uk") == 0);
 
     assert(parse_one("{\"field\":\"home_screen\",\"value\":\"feed\"}", &change));
     assert(change.field == WEB_SETTINGS_FIELD_HOME_SCREEN);
@@ -381,7 +385,7 @@ static void test_apply_writes_through_to_the_file(void)
     assert(reloaded.buffer_view == DEVICE_BUFFER_VIEW_GRAPH);
     assert(reloaded.weather_provider == DEVICE_WEATHER_WTTR);
     assert(strcmp(reloaded.weather_latitude, "59.93") == 0);
-    assert(strcmp(reloaded.weather_longitude, "37.62") == 0);
+    assert(strcmp(reloaded.weather_longitude, "30.52") == 0);
     assert(reloaded.screensaver == DEVICE_SCREENSAVER_CLOCK);
     assert(reloaded.screensaver_seconds == 600);
     assert(reloaded.screensaver_brightness == 10);
@@ -421,9 +425,7 @@ static void test_document_names_what_the_build_has(void)
 
     web_settings_view_t view;
     web_settings_make_view(&view, &settings, true, false, false, false);
-    /* Room for the zone list as well: the document carries every zone the
-       firmware knows, which the page builds its menu from. The device's
-       buffer for it, WEB_SERVER_FILE_CHUNK_SIZE in web_server.c. */
+    /* Match the device's WEB_SERVER_FILE_CHUNK_SIZE. */
     char document[4096];
     const web_settings_document_t extras = {
         .ntp_server = settings.ntp_server,
@@ -506,26 +508,20 @@ static void test_document_names_what_the_build_has(void)
     assert(strstr(document, "\"tone_min\":-12") != NULL);
     assert(strstr(document, "\"tone_max\":12") != NULL);
 
-    /* The clock: the zone as an id and the server as it stands, plus the list
-       to choose from - which is sent rather than written into the page, so
-       that adding a zone is one line of firmware. */
-    assert(strstr(document, "\"timezone\":\"europe/moscow\"") != NULL);
+    assert(strstr(document, "\"timezone\":\"Europe/Kyiv\"") != NULL);
     assert(strstr(document, "\"ntp_server\":\"pool.ntp.org\"") != NULL);
     /* The name as stored - empty here - beside the built-in one the page
        shows in its place. */
     assert(strstr(document, "\"device_name\":\"\"") != NULL);
     assert(strstr(document, "\"device_name_default\":\"jradio-B670\"") != NULL);
-    assert(strstr(document, "\"timezones\":[{\"id\":") != NULL);
-    /* The document was built for an English device above, so the zone names
-       are English too: a page that said "Москва" beside "Brightness" would be
-       the half-translated state this pass exists to end. */
-    assert(strstr(document, "\"id\":\"europe/moscow\",\"label\":\"Moscow (UTC+3)\"") != NULL);
+    assert(strstr(document, "\"tzdb\":\"") != NULL);
+    assert(strstr(document, "\"timezones\":[{\"id\":\"Europe/Kyiv\"}]") != NULL);
 
     /* The weather: the service in the live part, the rest only here. The
        key is reported as set or not and never as itself. */
     assert(strstr(document, "\"weather\":\"off\"") != NULL);
-    assert(strstr(document, "\"weather_latitude\":\"55.75\"") != NULL);
-    assert(strstr(document, "\"weather_longitude\":\"37.62\"") != NULL);
+    assert(strstr(document, "\"weather_latitude\":\"50.45\"") != NULL);
+    assert(strstr(document, "\"weather_longitude\":\"30.52\"") != NULL);
     assert(strstr(document, "\"openweathermap_key_set\":true") != NULL);
     assert(strstr(document, "\"openweathermap_key\":") == NULL);
     assert(strstr(document, "\"weather_state\":\"ok\"") != NULL);
@@ -547,6 +543,12 @@ static void test_document_names_what_the_build_has(void)
     assert(strstr(document, "\"openweathermap_key_set\":false") != NULL);
     assert(strstr(document, "\"weather_state\":\"no_key\"") != NULL);
     assert(strstr(document, "\"weather_report\":null") != NULL);
+
+    assert(device_settings_set_timezone(&settings, "Etc/GMT-1"));
+    web_settings_make_view(&view, &settings, true, false, false, false);
+    assert(view.timezone > UINT8_MAX);
+    assert(web_settings_serialize(document, sizeof(document), &view, &extras) > 0U);
+    assert(strstr(document, "\"timezone\":\"Etc/GMT-1\"") != NULL);
 
     // Truncation is never handed back as a short document.
     char tight[32];
@@ -593,7 +595,7 @@ static void test_view_comparison_notices_every_field(void)
     other.theme = (uint8_t)(base.theme + 1U);
     assert(!web_settings_view_equal(&base, &other));
     other = base;
-    other.language = DEVICE_LANGUAGE_EN;
+    other.language = test_locale("uk");
     assert(!web_settings_view_equal(&base, &other));
     other = base;
     other.home_screen = DEVICE_HOME_SCREEN_FEED;

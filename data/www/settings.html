@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark light">
   <meta name="theme-color" content="#0c0f13">
-  <title>jRadio — настройки</title>
+  <title>yiRadio — settings</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3CradialGradient id='g' cx='50%25' cy='45%25' r='55%25'%3E%3Cstop offset='0%25' stop-color='%237bffb0'/%3E%3Cstop offset='55%25' stop-color='%2322e06a'/%3E%3Cstop offset='100%25' stop-color='%230a8f3c'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='%23121417'/%3E%3Ccircle cx='16' cy='16' r='11' fill='url(%23g)'/%3E%3Cpath d='M16 16 12.9 5.6a11 11 0 0 1 6.2 0Z' fill='%23103a22'/%3E%3Ccircle cx='16' cy='16' r='3.7' fill='%230d1a12'/%3E%3Ccircle cx='16' cy='16' r='12.3' fill='none' stroke='%238c96a3' stroke-width='1.4'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/style.css">
   <script src="/theme.js"></script>
@@ -14,7 +14,7 @@
 <body data-i18n-page="title.settings">
   <header class="site-header">
     <div class="header-inner">
-      <a class="brand" href="/" data-i18n-aria="nav.back_to_player" aria-label="Вернуться к плееру">
+      <a class="brand" href="/" data-i18n-aria="nav.back_to_player" aria-label="Back to the player">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 32 32" focusable="false">
             <defs>
@@ -31,19 +31,19 @@
             <path class="eye-ticks" d="M16 1.6v2.2M30.4 16h-2.2M1.6 16h2.2"/>
           </svg>
         </span>
-        <span class="brand-word">jRadio</span>
+        <span class="brand-word" data-i18n="brand.name">yiRadio</span>
       </a>
 
-      <nav class="source-tabs" data-i18n-aria="nav.sections" aria-label="Разделы">
-        <a class="source-tab" href="/" data-i18n="nav.player">Плеер</a>
-        <a class="source-tab" href="/playlist" data-i18n="nav.playlist">Станции</a>
-        <a class="source-tab is-active" href="/settings" aria-current="page" data-i18n="nav.settings">Настройки</a>
+      <nav class="source-tabs" data-i18n-aria="nav.sections" aria-label="Sections">
+        <a class="source-tab" href="/" data-i18n="nav.player">Player</a>
+        <a class="source-tab" href="/playlist" data-i18n="nav.playlist">Stations</a>
+        <a class="source-tab is-active" href="/settings" aria-current="page" data-i18n="nav.settings">Settings</a>
       </nav>
 
       <div class="header-actions">
-        <span id="socket-state" class="socket-state is-connecting" role="status" aria-live="polite" data-i18n="socket.connecting">Подключение…</span>
+        <span id="socket-state" class="socket-state is-connecting" role="status" aria-live="polite" data-i18n="socket.connecting">Connecting…</span>
         <button id="theme-toggle" class="icon-button theme-toggle" type="button"
-                data-i18n-aria="theme.toggle" aria-label="Сменить тему">
+                data-i18n-aria="theme.toggle" aria-label="Switch theme">
           <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="M20 14.5A8 8 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/>
           </svg>
@@ -62,11 +62,11 @@
     <div class="update-banner-head">
       <p class="update-banner-line">
         <strong id="update-banner-title"></strong>
-        <a id="update-banner-more" href="/settings#update" data-i18n="update.whats_new">Что нового</a>
+        <a id="update-banner-more" href="/settings#update" data-i18n="update.whats_new">What's new</a>
       </p>
       <div class="update-banner-actions">
-        <button id="update-banner-install" class="primary-button" type="button" data-i18n="update.install">Обновить</button>
-        <button id="update-banner-skip" class="secondary-button" type="button" data-i18n="update.skip">Пропустить</button>
+        <button id="update-banner-install" class="primary-button" type="button" data-i18n="update.install">Update</button>
+        <button id="update-banner-skip" class="secondary-button" type="button" data-i18n="update.skip">Skip</button>
       </div>
     </div>
     <p id="update-banner-status" class="settings-status update-status"></p>
@@ -74,8 +74,8 @@
 
   <main class="page-shell">
     <div class="page-heading">
-      <h1 data-i18n="nav.settings">Настройки</h1>
-      <p data-i18n="settings.lead">То же, что на экране устройства, плюс сеть и аккаунт.</p>
+      <h1 data-i18n="nav.settings">Settings</h1>
+      <p data-i18n="settings.lead">The same as on the device screen, plus the network and the account.</p>
     </div>
 
     <div class="settings-columns">
@@ -84,55 +84,54 @@
           <div class="card-head">
             <button class="card-toggle" type="button" aria-expanded="true" aria-controls="device-body">
               <svg class="card-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 5 7 7-7 7"/></svg>
-              <h2 id="device-title" data-i18n="settings.device">Устройство</h2>
+              <h2 id="device-title" data-i18n="settings.device">Device</h2>
             </button>
-            <span id="device-status" class="settings-status" role="status" aria-live="polite" data-i18n="common.loading">Загрузка…</span>
+            <span id="device-status" class="settings-status" role="status" aria-live="polite" data-i18n="common.loading">Loading…</span>
           </div>
 
           <div class="card-body" id="device-body">
             <div id="device-fields">
               <div class="device-group">
-                <h3 data-i18n="settings.group_general">Общие</h3>
+                <h3 data-i18n="settings.group_general">General</h3>
                 <div class="device-row">
-                  <label for="device-language" data-i18n="settings.language">Язык</label>
-                  <select id="device-language" data-field="language">
-                    <option value="ru">Русский</option>
+                  <label for="device-language" data-i18n="settings.language">Language</label>
+                  <select id="device-language" data-field="language" disabled>
                     <option value="en">English</option>
                   </select>
                 </div>
                 <div class="device-row">
-                  <label for="device-name" data-i18n="settings.device_name">Имя устройства</label>
+                  <label for="device-name" data-i18n="settings.device_name">Device name</label>
                   <input id="device-name" type="text" spellcheck="false" autocapitalize="off"
                          autocomplete="off" maxlength="32" data-field="device_name">
                 </div>
-                <p class="field-note" id="device-name-note" data-i18n="settings.device_name_note_wifi">Так называется сеть Wi‑Fi устройства при первой настройке, латиницей — адрес имя.local в браузере. Пусто — имя из заводского номера.</p>
+                <p class="field-note" id="device-name-note" data-i18n="settings.device_name_note_wifi">What the device's Wi‑Fi network is called during first setup; in Latin letters, the name.local address in a browser. Empty means the built-in name.</p>
                 <div class="device-row" id="device-home-screen-row">
-                  <label for="device-home-screen" data-i18n="settings.home_screen">Главный экран</label>
+                  <label for="device-home-screen" data-i18n="settings.home_screen">Home screen</label>
                   <select id="device-home-screen" data-field="home_screen">
-                    <option value="text" data-i18n="settings.home_list">Список</option>
-                    <option value="feed" data-i18n="settings.home_feed">Лента</option>
+                    <option value="text" data-i18n="settings.home_list">List</option>
+                    <option value="feed" data-i18n="settings.home_feed">Feed</option>
                   </select>
                 </div>
                 <div class="device-row" id="device-feed-reverse-row">
-                  <label for="device-feed-reverse" data-i18n="settings.feed_reverse">Лента в обратную сторону</label>
+                  <label for="device-feed-reverse" data-i18n="settings.feed_reverse">Feed turns the other way</label>
                   <input id="device-feed-reverse" type="checkbox" data-field="feed_reverse">
                 </div>
                 <div class="device-row">
-                  <label for="device-scroll" data-i18n="settings.scroll">Скроллинг</label>
+                  <label for="device-scroll" data-i18n="settings.scroll">Scrolling</label>
                   <select id="device-scroll" data-field="scroll">
-                    <option value="bounce" data-i18n="settings.scroll_bounce">Влево-вправо</option>
-                    <option value="left" data-i18n="settings.scroll_left">Влево</option>
+                    <option value="bounce" data-i18n="settings.scroll_bounce">Back and forth</option>
+                    <option value="left" data-i18n="settings.scroll_left">Leftwards</option>
                   </select>
                 </div>
                 <div class="device-row">
-                  <label for="device-buffer-view" data-i18n="settings.buffer">Буфер</label>
+                  <label for="device-buffer-view" data-i18n="settings.buffer">Buffer</label>
                   <select id="device-buffer-view" data-field="buffer_view">
-                    <option value="text" data-i18n="settings.buffer_text">Текст</option>
-                    <option value="graph" data-i18n="settings.buffer_graph">График</option>
+                    <option value="text" data-i18n="settings.buffer_text">Text</option>
+                    <option value="graph" data-i18n="settings.buffer_graph">Graph</option>
                   </select>
                 </div>
                 <div class="device-row">
-                  <label for="device-autoplay" data-i18n="settings.autoplay">Автовоспроизведение</label>
+                  <label for="device-autoplay" data-i18n="settings.autoplay">Autoplay</label>
                   <input id="device-autoplay" type="checkbox" data-field="autoplay">
                 </div>
                 <!-- Only on a board that can be woken again: a power-on that
@@ -142,14 +141,14 @@
                   <input id="device-power-restore" type="checkbox" data-field="power_restore">
                 </div>
                 <div class="device-row">
-                  <label for="device-files-end" data-i18n="settings.files_end">Конец папки</label>
+                  <label for="device-files-end" data-i18n="settings.files_end">End of folder</label>
                   <select id="device-files-end" data-field="files_end">
-                    <option value="stop" data-i18n="settings.files_end_stop">Стоп</option>
-                    <option value="repeat" data-i18n="settings.files_end_repeat">Сначала</option>
+                    <option value="stop" data-i18n="settings.files_end_stop">Stop</option>
+                    <option value="repeat" data-i18n="settings.files_end_repeat">Start over</option>
                   </select>
                 </div>
                 <div class="device-row" id="device-yandex-row">
-                  <label for="device-yandex" data-i18n="settings.yandex">Яндекс Музыка</label>
+                  <label for="device-yandex" data-i18n="settings.yandex">Yandex Music</label>
                   <input id="device-yandex" type="checkbox" data-field="yandex_music">
                 </div>
                 <div class="device-row" id="device-dlna-row">
@@ -159,71 +158,76 @@
               </div>
 
               <div class="device-group">
-                <h3 data-i18n="settings.group_encoder">Энкодер</h3>
+                <h3 data-i18n="settings.group_encoder">Encoder</h3>
                 <div class="device-row">
-                  <label for="device-volume-step" data-i18n="settings.volume_step">Шаг громкости, %</label>
+                  <label for="device-volume-step" data-i18n="settings.volume_step">Volume step, %</label>
                   <span class="device-slider">
                     <input id="device-volume-step" type="range" min="1" max="20" step="1" data-field="volume_step">
                     <output id="device-volume-step-value">5</output>
                   </span>
                 </div>
-                <p class="field-note" data-i18n="note.volume_step">На сколько процентов меняется громкость за один щелчок энкодера и одно нажатие кнопки громкости пульта.</p>
+                <p class="field-note" data-i18n="note.volume_step">How many percent of volume one click of the encoder or one press of a remote volume key moves.</p>
               </div>
 
               <div class="device-group">
-                <h3 data-i18n="settings.group_switching">Смена станции</h3>
+                <h3 data-i18n="settings.group_switching">Changing station</h3>
                 <div class="device-row">
-                  <label for="device-soft-start" data-i18n="settings.soft_start">Плавный старт</label>
+                  <label for="device-soft-start" data-i18n="settings.soft_start">Soft start</label>
                   <input id="device-soft-start" type="checkbox" data-field="soft_start">
                 </div>
-                <p class="field-note" data-i18n="note.soft_start">При смене станции или источника звук нарастает от тишины до заданной громкости за две секунды. Смена трека в файлах и в волне идёт как раньше.</p>
+                <p class="field-note" data-i18n="note.soft_start">On a change of station or source the sound rises from silence to the set volume over two seconds. A change of track in files or in a wave is as before.</p>
               </div>
 
               <!-- Only on a board with a tuner: the device says so in `available`. -->
               <div class="device-group" id="device-fm-gain-block" hidden>
-                <h3 data-i18n="settings.group_fm">FM-радио</h3>
+                <h3 data-i18n="settings.group_fm">FM radio</h3>
                 <div class="device-row">
-                  <label for="device-fm-gain" data-i18n="settings.fm_gain">Уровень FM, дБ</label>
+                  <label for="device-fm-gain" data-i18n="settings.fm_gain">FM level, dB</label>
                   <span class="device-slider">
                     <input id="device-fm-gain" type="range" min="-6" max="12" step="1" data-field="fm_gain">
                     <output id="device-fm-gain-value">0</output>
                   </span>
                 </div>
-                <p class="field-note" data-i18n="note.fm_gain">Громкость FM относительно интернет-радио и файлов. Если FM заметно тише, поднимите; громкие места при большом усилении могут ограничиваться.</p>
+                <p class="field-note" data-i18n="note.fm_gain">FM's loudness against internet radio and files. Raise it if FM is noticeably quieter; at a high setting the loudest moments may be clipped.</p>
               </div>
 
               <!-- Only on a board with an S/PDIF output: the device says so in `available`. -->
               <div class="device-group" id="device-spdif-block" hidden>
-                <h3 data-i18n="settings.group_output">Выход звука</h3>
+                <h3 data-i18n="settings.group_output">Sound output</h3>
                 <div class="device-row">
-                  <label for="device-spdif-output" data-i18n="settings.spdif_output">Звук на S/PDIF</label>
+                  <label for="device-spdif-output" data-i18n="settings.spdif_output">Sound over S/PDIF</label>
                   <input id="device-spdif-output" type="checkbox" data-field="spdif_output">
                 </div>
-                <p class="field-note" data-i18n="note.spdif_output">Звук идёт на цифровой выход S/PDIF вместо встроенного ЦАП. Записи выше 48 кГц уходят на половине или четверти частоты. Bluetooth с телефона идёт сюда же, если провод DIN от модуля заведён на ESP32, иначе играет через ЦАП. Пока подключена колонка Bluetooth, звук у неё.</p>
+                <p class="field-note" data-i18n="note.spdif_output">The sound goes to the digital S/PDIF output instead of the built-in DAC. Recordings above 48 kHz go out at half or a quarter of their rate. Bluetooth from a phone comes here too when the module's DIN wire goes to the ESP32, otherwise it plays through the DAC. While a Bluetooth speaker is connected the sound is its.</p>
               </div>
 
               <div class="device-group" id="bt-output-block" hidden>
-                <h3 data-i18n="bt.group">Звук на Bluetooth</h3>
+                <h3 data-i18n="bt.group">Sound over Bluetooth</h3>
                 <div class="device-row">
-                  <label for="device-bt-output" data-i18n="bt.output">Отправлять на колонку</label>
+                  <label for="device-bt-output" data-i18n="bt.output">Send to a speaker</label>
                   <input id="device-bt-output" type="checkbox" data-field="bt_output">
                 </div>
-                <p id="bt-chosen" class="field-note"><span data-i18n="bt.chosen">Колонка:</span> <strong id="bt-chosen-name">—</strong> <span id="bt-chosen-state"></span></p>
+                <p id="bt-chosen" class="field-note"><span data-i18n="bt.chosen">Speaker:</span> <strong id="bt-chosen-name">—</strong> <span id="bt-chosen-state"></span></p>
                 <ul id="bt-speakers" class="saved-networks" hidden></ul>
                 <p id="bt-speakers-empty" class="empty-state" hidden></p>
                 <div class="settings-actions">
-                  <button id="bt-scan" class="secondary-button" type="button" data-i18n="bt.scan">Найти колонки</button>
+                  <button id="bt-scan" class="secondary-button" type="button" data-i18n="bt.scan">Find speakers</button>
                 </div>
               </div>
 
               <div class="device-group">
-                <h3 data-i18n="settings.group_time">Время</h3>
+                <h3 data-i18n="settings.group_time">Time</h3>
                 <div class="device-row">
-                  <label for="device-timezone" data-i18n="settings.timezone">Часовой пояс</label>
-                  <select id="device-timezone" data-field="timezone"></select>
+                  <label for="device-timezone" data-i18n="settings.timezone">Time zone</label>
+                  <select id="device-timezone" data-field="timezone" disabled></select>
                 </div>
+                <div id="device-timezone-filter" class="device-row" hidden>
+                  <label for="device-timezone-search" data-i18n="settings.timezone_search">Search time zones</label>
+                  <input id="device-timezone-search" type="search" autocomplete="off" spellcheck="false">
+                </div>
+                <p id="device-timezone-error" role="status" data-i18n="settings.timezone_unavailable" hidden>The time zone catalog is unavailable.</p>
                 <div class="device-row">
-                  <label for="device-ntp" data-i18n="settings.ntp">Сервер времени</label>
+                  <label for="device-ntp" data-i18n="settings.ntp">Time server</label>
                   <input id="device-ntp" type="text" inputmode="url" spellcheck="false"
                          autocapitalize="off" autocomplete="off" maxlength="63"
                          placeholder="pool.ntp.org" data-field="ntp_server">
@@ -232,15 +236,15 @@
                      here because this is the page about time. The countdown
                      is on the player page, where it is watched. -->
                 <div class="device-row">
-                  <label for="sleep-select" data-i18n="sleep.label">Таймер сна</label>
+                  <label for="sleep-select" data-i18n="sleep.label">Sleep timer</label>
                   <select id="sleep-select"></select>
                 </div>
               </div>
 
               <div class="device-group">
-                <h3 data-i18n="alarm.group">Будильник</h3>
+                <h3 data-i18n="alarm.group">Alarm clock</h3>
                 <div class="device-row">
-                  <label for="device-alarm" data-i18n="alarm.enabled">Включён</label>
+                  <label for="device-alarm" data-i18n="alarm.enabled">On</label>
                   <input id="device-alarm" type="checkbox" data-field="alarm_enabled">
                 </div>
                 <!-- The four rows below belong to the switch above and are
@@ -249,7 +253,7 @@
                      it was. They start hidden in the markup, or they would
                      flash into view before the device has answered. -->
                 <div class="device-row" id="device-alarm-time-row" hidden>
-                  <label for="device-alarm-time" data-i18n="alarm.time">Время</label>
+                  <label for="device-alarm-time" data-i18n="alarm.time">Time</label>
                   <input id="device-alarm-time" type="time" required data-field="alarm_time">
                 </div>
                 <!-- Seven buttons rather than seven checkboxes: they are one
@@ -258,38 +262,38 @@
                      for the reader; the bit each carries is the C library's,
                      Sunday as 0. -->
                 <div class="device-row device-row-stacked" id="device-alarm-days-row" hidden>
-                  <span class="row-label" data-i18n="alarm.days">Дни</span>
+                  <span class="row-label" data-i18n="alarm.days">Days</span>
                   <div id="device-alarm-days" class="day-chips">
-                    <button type="button" class="day-chip" data-day="1" data-i18n="alarm.mon">Пн</button>
-                    <button type="button" class="day-chip" data-day="2" data-i18n="alarm.tue">Вт</button>
-                    <button type="button" class="day-chip" data-day="3" data-i18n="alarm.wed">Ср</button>
-                    <button type="button" class="day-chip" data-day="4" data-i18n="alarm.thu">Чт</button>
-                    <button type="button" class="day-chip" data-day="5" data-i18n="alarm.fri">Пт</button>
-                    <button type="button" class="day-chip" data-day="6" data-i18n="alarm.sat">Сб</button>
-                    <button type="button" class="day-chip" data-day="0" data-i18n="alarm.sun">Вс</button>
+                    <button type="button" class="day-chip" data-day="1" data-i18n="alarm.mon">Mon</button>
+                    <button type="button" class="day-chip" data-day="2" data-i18n="alarm.tue">Tue</button>
+                    <button type="button" class="day-chip" data-day="3" data-i18n="alarm.wed">Wed</button>
+                    <button type="button" class="day-chip" data-day="4" data-i18n="alarm.thu">Thu</button>
+                    <button type="button" class="day-chip" data-day="5" data-i18n="alarm.fri">Fri</button>
+                    <button type="button" class="day-chip" data-day="6" data-i18n="alarm.sat">Sat</button>
+                    <button type="button" class="day-chip" data-day="0" data-i18n="alarm.sun">Sun</button>
                   </div>
                 </div>
                 <!-- What the alarm plays; the station row below is the chosen
                      source's own list, and FM is offered only with a tuner. The
                      last source is whatever was on, resumed as autoplay does. -->
                 <div class="device-row" id="device-alarm-source-row" hidden>
-                  <label for="device-alarm-source" data-i18n="alarm.source">Что включать</label>
+                  <label for="device-alarm-source" data-i18n="alarm.source">What to play</label>
                   <select id="device-alarm-source" data-field="alarm_source">
-                    <option value="radio" data-i18n="alarm.source_radio">Интернет-радио</option>
-                    <option value="fm" data-i18n="alarm.source_fm">FM-радио</option>
-                    <option value="last" data-i18n="alarm.source_last">Последний источник</option>
+                    <option value="radio" data-i18n="alarm.source_radio">Internet radio</option>
+                    <option value="fm" data-i18n="alarm.source_fm">FM radio</option>
+                    <option value="last" data-i18n="alarm.source_last">Last source</option>
                   </select>
                 </div>
                 <div class="device-row" id="device-alarm-station-row" hidden>
-                  <label for="device-alarm-station" data-i18n="alarm.station">Станция</label>
+                  <label for="device-alarm-station" data-i18n="alarm.station">Station</label>
                   <select id="device-alarm-station" data-field="alarm_station"></select>
                 </div>
                 <div class="device-row" id="device-alarm-fm-station-row" hidden>
-                  <label for="device-alarm-fm-station" data-i18n="alarm.fm_station">Станция FM</label>
+                  <label for="device-alarm-fm-station" data-i18n="alarm.fm_station">FM station</label>
                   <select id="device-alarm-fm-station" data-field="alarm_fm_station"></select>
                 </div>
                 <div class="device-row" id="device-alarm-volume-row" hidden>
-                  <label for="device-alarm-volume" data-i18n="alarm.volume">Громкость</label>
+                  <label for="device-alarm-volume" data-i18n="alarm.volume">Volume</label>
                   <span class="device-slider">
                     <input id="device-alarm-volume" type="range" min="0" max="100" step="5"
                            data-field="alarm_volume">
@@ -302,86 +306,86 @@
                    days, which puts the radio to sleep however it was turned
                    on. Its rows hang on its own switch, as the alarm's do. -->
               <div class="device-group">
-                <h3 data-i18n="alarm_off.group">Выключение по времени</h3>
+                <h3 data-i18n="alarm_off.group">Switch-off by time</h3>
                 <div class="device-row">
-                  <label for="device-alarm-off" data-i18n="alarm.enabled">Включён</label>
+                  <label for="device-alarm-off" data-i18n="alarm.enabled">On</label>
                   <input id="device-alarm-off" type="checkbox" data-field="alarm_off_enabled">
                 </div>
                 <div class="device-row" id="device-alarm-off-time-row" hidden>
-                  <label for="device-alarm-off-time" data-i18n="alarm.time">Время</label>
+                  <label for="device-alarm-off-time" data-i18n="alarm.time">Time</label>
                   <input id="device-alarm-off-time" type="time" required data-field="alarm_off_time">
                 </div>
                 <div class="device-row device-row-stacked" id="device-alarm-off-days-row" hidden>
-                  <span class="row-label" data-i18n="alarm.days">Дни</span>
+                  <span class="row-label" data-i18n="alarm.days">Days</span>
                   <div id="device-alarm-off-days" class="day-chips">
-                    <button type="button" class="day-chip" data-day="1" data-i18n="alarm.mon">Пн</button>
-                    <button type="button" class="day-chip" data-day="2" data-i18n="alarm.tue">Вт</button>
-                    <button type="button" class="day-chip" data-day="3" data-i18n="alarm.wed">Ср</button>
-                    <button type="button" class="day-chip" data-day="4" data-i18n="alarm.thu">Чт</button>
-                    <button type="button" class="day-chip" data-day="5" data-i18n="alarm.fri">Пт</button>
-                    <button type="button" class="day-chip" data-day="6" data-i18n="alarm.sat">Сб</button>
-                    <button type="button" class="day-chip" data-day="0" data-i18n="alarm.sun">Вс</button>
+                    <button type="button" class="day-chip" data-day="1" data-i18n="alarm.mon">Mon</button>
+                    <button type="button" class="day-chip" data-day="2" data-i18n="alarm.tue">Tue</button>
+                    <button type="button" class="day-chip" data-day="3" data-i18n="alarm.wed">Wed</button>
+                    <button type="button" class="day-chip" data-day="4" data-i18n="alarm.thu">Thu</button>
+                    <button type="button" class="day-chip" data-day="5" data-i18n="alarm.fri">Fri</button>
+                    <button type="button" class="day-chip" data-day="6" data-i18n="alarm.sat">Sat</button>
+                    <button type="button" class="day-chip" data-day="0" data-i18n="alarm.sun">Sun</button>
                   </div>
                 </div>
-                <p class="field-note" id="device-alarm-off-note" hidden data-i18n="alarm_off.note">В это время звук плавно гаснет, и радио засыпает до следующего будильника, как бы оно ни было включено.</p>
+                <p class="field-note" id="device-alarm-off-note" hidden data-i18n="alarm_off.note">At this time the sound fades out and the radio sleeps until the next alarm, however it was turned on.</p>
               </div>
 
               <div class="device-group">
-                <h3 data-i18n="settings.group_weather">Погода</h3>
+                <h3 data-i18n="settings.group_weather">Weather</h3>
                 <div class="device-row">
-                  <label for="device-weather" data-i18n="settings.weather">Источник</label>
+                  <label for="device-weather" data-i18n="settings.weather">Source</label>
                   <select id="device-weather" data-field="weather">
-                    <option value="off" data-i18n="settings.weather_off">Выключено</option>
+                    <option value="off" data-i18n="settings.weather_off">Off</option>
                     <option value="open_meteo">Open-Meteo</option>
                     <option value="wttr">wttr.in</option>
                     <option value="openweathermap">OpenWeatherMap</option>
                   </select>
                 </div>
                 <div class="device-row">
-                  <label for="device-weather-latitude" data-i18n="settings.latitude">Широта</label>
+                  <label for="device-weather-latitude" data-i18n="settings.latitude">Latitude</label>
                   <input id="device-weather-latitude" type="text" inputmode="decimal" spellcheck="false"
                          autocapitalize="off" autocomplete="off" maxlength="15"
-                         placeholder="55.75" data-field="weather_latitude">
+                         placeholder="50.45" data-field="weather_latitude">
                 </div>
                 <div class="device-row">
-                  <label for="device-weather-longitude" data-i18n="settings.longitude">Долгота</label>
+                  <label for="device-weather-longitude" data-i18n="settings.longitude">Longitude</label>
                   <input id="device-weather-longitude" type="text" inputmode="decimal" spellcheck="false"
                          autocapitalize="off" autocomplete="off" maxlength="15"
-                         placeholder="37.62" data-field="weather_longitude">
+                         placeholder="30.52" data-field="weather_longitude">
                 </div>
                 <div class="device-row" id="device-weather-key-row" hidden>
-                  <label for="device-weather-key" data-i18n="settings.owm_key">Ключ OpenWeatherMap</label>
+                  <label for="device-weather-key" data-i18n="settings.owm_key">OpenWeatherMap key</label>
                   <input id="device-weather-key" type="password" spellcheck="false"
                          autocapitalize="off" autocomplete="off" maxlength="64"
                          data-field="openweathermap_key">
                 </div>
                 <div class="device-row" id="device-weather-now-row" hidden>
-                  <span class="row-label" data-i18n="settings.weather_now">Сейчас</span>
+                  <span class="row-label" data-i18n="settings.weather_now">Now</span>
                   <span id="device-weather-now" class="row-value"></span>
                 </div>
               </div>
 
               <div class="device-group">
-                <h3 data-i18n="settings.group_display">Экран</h3>
+                <h3 data-i18n="settings.group_display">Display</h3>
                 <div class="device-row">
-                  <label for="device-brightness" data-i18n="settings.brightness">Яркость</label>
+                  <label for="device-brightness" data-i18n="settings.brightness">Brightness</label>
                   <span class="device-slider">
                     <input id="device-brightness" type="range" min="10" max="100" step="5" data-field="brightness">
                     <output id="device-brightness-value">50</output>
                   </span>
                 </div>
                 <div class="device-row">
-                  <label for="device-screensaver" data-i18n="settings.screensaver">Заставка</label>
+                  <label for="device-screensaver" data-i18n="settings.screensaver">Screensaver</label>
                   <select id="device-screensaver" data-field="screensaver">
-                    <option value="off" data-i18n="settings.screensaver_off">Нет</option>
-                    <option value="dim" data-i18n="settings.screensaver_dim">Затемнение</option>
-                    <option value="blank" data-i18n="settings.screensaver_blank">Чёрный экран</option>
-                    <option value="clock" data-i18n="settings.screensaver_clock">Часы</option>
-                    <option value="weather" data-i18n="settings.screensaver_weather">Погода</option>
+                    <option value="off" data-i18n="settings.screensaver_off">None</option>
+                    <option value="dim" data-i18n="settings.screensaver_dim">Dim</option>
+                    <option value="blank" data-i18n="settings.screensaver_blank">Blank</option>
+                    <option value="clock" data-i18n="settings.screensaver_clock">Clock</option>
+                    <option value="weather" data-i18n="settings.screensaver_weather">Weather</option>
                   </select>
                 </div>
                 <div class="device-row" id="device-screensaver-after-row" hidden>
-                  <label for="device-screensaver-after" data-i18n="settings.screensaver_after">Через, с</label>
+                  <label for="device-screensaver-after" data-i18n="settings.screensaver_after">After, s</label>
                   <select id="device-screensaver-after" data-field="screensaver_seconds">
                     <option value="15">15</option>
                     <option value="30">30</option>
@@ -392,79 +396,79 @@
                   </select>
                 </div>
                 <div class="device-row" id="device-screensaver-when-row" hidden>
-                  <label for="device-screensaver-when" data-i18n="settings.screensaver_when">Включать</label>
+                  <label for="device-screensaver-when" data-i18n="settings.screensaver_when">Comes on</label>
                   <select id="device-screensaver-when" data-field="screensaver_when">
-                    <option value="always" data-i18n="settings.screensaver_when_always">Всегда</option>
-                    <option value="idle" data-i18n="settings.screensaver_when_idle">Когда ничего не играет</option>
+                    <option value="always" data-i18n="settings.screensaver_when_always">Always</option>
+                    <option value="idle" data-i18n="settings.screensaver_when_idle">When nothing plays</option>
                   </select>
                 </div>
                 <div class="device-row" id="device-idle-brightness-row" hidden>
-                  <label for="device-idle-brightness" data-i18n="settings.idle_brightness">Яркость в покое</label>
+                  <label for="device-idle-brightness" data-i18n="settings.idle_brightness">Idle brightness</label>
                   <span class="device-slider">
                     <input id="device-idle-brightness" type="range" min="5" max="50" step="5" data-field="screensaver_brightness">
                     <output id="device-idle-brightness-value">20</output>
                   </span>
                 </div>
                 <div class="device-row">
-                  <label for="device-flip-vertical" data-i18n="settings.flip_vertical">Поворот по вертикали</label>
+                  <label for="device-flip-vertical" data-i18n="settings.flip_vertical">Flip vertically</label>
                   <input id="device-flip-vertical" type="checkbox" data-field="flip_vertical">
                 </div>
                 <div class="device-row">
-                  <label for="device-flip-horizontal" data-i18n="settings.flip_horizontal">Поворот по горизонтали</label>
+                  <label for="device-flip-horizontal" data-i18n="settings.flip_horizontal">Flip horizontally</label>
                   <input id="device-flip-horizontal" type="checkbox" data-field="flip_horizontal">
                 </div>
                 <div class="device-row">
-                  <label for="device-invert-colors" data-i18n="settings.invert_colors">Инверсия цветов</label>
+                  <label for="device-invert-colors" data-i18n="settings.invert_colors">Invert colours</label>
                   <input id="device-invert-colors" type="checkbox" data-field="invert_colors">
                 </div>
-                <p class="field-note" data-i18n="note.invert_colors">Если картинка выглядит негативом — у вашего дисплея другое стекло; включите.</p>
+                <p class="field-note" data-i18n="note.invert_colors">If the picture looks like a negative, your display has the other kind of glass - switch this on.</p>
                 <div class="device-row">
-                  <label for="device-theme" data-i18n="settings.theme">Тема</label>
+                  <label for="device-theme" data-i18n="settings.theme">Theme</label>
                   <select id="device-theme" data-field="theme">
-                    <option value="standard" data-i18n="settings.theme_standard">Стандарт</option>
-                    <option value="contrast" data-i18n="settings.theme_contrast">Контраст</option>
-                    <option value="custom" data-i18n="settings.theme_custom">Своя</option>
+                    <option value="standard" data-i18n="settings.theme_standard">Standard</option>
+                    <option value="contrast" data-i18n="settings.theme_contrast">Contrast</option>
+                    <option value="custom" data-i18n="settings.theme_custom">Custom</option>
                   </select>
                 </div>
                 <!-- The custom theme's seven colours, there only while it is the
                      chosen one. The panel is the preview: each colour is on it
                      as soon as the picker closes. -->
                 <div class="device-row" id="device-theme-ground-row" hidden>
-                  <label for="device-theme-ground" data-i18n="settings.theme_ground">Фон</label>
+                  <label for="device-theme-ground" data-i18n="settings.theme_ground">Background</label>
                   <input id="device-theme-ground" type="color" data-field="theme_ground">
                 </div>
                 <div class="device-row" id="device-theme-text-row" hidden>
-                  <label for="device-theme-text" data-i18n="settings.theme_text">Основной текст</label>
+                  <label for="device-theme-text" data-i18n="settings.theme_text">Main text</label>
                   <input id="device-theme-text" type="color" data-field="theme_text">
                 </div>
                 <div class="device-row" id="device-theme-artist-row" hidden>
-                  <label for="device-theme-artist" data-i18n="settings.theme_artist">Исполнитель</label>
+                  <label for="device-theme-artist" data-i18n="settings.theme_artist">Artist</label>
                   <input id="device-theme-artist" type="color" data-field="theme_artist">
                 </div>
                 <div class="device-row" id="device-theme-secondary-row" hidden>
-                  <label for="device-theme-secondary" data-i18n="settings.theme_secondary">Второстепенный текст</label>
+                  <label for="device-theme-secondary" data-i18n="settings.theme_secondary">Secondary text</label>
                   <input id="device-theme-secondary" type="color" data-field="theme_secondary">
                 </div>
                 <div class="device-row" id="device-theme-dim-row" hidden>
-                  <label for="device-theme-dim" data-i18n="settings.theme_dim">Тусклый текст</label>
+                  <label for="device-theme-dim" data-i18n="settings.theme_dim">Dim text</label>
                   <input id="device-theme-dim" type="color" data-field="theme_dim">
                 </div>
                 <div class="device-row" id="device-theme-accent-row" hidden>
-                  <label for="device-theme-accent" data-i18n="settings.theme_accent">Акцент</label>
+                  <label for="device-theme-accent" data-i18n="settings.theme_accent">Accent</label>
                   <input id="device-theme-accent" type="color" data-field="theme_accent">
                 </div>
                 <div class="device-row" id="device-theme-saver-row" hidden>
-                  <label for="device-theme-saver" data-i18n="settings.theme_saver">Фон заставки</label>
+                  <label for="device-theme-saver" data-i18n="settings.theme_saver">Screensaver background</label>
                   <input id="device-theme-saver" type="color" data-field="theme_saver">
                 </div>
                 <div class="settings-actions" id="device-theme-reset-row" hidden>
-                  <button id="device-theme-reset" class="secondary-button" type="button" data-i18n="settings.theme_reset">Сбросить к стандартным цветам</button>
+                  <button id="device-theme-reset" class="secondary-button" type="button" data-i18n="settings.theme_reset">Reset to standard colours</button>
                 </div>
-                <p class="field-note" data-i18n="note.theme">Цвета меняются на экране устройства сразу. Если что-то стало не прочитать — строка «Тема» на устройстве возвращает стандартную.</p>
+                <p class="field-note" data-i18n="note.theme">The colours change on the device screen at once. If something becomes unreadable, the Theme row on the device takes you back to Standard.</p>
               </div>
             </div>
 
-            <p class="field-note" data-i18n="note.device">Записывается в settings.csv устройства и применяется сразу — экран и кнопки на корпусе показывают то же самое.</p>
+            <p class="field-note" data-i18n="note.device">Written to the device's settings.csv and applied at once — the screen and the buttons on the case show the same.</p>
           </div>
         </section>
       </div>
@@ -476,51 +480,51 @@
               <svg class="card-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 5 7 7-7 7"/></svg>
               <h2 id="wifi-title" data-i18n="wifi.title">Wi-Fi</h2>
             </button>
-            <span id="wifi-status" class="settings-status" role="status" aria-live="polite" data-i18n="wifi.waiting">Ожидание данных</span>
+            <span id="wifi-status" class="settings-status" role="status" aria-live="polite" data-i18n="wifi.waiting">Waiting for data</span>
           </div>
 
           <div class="card-body" id="wifi-body" hidden>
             <dl class="network-summary">
-              <div><dt data-i18n="wifi.current">Текущая сеть</dt><dd id="wifi-active">—</dd></div>
-              <div><dt data-i18n="wifi.ip">IP-адрес</dt><dd id="wifi-ip">—</dd></div>
-              <div><dt data-i18n="wifi.host">Имя в сети</dt><dd id="wifi-host">—</dd></div>
+              <div><dt data-i18n="wifi.current">Current network</dt><dd id="wifi-active">—</dd></div>
+              <div><dt data-i18n="wifi.ip">IP address</dt><dd id="wifi-ip">—</dd></div>
+              <div><dt data-i18n="wifi.host">Network name</dt><dd id="wifi-host">—</dd></div>
             </dl>
 
             <div class="device-group">
-              <h3 data-i18n="wifi.saved">Сохранённые сети</h3>
+              <h3 data-i18n="wifi.saved">Saved networks</h3>
               <ul id="saved-networks" class="saved-networks"></ul>
-              <p id="saved-networks-empty" class="empty-state" data-i18n="wifi.saved_empty">Сохранённых сетей пока нет</p>
+              <p id="saved-networks-empty" class="empty-state" data-i18n="wifi.saved_empty">No saved networks yet</p>
             </div>
 
             <div id="wifi-scan-block" class="device-group" hidden>
-              <h3 data-i18n="wifi.nearby">Сети вокруг</h3>
+              <h3 data-i18n="wifi.nearby">Networks nearby</h3>
               <ul id="scan-networks" class="saved-networks"></ul>
-              <p id="scan-empty" class="empty-state" data-i18n="common.list_empty">Список пуст</p>
+              <p id="scan-empty" class="empty-state" data-i18n="common.list_empty">The list is empty</p>
             </div>
 
             <div class="settings-actions">
-              <button id="wifi-add" class="secondary-button" type="button" data-i18n="wifi.add">Добавить сеть</button>
-              <button id="wifi-scan" class="secondary-button" type="button" hidden data-i18n="wifi.rescan">Обновить список</button>
+              <button id="wifi-add" class="secondary-button" type="button" data-i18n="wifi.add">Add a network</button>
+              <button id="wifi-scan" class="secondary-button" type="button" hidden data-i18n="wifi.rescan">Refresh the list</button>
             </div>
 
             <form id="wifi-form" class="settings-form" hidden>
-              <p id="wifi-chosen" class="field-note" hidden><span data-i18n="wifi.chosen">Сеть:</span> <strong id="wifi-chosen-name">—</strong></p>
+              <p id="wifi-chosen" class="field-note" hidden><span data-i18n="wifi.chosen">Network:</span> <strong id="wifi-chosen-name">—</strong></p>
               <div id="wifi-ssid-row" class="settings-form" hidden>
-                <label for="wifi-ssid" data-i18n="wifi.ssid">Название сети</label>
+                <label for="wifi-ssid" data-i18n="wifi.ssid">Network name</label>
                 <input id="wifi-ssid" name="ssid" type="text" maxlength="32" autocomplete="off">
               </div>
-              <label for="wifi-password" data-i18n="wifi.password">Пароль</label>
+              <label for="wifi-password" data-i18n="wifi.password">Password</label>
               <div class="password-field">
                 <input id="wifi-password" name="password" type="password" maxlength="64" autocomplete="new-password">
                 <button id="wifi-password-reveal" class="secondary-button" type="button"
-                        aria-controls="wifi-password" aria-pressed="false" data-i18n="wifi.reveal">Показать</button>
+                        aria-controls="wifi-password" aria-pressed="false" data-i18n="wifi.reveal">Show</button>
               </div>
               <div class="settings-actions">
-                <button id="wifi-submit" class="primary-button" type="submit" disabled data-i18n="wifi.submit">Проверить и сохранить</button>
-                <button id="wifi-cancel" class="secondary-button" type="button" data-i18n="common.cancel">Отмена</button>
+                <button id="wifi-submit" class="primary-button" type="submit" disabled data-i18n="wifi.submit">Check and save</button>
+                <button id="wifi-cancel" class="secondary-button" type="button" data-i18n="common.cancel">Cancel</button>
               </div>
             </form>
-            <p class="field-note" data-i18n="note.wifi">Пароль отправляется устройству один раз и сразу удаляется из поля. Сети вокруг устройство ищет только пока не подключено ни к одной из них.</p>
+            <p class="field-note" data-i18n="note.wifi">The password is sent once and cleared from the field immediately. The device only looks for networks while it is connected to none.</p>
           </div>
         </section>
 
@@ -528,15 +532,15 @@
           <div class="card-head">
             <button class="card-toggle" type="button" aria-expanded="false" aria-controls="remote-body">
               <svg class="card-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 5 7 7-7 7"/></svg>
-              <h2 id="remote-title" data-i18n="remote.title">Пульт</h2>
+              <h2 id="remote-title" data-i18n="remote.title">Remote control</h2>
             </button>
             <span id="remote-status" class="settings-status" role="status" aria-live="polite"></span>
           </div>
 
           <div class="card-body" id="remote-body" hidden>
-            <p class="field-note" data-i18n="note.remote">Любой инфракрасный пульт: на отдельной странице у каждой функции нажимаете «Обучить», затем кнопку на пульте. Таблица хранится на устройстве в remote.csv.</p>
+            <p class="field-note" data-i18n="note.remote">Any infrared remote: on its own page you press "Learn" beside each function, then the key on the remote. The table lives on the device in remote.csv.</p>
             <div class="settings-actions">
-              <a class="primary-button" href="/remote" data-i18n="remote.open">Настроить пульт</a>
+              <a class="primary-button" href="/remote" data-i18n="remote.open">Set up the remote</a>
             </div>
           </div>
         </section>
@@ -545,33 +549,33 @@
           <div class="card-head">
             <button class="card-toggle" type="button" aria-expanded="false" aria-controls="yandex-body">
               <svg class="card-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 5 7 7-7 7"/></svg>
-              <h2 id="yandex-title" data-i18n="yandex.title">ЯМузыка</h2>
+              <h2 id="yandex-title" data-i18n="yandex.title">Ya.Music</h2>
             </button>
-            <span id="yandex-status" class="settings-status" role="status" aria-live="polite" data-i18n="yandex.checking">Проверка…</span>
+            <span id="yandex-status" class="settings-status" role="status" aria-live="polite" data-i18n="yandex.checking">Checking…</span>
           </div>
 
           <div class="card-body" id="yandex-body" hidden>
             <div id="yandex-code-block" class="yandex-code" hidden>
-              <p class="yandex-code-lead" data-i18n="yandex.code_lead">Откройте страницу и введите код:</p>
+              <p class="yandex-code-lead" data-i18n="yandex.code_lead">Open the page and enter the code:</p>
               <p><a id="yandex-url" href="#" rel="noreferrer noopener" target="_blank">—</a></p>
               <p id="yandex-code" class="yandex-code-value">—</p>
               <p id="yandex-countdown" class="settings-status"></p>
             </div>
 
             <div id="yandex-stations-block" class="device-group" hidden>
-              <h3 data-i18n="list.stations">Станции</h3>
+              <h3 data-i18n="list.stations">Stations</h3>
               <ul id="yandex-stations" class="saved-networks"></ul>
-              <p id="yandex-stations-empty" class="empty-state" data-i18n="common.list_empty">Список пуст</p>
+              <p id="yandex-stations-empty" class="empty-state" data-i18n="common.list_empty">The list is empty</p>
             </div>
 
             <div class="settings-actions">
-              <button id="yandex-link" class="primary-button" type="button" data-i18n="yandex.link">Привязать аккаунт</button>
-              <button id="yandex-cancel" class="secondary-button" type="button" hidden data-i18n="yandex.cancel">Отменить</button>
-              <button id="yandex-refresh" class="secondary-button" type="button" hidden data-i18n="yandex.refresh">Обновить станции</button>
-              <button id="yandex-forget" class="secondary-button" type="button" hidden data-i18n="yandex.forget">Отвязать</button>
+              <button id="yandex-link" class="primary-button" type="button" data-i18n="yandex.link">Link an account</button>
+              <button id="yandex-cancel" class="secondary-button" type="button" hidden data-i18n="yandex.cancel">Cancel</button>
+              <button id="yandex-refresh" class="secondary-button" type="button" hidden data-i18n="yandex.refresh">Refresh the stations</button>
+              <button id="yandex-forget" class="secondary-button" type="button" hidden data-i18n="yandex.forget">Unlink</button>
             </div>
 
-            <p class="field-note" data-i18n="note.yandex">Пароль от Яндекса устройству не нужен: код подтверждается на сайте Яндекса, сюда возвращается только токен доступа.</p>
+            <p class="field-note" data-i18n="note.yandex">The device never needs the Yandex password: the code is confirmed on Yandex's own site and only an access token comes back.</p>
           </div>
         </section>
 
@@ -579,25 +583,25 @@
           <div class="card-head">
             <button class="card-toggle" type="button" aria-expanded="false" aria-controls="backup-body">
               <svg class="card-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 5 7 7-7 7"/></svg>
-              <h2 id="backup-title" data-i18n="backup.title">Резервная копия</h2>
+              <h2 id="backup-title" data-i18n="backup.title">Backup</h2>
             </button>
-            <span id="backup-status" class="settings-status" role="status" aria-live="polite" data-i18n="common.ready">Готово</span>
+            <span id="backup-status" class="settings-status" role="status" aria-live="polite" data-i18n="common.ready">Ready</span>
           </div>
 
           <div class="card-body" id="backup-body" hidden>
-            <p class="field-note" data-i18n="note.backup">В архив попадает всё, что устройство знает о себе: сети Wi-Fi, настройки, токен ЯМузыки, ключ погоды, обученные кнопки пульта и FM-станции. Плейлист сохраняется отдельно, на странице «Станции».</p>
+            <p class="field-note" data-i18n="note.backup">The archive holds everything the device knows about itself: Wi-Fi networks, settings, the Ya.Music token, the weather key, the keys the remote was taught and the FM stations with their pictures. The playlist is saved separately, on the Stations page.</p>
 
             <div class="settings-actions">
-              <a id="backup-download" class="secondary-button" href="/api/backup" download data-i18n="backup.download">Скачать архив</a>
+              <a id="backup-download" class="secondary-button" href="/api/backup" download data-i18n="backup.download">Download the archive</a>
               <label class="secondary-button file-button" for="backup-file">
-                <span data-i18n="backup.choose">Выбрать файл</span>
+                <span data-i18n="backup.choose">Choose a file</span>
                 <input id="backup-file" type="file" accept=".zip,.json,.csv,application/zip" hidden>
               </label>
-              <button id="backup-restore" class="primary-button" type="button" disabled data-i18n="backup.restore">Восстановить</button>
+              <button id="backup-restore" class="primary-button" type="button" disabled data-i18n="backup.restore">Restore</button>
             </div>
 
-            <p class="field-note" data-i18n="note.restore">Восстановить можно весь архив целиком или один файл из него — wifi.json, settings.csv, yandex.json, weather.json, remote.csv, fm_presets.csv или levels.csv. После восстановления устройство перезагрузится.</p>
-            <p class="field-note" data-i18n="note.backup_secret">Пароли Wi-Fi, токен ЯМузыки и ключ погоды лежат в архиве открытым текстом: храните его так же, как хранили бы пароль.</p>
+            <p class="field-note" data-i18n="note.restore">Restore the whole archive or a single file out of it — wifi.json, settings.csv, yandex.json, weather.json, remote.csv, fm_presets.csv or levels.csv. The device restarts afterwards.</p>
+            <p class="field-note" data-i18n="note.backup_secret">The Wi-Fi passwords, the Ya.Music token and the weather key are in the archive as plain text: keep it the way you would keep a password.</p>
           </div>
         </section>
 
@@ -605,45 +609,45 @@
           <div class="card-head">
             <button class="card-toggle" type="button" aria-expanded="false" aria-controls="update-body">
               <svg class="card-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 5 7 7-7 7"/></svg>
-              <h2 id="update-title" data-i18n="update.title">Обновление прошивки</h2>
+              <h2 id="update-title" data-i18n="update.title">Firmware update</h2>
             </button>
           </div>
 
           <div class="card-body" id="update-body" hidden>
             <dl class="about-list">
-              <dt data-i18n="update.current">Сейчас</dt><dd id="update-current">—</dd>
-              <dt data-i18n="update.latest">Последняя</dt><dd id="update-latest">—</dd>
+              <dt data-i18n="update.current">Running</dt><dd id="update-current">—</dd>
+              <dt data-i18n="update.latest">Latest</dt><dd id="update-latest">—</dd>
             </dl>
 
             <!-- Every version newer than the running one, newest first: one
                  skipped release or several, the update brings them all. -->
             <div id="update-history-block" hidden>
-              <h3 class="update-subtitle" data-i18n="update.whats_new">Что нового</h3>
+              <h3 class="update-subtitle" data-i18n="update.whats_new">What's new</h3>
               <div id="update-history" class="update-history"></div>
-              <p class="field-note"><a id="update-changelog" href="https://github.com/jmper-ha/jradio/blob/main/doc/changelog.md" target="_blank" rel="noopener" data-i18n="update.full_history">Вся история изменений</a></p>
+              <p class="field-note"><a id="update-changelog" href="https://github.com/jmper-ha/jradio/blob/main/doc/changelog.en.md" target="_blank" rel="noopener" data-i18n="update.full_history">The whole change history</a></p>
             </div>
 
             <div class="device-row">
-              <label for="update-auto" data-i18n="update.auto">Проверять обновления</label>
+              <label for="update-auto" data-i18n="update.auto">Check for updates</label>
               <input id="update-auto" type="checkbox">
             </div>
             <div class="settings-actions">
-              <button id="update-check" class="secondary-button" type="button" data-i18n="update.check">Проверить сейчас</button>
+              <button id="update-check" class="secondary-button" type="button" data-i18n="update.check">Check now</button>
             </div>
-            <p class="field-note" data-i18n="note.update_check">Радио раз в день спрашивает у GitHub, вышла ли новая версия, и ничего не сообщает о себе. О новой версии скажет плашка вверху страницы.</p>
+            <p class="field-note" data-i18n="note.update_check">Once a day the radio asks GitHub whether a new version is out, and tells it nothing about itself. A new version is announced at the top of the page.</p>
 
-            <h3 class="update-subtitle" data-i18n="update.by_hand">Обновить из файла</h3>
+            <h3 class="update-subtitle" data-i18n="update.by_hand">Update from a file</h3>
             <p class="field-note">
               <span id="update-files"></span>
-              <a href="https://github.com/jmper-ha/jradio/releases" target="_blank" rel="noopener" data-i18n="update.releases">Страница релизов</a>
+              <a href="https://github.com/jmper-ha/jradio/releases" target="_blank" rel="noopener" data-i18n="update.releases">open it</a>
             </p>
 
             <div class="settings-actions">
               <label class="secondary-button file-button" for="update-file">
-                <span data-i18n="backup.choose">Выбрать файл</span>
+                <span data-i18n="backup.choose">Choose a file</span>
                 <input id="update-file" type="file" accept=".bin,.tar" multiple hidden>
               </label>
-              <button id="update-send" class="primary-button" type="button" disabled data-i18n="update.send">Загрузить</button>
+              <button id="update-send" class="primary-button" type="button" disabled data-i18n="update.send">Upload</button>
             </div>
             <progress id="update-progress" class="update-progress" max="100" value="0" hidden></progress>
             <!-- In the body, not beside the heading like the other cards' one
@@ -651,7 +655,7 @@
                  head they ran over the title. -->
             <p id="update-status" class="settings-status update-status" role="status" aria-live="polite"></p>
 
-            <p class="field-note" data-i18n="note.update">Выберите оба файла сразу. Устройство проверит их и попросит нажать энкодер: без нажатия ничего не меняется. Станции, Wi-Fi и настройки остаются на месте.</p>
+            <p class="field-note" data-i18n="note.update">Choose both files at once. The radio checks them and asks for a press of the encoder: without it nothing changes. Stations, Wi-Fi and settings stay as they are.</p>
           </div>
         </section>
 
@@ -659,30 +663,32 @@
           <div class="card-head">
             <button class="card-toggle" type="button" aria-expanded="false" aria-controls="about-body">
               <svg class="card-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 5 7 7-7 7"/></svg>
-              <h2 id="about-title" data-i18n="about.title">Об устройстве</h2>
+              <h2 id="about-title" data-i18n="about.title">About</h2>
             </button>
           </div>
 
           <div class="card-body" id="about-body" hidden>
             <dl class="about-list">
-              <dt data-i18n="about.firmware">Прошивка</dt><dd id="about-firmware">—</dd>
-              <dt data-i18n="about.built">Собрана</dt><dd id="about-built">—</dd>
-              <dt data-i18n="about.web">Веб-интерфейс</dt><dd id="about-web">—</dd>
+              <dt data-i18n="about.firmware">Firmware</dt><dd id="about-firmware">—</dd>
+              <dt data-i18n="about.build">Build</dt><dd id="about-build">—</dd>
+              <dt data-i18n="about.built">Built</dt><dd id="about-built">—</dd>
+              <dt data-i18n="about.web">Web UI</dt><dd id="about-web">—</dd>
               <dt>ESP-IDF</dt><dd id="about-idf">—</dd>
-              <dt id="about-module-label" data-i18n="about.module" hidden>Модуль Bluetooth</dt><dd id="about-module" hidden>—</dd>
+              <dt data-i18n="about.compiler">Compiler</dt><dd id="about-compiler">—</dd>
+              <dt id="about-module-label" data-i18n="about.module" hidden>Bluetooth module</dt><dd id="about-module" hidden>—</dd>
             </dl>
 
             <p id="about-notice" class="settings-status is-error" hidden></p>
 
-            <p class="field-note" data-i18n="note.versions">Прошивка и веб-интерфейс пишутся разными командами, поэтому у них свои версии. Если они разошлись, перепрошейте раздел данных.</p>
-            <p class="field-note"><a id="about-author" href="#">—</a></p>
+            <p class="field-note" data-i18n="note.versions">The firmware and the web interface are flashed by different commands, so each has its own version. If they differ, reflash the data partition.</p>
+            <p class="field-note">yiRadio is based on jRadio project.</p>
           </div>
         </section>
       </div>
     </div>
   </main>
 
-  <noscript><p class="noscript-message">Для настроек требуется JavaScript. / JavaScript is required for the settings page.</p></noscript>
+  <noscript><p class="noscript-message">JavaScript is required for the settings page.</p></noscript>
   <script src="/settings.js"></script>
   <script src="/update.js"></script>
 </body>

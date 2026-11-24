@@ -13,7 +13,6 @@ const vm = require('vm');
 /* The editor lives on the flasher site, not on the device; only the
    dictionary is the device's. */
 const FLASHER = path.join(__dirname, '..', 'flasher');
-const WWW = path.join(__dirname, '..', 'data', 'www');
 const hw = require(path.join(FLASHER, 'hardware_core.js'));
 
 /* ---- the model --------------------------------------------------------- */
@@ -449,8 +448,8 @@ function loadPage(browserLanguage) {
   window.self = window;
   const context = vm.createContext({window, document, self: window, navigator: window.navigator,
                                     URL: window.URL, Blob: window.Blob, console});
-  for (const [dir, file] of [[WWW, 'i18n.js'], [FLASHER, 'hardware_core.js'], [FLASHER, 'hardware.js']]) {
-    vm.runInContext(fs.readFileSync(path.join(dir, file), 'utf8'), context, {filename: file});
+  for (const file of ['i18n.js', 'hardware_core.js', 'hardware.js']) {
+    vm.runInContext(fs.readFileSync(path.join(FLASHER, file), 'utf8'), context, {filename: file});
   }
   return {document, window, storage};
 }

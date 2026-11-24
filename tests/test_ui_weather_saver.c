@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "locale_fixture.h"
 #include "ui_weather_saver.h"
 
 static weather_report_t moscow(void)
@@ -36,64 +37,67 @@ static weather_report_t moscow(void)
 static void test_the_readings_as_the_mockup_has_them(void)
 {
     const weather_report_t report = moscow();
+    const device_language_t ru = test_locale("ru");
     EXPECT(ui_wx_temperature_text(out, sizeof(out), 6), "+6\xC2\xB0");
     EXPECT(ui_wx_temperature_text(out, sizeof(out), -3), "\xE2\x80\x93" "3\xC2\xB0");
     EXPECT(ui_wx_temperature_text(out, sizeof(out), 0), "0\xC2\xB0");
-    EXPECT(ui_wx_feels_text(out, sizeof(out), DEVICE_LANGUAGE_RU, &report, false),
+    EXPECT(ui_wx_feels_text(out, sizeof(out), ru, &report, false),
            "ощущается +3\xC2\xB0");
-    EXPECT(ui_wx_feels_text(out, sizeof(out), DEVICE_LANGUAGE_RU, &report, true),
+    EXPECT(ui_wx_feels_text(out, sizeof(out), ru, &report, true),
            "ощущ. +3\xC2\xB0");
     EXPECT(ui_wx_feels_text(out, sizeof(out), DEVICE_LANGUAGE_EN, &report, false),
            "feels like +3\xC2\xB0");
     EXPECT(ui_wx_humidity_text(out, sizeof(out), &report), "62%");
-    EXPECT(ui_wx_pressure_text(out, sizeof(out), DEVICE_LANGUAGE_RU, &report), "763 мм");
+    EXPECT(ui_wx_pressure_text(out, sizeof(out), ru, &report), "763 мм");
     EXPECT(ui_wx_pressure_text(out, sizeof(out), DEVICE_LANGUAGE_EN, &report), "763 mmHg");
-    EXPECT(ui_wx_wind_text(out, sizeof(out), DEVICE_LANGUAGE_RU, &report, true), "1 м/с В");
-    EXPECT(ui_wx_wind_text(out, sizeof(out), DEVICE_LANGUAGE_RU, &report, false), "1 м/с");
+    EXPECT(ui_wx_wind_text(out, sizeof(out), ru, &report, true), "1 м/с В");
+    EXPECT(ui_wx_wind_text(out, sizeof(out), ru, &report, false), "1 м/с");
     EXPECT(ui_wx_wind_text(out, sizeof(out), DEVICE_LANGUAGE_EN, &report, true), "1 m/s E");
-    EXPECT(ui_wx_wind_label(out, sizeof(out), DEVICE_LANGUAGE_RU, &report), "ветер, порывы 2");
+    EXPECT(ui_wx_wind_label(out, sizeof(out), ru, &report), "ветер, порывы 2");
     EXPECT(ui_wx_clock_text(out, sizeof(out), report.sunrise_min), "07:11");
-    EXPECT(ui_wx_sky_text(out, sizeof(out), DEVICE_LANGUAGE_RU, &report),
+    EXPECT(ui_wx_sky_text(out, sizeof(out), ru, &report),
            "облачно 27% \xC2\xB7 осадков нет");
 }
 
 static void test_what_a_service_did_not_say_is_left_out(void)
 {
     weather_report_t report = moscow();
+    const device_language_t ru = test_locale("ru");
     report.feels_like_c = WEATHER_UNKNOWN;
     report.wind_gust_ms = WEATHER_UNKNOWN;
     report.wind_from_deg = WEATHER_UNKNOWN;
     report.cloud_pct = WEATHER_UNKNOWN;
     report.precipitation_tenths_mm = 4;
-    EXPECT(ui_wx_feels_text(out, sizeof(out), DEVICE_LANGUAGE_RU, &report, false), "");
-    EXPECT(ui_wx_wind_text(out, sizeof(out), DEVICE_LANGUAGE_RU, &report, true), "1 м/с");
-    EXPECT(ui_wx_wind_label(out, sizeof(out), DEVICE_LANGUAGE_RU, &report), "ветер");
-    EXPECT(ui_wx_sky_text(out, sizeof(out), DEVICE_LANGUAGE_RU, &report), "осадки 0,4 мм");
+    EXPECT(ui_wx_feels_text(out, sizeof(out), ru, &report, false), "");
+    EXPECT(ui_wx_wind_text(out, sizeof(out), ru, &report, true), "1 м/с");
+    EXPECT(ui_wx_wind_label(out, sizeof(out), ru, &report), "ветер");
+    EXPECT(ui_wx_sky_text(out, sizeof(out), ru, &report), "осадки 0,4 мм");
     EXPECT(ui_wx_sky_text(out, sizeof(out), DEVICE_LANGUAGE_EN, &report), "rain 0.4 mm");
     report.precipitation_tenths_mm = WEATHER_UNKNOWN;
-    EXPECT(ui_wx_sky_text(out, sizeof(out), DEVICE_LANGUAGE_RU, &report), "");
+    EXPECT(ui_wx_sky_text(out, sizeof(out), ru, &report), "");
     report.humidity_pct = WEATHER_UNKNOWN;
     report.pressure_mmhg = WEATHER_UNKNOWN;
     report.sunrise_min = WEATHER_UNKNOWN;
     EXPECT(ui_wx_humidity_text(out, sizeof(out), &report), "");
-    EXPECT(ui_wx_pressure_text(out, sizeof(out), DEVICE_LANGUAGE_RU, &report), "");
+    EXPECT(ui_wx_pressure_text(out, sizeof(out), ru, &report), "");
     EXPECT(ui_wx_clock_text(out, sizeof(out), report.sunrise_min), "");
     report.wind_ms = 0;
-    EXPECT(ui_wx_wind_text(out, sizeof(out), DEVICE_LANGUAGE_RU, &report, true), "штиль");
+    EXPECT(ui_wx_wind_text(out, sizeof(out), ru, &report, true), "штиль");
     // Gusts no stronger than the wind say nothing worth a line.
     report.wind_ms = 5;
     report.wind_gust_ms = 5;
     EXPECT(ui_wx_wind_label(out, sizeof(out), DEVICE_LANGUAGE_EN, &report), "wind");
-    EXPECT(ui_wx_wind_text(out, sizeof(out), DEVICE_LANGUAGE_RU, NULL, true), "");
+    EXPECT(ui_wx_wind_text(out, sizeof(out), ru, NULL, true), "");
 }
 
 static void test_the_forecast_days(void)
 {
     const weather_report_t report = moscow();
-    EXPECT(ui_wx_day_name(out, sizeof(out), DEVICE_LANGUAGE_RU, 0, &report.days[0]), "Сегодня");
-    EXPECT(ui_wx_day_name(out, sizeof(out), DEVICE_LANGUAGE_RU, 1, &report.days[1]), "Чт");
+    const device_language_t ru = test_locale("ru");
+    EXPECT(ui_wx_day_name(out, sizeof(out), ru, 0, &report.days[0]), "Сегодня");
+    EXPECT(ui_wx_day_name(out, sizeof(out), ru, 1, &report.days[1]), "Чт");
     EXPECT(ui_wx_day_name(out, sizeof(out), DEVICE_LANGUAGE_EN, 1, &report.days[1]), "Thu");
-    EXPECT(ui_wx_day_name(out, sizeof(out), DEVICE_LANGUAGE_RU, 2, &report.days[2]), "");
+    EXPECT(ui_wx_day_name(out, sizeof(out), ru, 2, &report.days[2]), "");
     EXPECT(ui_wx_day_range_text(out, sizeof(out), &report.days[0], true, false),
            "+2\xE2\x80\xA6+12\xC2\xB0");
     EXPECT(ui_wx_day_range_text(out, sizeof(out), &report.days[0], false, false), "+2\xE2\x80\xA6+12");
@@ -108,6 +112,16 @@ static void test_the_forecast_days(void)
     EXPECT(ui_wx_day_range_text(out, sizeof(out), &report.days[2], true, false), "");
     EXPECT(ui_wx_day_chance_text(out, sizeof(out), &report.days[0]), "3%");
     EXPECT(ui_wx_day_chance_text(out, sizeof(out), &report.days[1]), "");
+}
+
+static void test_ukrainian_readings(void)
+{
+    weather_report_t report = moscow();
+    const device_language_t uk = test_locale("uk");
+    report.precipitation_tenths_mm = 14;
+    EXPECT(ui_wx_sky_text(out, sizeof(out), uk, &report), "хмарність 27% · опади 1,4 мм");
+    EXPECT(ui_wx_wind_text(out, sizeof(out), uk, &report, true), "1 м/с Сх");
+    EXPECT(ui_wx_day_name(out, sizeof(out), uk, 0, &report.days[0]), "Сьогодні");
 }
 
 static void test_the_shift_walks_round_a_square(void)
@@ -147,6 +161,7 @@ int main(void)
     test_the_readings_as_the_mockup_has_them();
     test_what_a_service_did_not_say_is_left_out();
     test_the_forecast_days();
+    test_ukrainian_readings();
     test_the_shift_walks_round_a_square();
     puts("ui_weather_saver tests passed");
     return 0;

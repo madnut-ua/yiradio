@@ -1,5 +1,6 @@
 #include "device_settings.h"
 #include "settings_csv.h"
+#include "locale_fixture.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -17,12 +18,33 @@ static void reset_file(void)
     fclose(file);
 }
 
+static void test_locale_codes_survive_reboot_and_missing_packages(void)
+{
+    reset_file();
+    const device_language_t russian = test_locale("ru");
+    const device_language_t ukrainian = test_locale("uk");
+    assert(settings_csv_set(test_path, "language", "ru"));
+    device_settings_t settings;
+    assert(device_settings_init_at(&settings, test_path));
+    assert(settings.language == russian);
+    assert(device_settings_set_language(&settings, ukrainian));
+    assert(device_settings_init_at(&settings, test_path));
+    assert(settings.language == ukrainian);
+    assert(settings_csv_set(test_path, "language", "pt-BR"));
+    assert(device_settings_init_at(&settings, test_path));
+    assert(settings.language == DEVICE_LANGUAGE_EN);
+    char value[32];
+    assert(settings_csv_get(test_path, "language", value, sizeof(value)));
+    assert(strcmp(value, "pt-BR") == 0);
+    reset_file();
+}
+
 static void test_defaults_and_load(void)
 {
     reset_file();
     device_settings_t settings;
     assert(device_settings_init_at(&settings, test_path));
-    assert(settings.language == DEVICE_LANGUAGE_RU);
+    assert(settings.language == DEVICE_LANGUAGE_EN);
     assert(settings.home_screen == DEVICE_HOME_SCREEN_TEXT);
     assert(!settings.flip_vertical && !settings.flip_horizontal);
     /* Off by default: the profile's measured inversion is the baseline, and
@@ -103,7 +125,7 @@ static void test_invalid_values_do_not_change_model(void)
     assert(!device_settings_set_buffer_view(&settings, (device_buffer_view_t)99));
     assert(!device_settings_set_files_end(&settings, (device_files_end_t)99));
     assert(settings.files_end == DEVICE_FILES_END_STOP);
-    assert(settings.language == DEVICE_LANGUAGE_RU);
+    assert(settings.language == DEVICE_LANGUAGE_EN);
     assert(settings.home_screen == DEVICE_HOME_SCREEN_TEXT);
     assert(!settings.flip_vertical);
     assert(settings.buffer_view == DEVICE_BUFFER_VIEW_TEXT);
@@ -408,9 +430,7 @@ static void test_the_clock_settings_persist_and_are_checked(void)
     reset_file();
     device_settings_t settings;
     assert(device_settings_init_at(&settings, test_path));
-    /* What the device had before either was a setting, so a card that has
-     * never seen this page still keeps Moscow time off pool.ntp.org. */
-    assert(strcmp(settings.timezone, "europe/moscow") == 0);
+    assert(strcmp(settings.timezone, "Europe/Kyiv") == 0);
     assert(strcmp(settings.ntp_server, "pool.ntp.org") == 0);
 
     assert(device_settings_set_timezone(&settings, "asia/yekaterinburg"));
@@ -418,7 +438,7 @@ static void test_the_clock_settings_persist_and_are_checked(void)
 
     device_settings_t reloaded;
     assert(device_settings_init_at(&reloaded, test_path));
-    assert(strcmp(reloaded.timezone, "asia/yekaterinburg") == 0);
+    assert(strcmp(reloaded.timezone, "Asia/Yekaterinburg") == 0);
     assert(strcmp(reloaded.ntp_server, "ntp.example.lan") == 0);
 
     /* A zone this build does not have is refused rather than stored: a zone
@@ -427,7 +447,7 @@ static void test_the_clock_settings_persist_and_are_checked(void)
     assert(!device_settings_set_timezone(&settings, "mars/olympus"));
     assert(!device_settings_set_timezone(&settings, ""));
     assert(!device_settings_set_timezone(&settings, NULL));
-    assert(strcmp(settings.timezone, "asia/yekaterinburg") == 0);
+    assert(strcmp(settings.timezone, "Asia/Yekaterinburg") == 0);
 
     /* An empty field on the page means "whatever the device came with": a
      * device with no time server at all is worse than one on the pool. */
@@ -446,13 +466,13 @@ static void test_the_clock_settings_persist_and_are_checked(void)
     assert(!device_settings_set_ntp_server(&settings, oversized));
 
     /* The device's own name: empty on a card that never had one, which is
-       the built-in "jradio-XXXX" from the MAC. Trimmed, kept across a reload,
+       the built-in "yiRadio-XXXX" from the MAC. Trimmed, kept across a reload,
        and emptied again by an empty field. A comma would cut the line. */
     assert(settings.device_name[0] == '\0');
     const unsigned char mac[6] = {0x68, 0xEE, 0x8F, 0x4D, 0xB6, 0x70};
     char built_in[DEVICE_NAME_MAX];
     device_settings_default_name(mac, built_in, sizeof(built_in));
-    assert(strcmp(built_in, "jradio-B670") == 0);
+    assert(strcmp(built_in, "yiRadio-B670") == 0);
     assert(device_settings_set_device_name(&settings, "  Кухня  "));
     assert(strcmp(settings.device_name, "Кухня") == 0);
     assert(device_settings_init_at(&reloaded, test_path));
@@ -470,8 +490,8 @@ static void test_the_clock_settings_persist_and_are_checked(void)
     char host[DEVICE_HOST_NAME_MAX];
     assert(device_settings_host_name("Радио на кухне", host, sizeof(host)));
     assert(strcmp(host, "Radio-na-kukhne") == 0);
-    assert(device_settings_host_name("jradio-B670", host, sizeof(host)));
-    assert(strcmp(host, "jradio-B670") == 0);
+    assert(device_settings_host_name(built_in, host, sizeof(host)));
+    assert(strcmp(host, "yiRadio-B670") == 0);
     assert(device_settings_host_name(" Ёлка_№1 (зал) ", host, sizeof(host)));
     assert(strcmp(host, "Elka-1-zal") == 0);
     assert(device_settings_host_name("Щука объём", host, sizeof(host)));
@@ -493,7 +513,7 @@ static void test_the_clock_settings_persist_and_are_checked(void)
      * which would read as UTC. */
     assert(settings_csv_set(test_path, "timezone", "mars/olympus"));
     assert(device_settings_init_at(&reloaded, test_path));
-    assert(strcmp(reloaded.timezone, "europe/moscow") == 0);
+    assert(strcmp(reloaded.timezone, "Europe/Kyiv") == 0);
 }
 
 static void test_the_weather_settings_persist_and_are_checked(void)
@@ -504,8 +524,8 @@ static void test_the_weather_settings_persist_and_are_checked(void)
     /* Off until somebody says otherwise, and pointed at the same city the
      * default time zone is on, so the two defaults do not contradict. */
     assert(settings.weather_provider == DEVICE_WEATHER_OFF);
-    assert(strcmp(settings.weather_latitude, "55.75") == 0);
-    assert(strcmp(settings.weather_longitude, "37.62") == 0);
+    assert(strcmp(settings.weather_latitude, "50.45") == 0);
+    assert(strcmp(settings.weather_longitude, "30.52") == 0);
 
     assert(device_settings_set_weather_provider(&settings, DEVICE_WEATHER_WTTR));
     assert(device_settings_set_weather_latitude(&settings, "-33.8688"));
@@ -568,15 +588,15 @@ static void test_the_weather_settings_persist_and_are_checked(void)
     /* An empty field puts the default back, like the time server's. */
     assert(device_settings_set_weather_latitude(&settings, ""));
     assert(device_settings_set_weather_longitude(&settings, NULL));
-    assert(strcmp(settings.weather_latitude, "55.75") == 0);
-    assert(strcmp(settings.weather_longitude, "37.62") == 0);
+    assert(strcmp(settings.weather_latitude, "50.45") == 0);
+    assert(strcmp(settings.weather_longitude, "30.52") == 0);
 
     /* A file with a coordinate that would not pass the setter - somebody's
      * edit - leaves the default standing rather than half a number. */
     assert(settings_csv_set(test_path, "weather_latitude", "north"));
     assert(settings_csv_set(test_path, "weather", "accuweather"));
     assert(device_settings_init_at(&reloaded, test_path));
-    assert(strcmp(reloaded.weather_latitude, "55.75") == 0);
+    assert(strcmp(reloaded.weather_latitude, "50.45") == 0);
     assert(reloaded.weather_provider == DEVICE_WEATHER_OFF);
 
     /* A file from before the service was remembered: the provider that is
@@ -1149,6 +1169,7 @@ static void test_tone_and_loudness_persist(void)
 
 int main(void)
 {
+    test_locale_codes_survive_reboot_and_missing_packages();
     test_tone_and_loudness_persist();
     test_the_fm_level_persists();
     test_the_balance_persists();

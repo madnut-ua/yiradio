@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "board_config.h"
 #include "esp_app_desc.h"
 
 /* Where tools/stamp_version.py lands once the image is flashed. Beside
@@ -49,6 +50,14 @@ void version_info_read(version_info_t *info)
         copy_field(info->idf, sizeof(info->idf), desc->idf_ver);
         info->firmware.present = info->firmware.version[0] != '\0';
     }
+
+    /* Build describes the compiled defaults, even if board.csv overrides them. */
+    _Static_assert(VERSION_INFO_BUILD_SIZE >= BOARD_BUILD_SUMMARY_SIZE,
+                   "version_info.build must hold the complete board summary");
+    board_config_t config;
+    board_config_compiled(&config);
+    board_config_build_summary(&config, info->build);
+    info->compiler = VERSION_INFO_COMPILER;
 
     read_web_stamp(&info->web);
 }

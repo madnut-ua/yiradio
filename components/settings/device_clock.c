@@ -1,4 +1,23 @@
 #include "device_clock.h"
+#include "device_timezone.h"
+
+#include <stdatomic.h>
+
+static _Atomic(const device_timezone_t *) s_zone;
+
+void device_clock_set_timezone(const char *timezone_id)
+{
+    const device_timezone_t *zone = device_timezone_find(timezone_id);
+    if (zone == NULL) zone = device_timezone_find(DEVICE_TIMEZONE_DEFAULT_ID);
+    atomic_store_explicit(&s_zone, zone, memory_order_relaxed);
+}
+
+bool device_clock_localtime(time_t utc, struct tm *local)
+{
+    const device_timezone_t *zone = atomic_load_explicit(&s_zone, memory_order_relaxed);
+    if (zone == NULL) zone = device_timezone_find(DEVICE_TIMEZONE_DEFAULT_ID);
+    return device_timezone_localtime(zone, utc, local);
+}
 
 #ifdef ESP_PLATFORM
 
@@ -13,7 +32,6 @@
 #include "freertos/task.h"
 
 #include "device_settings.h"
-#include "device_timezone.h"
 
 static const char *TAG = "device_clock";
 static bool s_started;
@@ -31,19 +49,6 @@ static void device_clock_synced(struct timeval *tv)
 {
     (void)tv;
     if (s_on_sync != NULL) s_on_sync();
-}
-
-static void device_clock_set_zone(const char *timezone_id)
-{
-    /* A POSIX TZ rule, not a zone name: the C library has no tzdata on this
-     * device. Anything the table does not know leaves the clock where it is
-     * rather than on UTC, which would be a device three hours out with nothing
-     * on screen to say why. */
-    const device_timezone_t *zone = device_timezone_find(timezone_id);
-    if (zone == NULL) zone = device_timezone_find(DEVICE_TIMEZONE_DEFAULT_ID);
-    if (zone == NULL) return;
-    setenv("TZ", zone->posix, 1);
-    tzset();
 }
 
 static void device_clock_start_sntp(const char *server)
@@ -87,13 +92,8 @@ void device_clock_init(const char *server, const char *timezone_id)
 
 void device_clock_apply(const char *server, const char *timezone_id)
 {
-    device_clock_set_zone(timezone_id);
+    device_clock_set_timezone(timezone_id);
     device_clock_start_sntp(server);
-}
-
-void device_clock_set_timezone(const char *timezone_id)
-{
-    device_clock_set_zone(timezone_id);
 }
 
 bool device_clock_now(int *hour, int *minute)
@@ -107,7 +107,7 @@ bool device_clock_now(int *hour, int *minute)
     if (now < 1600000000) return false;
 
     struct tm local;
-    localtime_r(&now, &local);
+    if (!device_clock_localtime(now, &local)) return false;
     /* Logged once, at the moment the clock becomes usable: without it there is
      * no way to tell a failed sync from a screen that simply has not been
      * looked at, since the only other evidence is four characters on a panel. */
@@ -129,7 +129,7 @@ bool device_clock_moment(int *weekday, int *hour, int *minute, int *second)
     const time_t now = time(NULL);
     if (now < 1600000000) return false;
     struct tm local;
-    localtime_r(&now, &local);
+    if (!device_clock_localtime(now, &local)) return false;
     *weekday = local.tm_wday;
     *hour = local.tm_hour;
     *minute = local.tm_min;
@@ -157,7 +157,7 @@ bool device_clock_today(int *day, int *month, int *weekday)
     const time_t now = time(NULL);
     if (now < 1600000000) return false;
     struct tm local;
-    localtime_r(&now, &local);
+    if (!device_clock_localtime(now, &local)) return false;
     *day = local.tm_mday;
     *month = local.tm_mon + 1;
     *weekday = local.tm_wday;
@@ -176,11 +176,6 @@ void device_clock_on_sync(void (*callback)(void))
 void device_clock_init(const char *server, const char *timezone_id)
 {
     (void)server;
-    (void)timezone_id;
-}
-
-void device_clock_set_timezone(const char *timezone_id)
-{
     (void)timezone_id;
 }
 

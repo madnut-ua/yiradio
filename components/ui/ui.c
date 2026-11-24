@@ -19,6 +19,7 @@
 #include "board_config.h"
 #include "board_display_profile.h"
 #include "device_settings.h"
+#include "device_locale.h"
 #include "file_storage.h"
 #include "player_control.h"
 #include "wifi_provisioning.h"
@@ -549,8 +550,9 @@ static lv_obj_t *s_settings_web_hint;
  * the settings loop is already running, so a screen of its own would mean a
  * second copy of everything that keeps one up to date. */
 static lv_obj_t *s_about_overlay;
+static lv_obj_t *s_about_body;
+enum { UI_ABOUT_ROWS = 7 };
 static lv_obj_t *s_about_rows[UI_ABOUT_ROWS];
-static lv_obj_t *s_about_author;
 static lv_obj_t *s_about_hint;
 static bool s_about_open;
 static uint32_t s_about_opened_ms;
@@ -1103,14 +1105,14 @@ static void ui_scroller_tick(ui_scroller_t *scroller, ui_text_scroll_mode_t mode
 static const char *ui_radio_state_text(player_playback_state_t state)
 {
     switch (state) {
-    case PLAYER_PLAYBACK_CONNECTING: return "Connecting...";
-    case PLAYER_PLAYBACK_PLAYING: return "Playing";
-    case PLAYER_PLAYBACK_PAUSED: return "Paused";
-    case PLAYER_PLAYBACK_RECONNECTING: return "Reconnecting...";
-    case PLAYER_PLAYBACK_ERROR: return "Connection error";
-    case PLAYER_PLAYBACK_STOPPED: return "Stopped";
+    case PLAYER_PLAYBACK_CONNECTING: return ui_text(DEVICE_TEXT_STATE_CONNECTING);
+    case PLAYER_PLAYBACK_PLAYING: return ui_text(DEVICE_TEXT_STATE_PLAYING);
+    case PLAYER_PLAYBACK_PAUSED: return ui_text(DEVICE_TEXT_STATE_PAUSED);
+    case PLAYER_PLAYBACK_RECONNECTING: return ui_text(DEVICE_TEXT_STATE_RECONNECTING);
+    case PLAYER_PLAYBACK_ERROR: return ui_text(DEVICE_TEXT_STATE_ERROR);
+    case PLAYER_PLAYBACK_STOPPED: return ui_text(DEVICE_TEXT_STATE_STOPPED);
     }
-    return "Unknown";
+    return ui_text(DEVICE_TEXT_STATE_UNKNOWN);
 }
 
 /* The sleep timer's crescent at this panel's strip size. Two levels so the
@@ -1152,7 +1154,7 @@ static void ui_status_strip_create(lv_obj_t *screen, ui_status_strip_t *strip,
     strip->context = lv_label_create(screen);
     lv_obj_set_pos(strip->context, UI_STRIP_CONTEXT_X, 5);
     /* The face's own line, not the 14 px one's 19: on the 18 px panels a
-     * fixed 19 cut the bottom off "jRadio" and the screen names (2026-11-06). */
+     * fixed 19 cut the bottom off the wordmark and the screen names. */
     lv_obj_set_size(strip->context, UI_STRIP_CONTEXT_W, UI_FONT_BODY_LINE_H);
     lv_obj_set_style_text_font(strip->context, UI_FONT_BODY, 0);
     lv_label_set_long_mode(strip->context, LV_LABEL_LONG_DOT);
@@ -2276,7 +2278,7 @@ static bool ui_wx_refresh(bool force)
     if (!weather) {
         changed |= ui_wx_set_image(s_wx_icon, NULL);
         changed |= ui_set_label_text_note_change(
-            s_wx_none, language == DEVICE_LANGUAGE_EN ? "no weather" : "нет данных о погоде");
+            s_wx_none, ui_text(DEVICE_TEXT_WEATHER_NONE));
         return changed;
     }
 
@@ -2289,11 +2291,11 @@ static bool ui_wx_refresh(bool force)
     ui_wx_humidity_text(text, sizeof(text), &report);
     changed |= ui_set_label_text_note_change(s_wx_value[0], text);
     changed |= ui_set_label_text_note_change(
-        s_wx_name[0], language == DEVICE_LANGUAGE_EN ? "humidity" : "влажность");
+        s_wx_name[0], ui_text(DEVICE_TEXT_WEATHER_HUMIDITY));
     ui_wx_pressure_text(text, sizeof(text), language, &report);
     changed |= ui_set_label_text_note_change(s_wx_value[1], text);
     changed |= ui_set_label_text_note_change(
-        s_wx_name[1], language == DEVICE_LANGUAGE_EN ? "pressure" : "давление");
+        s_wx_name[1], ui_text(DEVICE_TEXT_WEATHER_PRESSURE));
     ui_wx_wind_text(text, sizeof(text), language, &report, UI_WX_WIND_POINT);
     changed |= ui_set_label_text_note_change(s_wx_value[2], text);
     ui_wx_wind_label(text, sizeof(text), language, &report);
@@ -2577,6 +2579,9 @@ static void ui_status_strip_update(ui_status_strip_t *strip,
 {
     if (strip == NULL || strip->clock == NULL) return;
 
+    if (strip == &s_menu_strip || strip == &s_feed_strip) {
+        ui_set_label_text_if_changed(strip->context, ui_text(DEVICE_TEXT_BRAND));
+    }
     int hour = 0;
     int minute = 0;
     const bool have_time = device_clock_now(&hour, &minute);
@@ -2755,8 +2760,11 @@ static void ui_update_footer(void)
         buffer_slot = true;
         buffer_known = player_control_input_fill(&buffer_fill);
         if (buffer_known) {
-            snprintf(left_text, sizeof(left_text), ui_text(DEVICE_TEXT_BUFFER_FORMAT),
-                     (unsigned int)buffer_fill);
+            char percent[12];
+            snprintf(percent, sizeof(percent), "%u", (unsigned int)buffer_fill);
+            const device_text_arg_t arg = {"percent", percent};
+            device_text_format(left_text, sizeof(left_text), DEVICE_TEXT_BUFFER_FORMAT,
+                               s_device_settings.language, &arg, 1U);
         } else {
             // Nothing playing, or a source with no backlog at all. A dash says
             // that; a zero would claim the buffer had run dry.
@@ -2919,7 +2927,7 @@ static void ui_update_playback_marks(const player_snapshot_t *snapshot)
  *
  * A message from the player wins over the name of the state: "Stopped" is true
  * and useless, and why it is stopped is the thing worth the row. Nothing on
- * this panel showed snapshot->error at all until now - it reached the browser
+ * this panel showed playback errors at all until now - they reached the browser
  * and stopped there - so a press that started nothing, or an account without a
  * subscription, was a screen with no explanation on it. */
 static void ui_set_state_line(const char *state, const char *artist, bool error);
@@ -2946,8 +2954,8 @@ static void ui_set_state_line_from(const player_snapshot_t *snapshot,
         ui_set_state_line(ui_text(DEVICE_TEXT_STATE_RECONNECTING), artist, false);
         return;
     }
-    if (snapshot->error[0] != '\0') {
-        ui_set_state_line(snapshot->error, artist, true);
+    if (snapshot->error_text_id != 0U) {
+        ui_set_state_line(ui_text((device_text_id_t)(snapshot->error_text_id - 1U)), artist, true);
         return;
     }
     ui_set_state_line(state, artist, snapshot->playback_state == PLAYER_PLAYBACK_ERROR);
@@ -3064,7 +3072,9 @@ static void ui_update_bluetooth_status(const player_snapshot_t *snapshot)
     if (snapshot->playback_state == PLAYER_PLAYBACK_STOPPED && snapshot->context[0] == '\0') {
         char name[DEVICE_NAME_MAX];
         device_settings_device_name(name, sizeof(name));
-        snprintf(pairing, sizeof(pairing), ui_text(DEVICE_TEXT_BLUETOOTH_PAIRING), name);
+        const device_text_arg_t arg = {"name", name};
+        device_text_format(pairing, sizeof(pairing), DEVICE_TEXT_BLUETOOTH_PAIRING,
+                           s_device_settings.language, &arg, 1U);
         state = pairing;
     } else if (snapshot->playback_state != PLAYER_PLAYBACK_PLAYING &&
                snapshot->playback_state != PLAYER_PLAYBACK_PAUSED &&
@@ -3630,7 +3640,7 @@ static void ui_create_feed_screen(void)
     lv_obj_set_style_border_width(s_feed_screen, 0, 0);
     lv_obj_set_style_pad_all(s_feed_screen, 0, 0);
     lv_obj_set_style_text_font(s_feed_screen, UI_FONT_BODY, 0);
-    ui_status_strip_create(s_feed_screen, &s_feed_strip, "jRadio");
+    ui_status_strip_create(s_feed_screen, &s_feed_strip, ui_text(DEVICE_TEXT_BRAND));
 
     s_feed_title = lv_label_create(s_feed_screen);
     lv_obj_set_pos(s_feed_title, 0, UI_STRIP_H + 8);
@@ -3766,7 +3776,7 @@ static void ui_create_menu_screen(void)
      * cursor. */
     lv_obj_clear_flag(s_menu_screen, LV_OBJ_FLAG_SCROLLABLE);
 
-    ui_status_strip_create(s_menu_screen, &s_menu_strip, "jRadio");
+    ui_status_strip_create(s_menu_screen, &s_menu_strip, ui_text(DEVICE_TEXT_BRAND));
 
     for (uint8_t index = 0; index < UI_MENU_ITEM_COUNT; ++index) {
         s_menu_rows[index] = lv_label_create(s_menu_screen);
@@ -4272,13 +4282,6 @@ static void ui_create_settings_screen(void)
     ui_create_about_overlay();
 }
 
-/* The About overlay: what the device is, and who to write to about it.
- *
- * Built once with the screen rather than on demand. LVGL's heap is 192 KB in
- * PSRAM since the pool moved there, and seven labels are nothing against it -
- * building and tearing down on every press would trade that for a chance of
- * failing at the moment somebody asked, and a failed lv_obj_create is a hang
- * in the refresh rather than an error anybody sees. */
 static void ui_create_about_overlay(void)
 {
     s_about_overlay = lv_obj_create(s_settings_screen);
@@ -4287,6 +4290,7 @@ static void ui_create_about_overlay(void)
     lv_obj_set_size(s_about_overlay, TFT_WIDTH, TFT_HEIGHT);
     ui_paint(s_about_overlay, UI_PAINT_BG, UI_ROLE_GROUND, 0);
     lv_obj_set_style_bg_opa(s_about_overlay, LV_OPA_COVER, 0);
+    lv_obj_remove_flag(s_about_overlay, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_flag(s_about_overlay, LV_OBJ_FLAG_HIDDEN);
 
     lv_obj_t *title = lv_label_create(s_about_overlay);
@@ -4295,18 +4299,25 @@ static void ui_create_about_overlay(void)
     lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_style_text_font(title, UI_FONT_TITLE, 0);
     ui_paint(title, UI_PAINT_TEXT, UI_ROLE_ACCENT, 0);
-    /* Not translated, and not "О устройстве": it is the name of the thing. */
-    lv_label_set_text(title, "jradio");
+    lv_label_set_text(title, "yiRadio");
+
+    s_about_body = lv_obj_create(s_about_overlay);
+    lv_obj_remove_style_all(s_about_body);
+    lv_obj_set_pos(s_about_body, UI_CONTENT_X, UI_ABOUT_ROW_Y);
+    lv_obj_set_size(s_about_body, UI_CONTENT_W, UI_ABOUT_BODY_H);
+    lv_obj_set_scroll_dir(s_about_body, LV_DIR_VER);
+    lv_obj_set_scrollbar_mode(s_about_body, LV_SCROLLBAR_MODE_AUTO);
+    lv_obj_set_style_width(s_about_body, 3, LV_PART_SCROLLBAR);
+    lv_obj_set_style_bg_opa(s_about_body, LV_OPA_COVER, LV_PART_SCROLLBAR);
+    ui_paint(s_about_body, UI_PAINT_BG, UI_ROLE_DIM, LV_PART_SCROLLBAR);
+    lv_obj_set_style_pad_right(s_about_body, 7, 0);
+    lv_obj_set_style_pad_row(s_about_body, 2, 0);
+    lv_obj_set_flex_flow(s_about_body, LV_FLEX_FLOW_COLUMN);
 
     for (size_t row = 0U; row < UI_ABOUT_ROWS; ++row) {
-        s_about_rows[row] = lv_label_create(s_about_overlay);
-        lv_obj_set_pos(s_about_rows[row], UI_CONTENT_X,
-                       UI_ABOUT_ROW_Y + (int)row * UI_ABOUT_ROW_PITCH);
-        lv_obj_set_width(s_about_rows[row], UI_CONTENT_W);
-        /* One line each, dotted rather than wrapped: a version that did not
-         * fit would otherwise push every row below it down. */
-        lv_obj_set_height(s_about_rows[row], UI_SRC_LINE_H);
-        lv_label_set_long_mode(s_about_rows[row], LV_LABEL_LONG_DOT);
+        s_about_rows[row] = lv_label_create(s_about_body);
+        lv_obj_set_width(s_about_rows[row], LV_PCT(100));
+        lv_label_set_long_mode(s_about_rows[row], LV_LABEL_LONG_WRAP);
         ui_paint(s_about_rows[row], UI_PAINT_TEXT, UI_ROLE_TEXT, 0);
         lv_label_set_text(s_about_rows[row], "");
     }
@@ -4314,13 +4325,11 @@ static void ui_create_about_overlay(void)
      * problem - so it is the only one that is not the ordinary text colour. */
     ui_paint(s_about_rows[UI_ABOUT_ROWS - 1U], UI_PAINT_TEXT, UI_ROLE_ACCENT, 0);
 
-    s_about_author = lv_label_create(s_about_overlay);
-    lv_obj_set_pos(s_about_author, UI_CONTENT_X, UI_ABOUT_AUTHOR_Y);
-    lv_obj_set_width(s_about_author, UI_CONTENT_W);
-    lv_obj_set_style_text_align(s_about_author, LV_TEXT_ALIGN_CENTER, 0);
-    lv_label_set_long_mode(s_about_author, LV_LABEL_LONG_DOT);
-    ui_paint(s_about_author, UI_PAINT_TEXT, UI_ROLE_SECONDARY, 0);
-    lv_label_set_text(s_about_author, VERSION_INFO_AUTHOR);
+    lv_obj_t *attribution = lv_label_create(s_about_body);
+    lv_obj_set_width(attribution, LV_PCT(100));
+    lv_label_set_long_mode(attribution, LV_LABEL_LONG_WRAP);
+    ui_paint(attribution, UI_PAINT_TEXT, UI_ROLE_SECONDARY, 0);
+    lv_label_set_text_static(attribution, VERSION_INFO_ATTRIBUTION);
 
     lv_obj_t *hint = lv_label_create(s_about_overlay);
     lv_obj_set_pos(hint, UI_CONTENT_X, UI_ABOUT_HINT_Y);
@@ -4370,10 +4379,8 @@ static void ui_settings_row_text(const ui_settings_row_t *row, char *text, size_
         /* The value names itself in its own language whichever is in force, so
          * that somebody who cannot read the current setting can still find the
          * way back out of it. */
-        ui_settings_field(text, text_size, DEVICE_TEXT_ROW_LANGUAGE,
-                          s_device_settings.language == DEVICE_LANGUAGE_EN
-                              ? DEVICE_TEXT_LANGUAGE_ENGLISH
-                              : DEVICE_TEXT_LANGUAGE_RUSSIAN);
+        snprintf(text, text_size, "  %s: %s", ui_text(DEVICE_TEXT_ROW_LANGUAGE),
+                 device_locale_name(s_device_settings.language));
         break;
     case UI_SETTINGS_ROW_HOME_SCREEN_FIELD:
         ui_settings_field(text, text_size, DEVICE_TEXT_ROW_HOME_SCREEN,
@@ -4601,25 +4608,40 @@ static bool ui_settings_row_switch(ui_settings_row_id_t id, size_t *index, bool 
  * file, and that belongs to the moment somebody asks rather than to a poll
  * loop that runs every 10 ms. Neither figure can change while the device is
  * running, so once per press is once too often already. */
-static void ui_show_about(void)
+static void ui_render_about(void)
 {
-    if (s_about_open || s_about_overlay == NULL) return;
-    s_about_open = true;
-    s_about_opened_ms = ui_tick_get_ms();
-
     version_info_t info;
     version_info_read(&info);
     ui_about_lines_t lines;
     ui_about_build(&info, s_device_settings.language, &lines);
 
     const char *const text[UI_ABOUT_ROWS] = {
-        lines.firmware, lines.built, lines.web, lines.idf, lines.notice,
+        lines.firmware, lines.build, lines.built, lines.web, lines.idf, lines.compiler, lines.notice,
     };
     for (size_t row = 0U; row < UI_ABOUT_ROWS; ++row) {
         lv_label_set_text(s_about_rows[row], text[row]);
     }
+    if (lines.notice[0] == '\0') lv_obj_add_flag(s_about_rows[UI_ABOUT_ROWS - 1U], LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_remove_flag(s_about_rows[UI_ABOUT_ROWS - 1U], LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(s_about_hint, ui_text(DEVICE_TEXT_PRESS_TO_RETURN));
+}
+
+static void ui_show_about(void)
+{
+    if (s_about_open || s_about_overlay == NULL) return;
+    s_about_open = true;
+    s_about_opened_ms = ui_tick_get_ms();
+    ui_render_about();
     lv_obj_clear_flag(s_about_overlay, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_update_layout(s_about_body);
+    lv_obj_scroll_to_y(s_about_body, 0, LV_ANIM_OFF);
+}
+
+/* Positive steps reveal later rows. */
+static void ui_scroll_about(int steps)
+{
+    s_about_opened_ms = ui_tick_get_ms();
+    lv_obj_scroll_by_bounded(s_about_body, 0, -steps * UI_SRC_LINE_H, LV_ANIM_OFF);
 }
 
 static void ui_hide_about(void)
@@ -4674,7 +4696,7 @@ static void ui_update_settings_web_band(void)
                         s_device_settings.language, UI_SET_BAND_SHOW_SCHEME, mounted, text,
                         sizeof(text));
     ui_set_label_text_if_changed(s_settings_web_address, text);
-    /* The setup network's line - "join jradio-XXXX" - is wider than the slot
+    /* The setup network's line - "join yiRadio-XXXX" - is wider than the slot
      * beside the hint on a 320 px panel, and wrapped into a second line the
      * band cut in half: the network's name was the half that went (seen on
      * the 320x170 module 2026-10-31). The name is the one thing a visitor
@@ -5013,6 +5035,7 @@ static void ui_reload_settings(void)
     const bool tone_pending = s_tone_save_pending;
     const signed char turning_bass = s_device_settings.tone_bass;
     const signed char turning_treble = s_device_settings.tone_treble;
+    const device_language_t prior_language = s_device_settings.language;
 
     if (!device_settings_init(&s_device_settings)) {
         lv_label_set_text(s_settings_notice, ui_text(DEVICE_TEXT_SETTINGS_READ_FAILED));
@@ -5049,6 +5072,12 @@ static void ui_reload_settings(void)
      * which is the narrower of the two problems. */
     device_settings_publish(&s_device_settings);
     ui_apply_device_name();
+    if (s_device_settings.language != prior_language) {
+        ui_update_menu_highlight();
+        if (s_feed_screen != NULL) ui_update_feed_screen();
+        if (s_about_open) ui_render_about();
+        if (s_qr_open) lv_label_set_text(s_qr_back, ui_text(DEVICE_TEXT_PRESS_TO_RETURN));
+    }
     if (s_settings_open) {
         ui_update_settings();
     } else {
@@ -5454,11 +5483,12 @@ static void ui_settings_change_selected(void)
     const ui_settings_row_id_t selected = ui_settings_model_selected(&s_settings_model);
     bool changed = false;
     switch (selected) {
-    case UI_SETTINGS_ROW_LANGUAGE_FIELD:
-        changed = device_settings_set_language(
-            &s_device_settings,
-            s_device_settings.language == DEVICE_LANGUAGE_EN ? DEVICE_LANGUAGE_RU : DEVICE_LANGUAGE_EN);
+    case UI_SETTINGS_ROW_LANGUAGE_FIELD: {
+        const device_language_t next = device_locale_next(s_device_settings.language);
+        if (next == s_device_settings.language) return;
+        changed = device_settings_set_language(&s_device_settings, next);
         break;
+    }
     case UI_SETTINGS_ROW_HOME_SCREEN_FIELD:
         changed = device_settings_set_home_screen(
             &s_device_settings,
@@ -6261,7 +6291,7 @@ static void ui_load_source_screen(audio_source_t selected_source)
                       ui_menu_item_label((ui_menu_item_t)index, s_device_settings.language));
     lv_screen_load(s_source_screen);
     if (selected_source == AUDIO_SOURCE_INTERNET_RADIO) {
-        ui_set_state_line("Connecting...", "", false);
+        ui_set_state_line(ui_text(DEVICE_TEXT_STATE_CONNECTING), "", false);
         ui_scroller_set_text(&s_source_detail, "");
         ui_set_label_text_if_changed(s_source_stream, "");
         s_waiting_for_source_item = true;
@@ -6297,7 +6327,7 @@ static void ui_load_source_screen(audio_source_t selected_source)
         ui_set_label_text_if_changed(s_source_stream, "");
     } else {
         s_waiting_for_source_item = false;
-        ui_set_state_line("Not implemented", "", false);
+        ui_set_state_line(ui_text(DEVICE_TEXT_NOT_AVAILABLE_YET), "", false);
         ui_scroller_set_text(&s_source_detail, "");
         ui_set_label_text_if_changed(s_source_stream, "");
     }
@@ -8391,12 +8421,12 @@ static void ui_handle_input(board_input_action_t action)
     }
     if (s_settings_open) {
         if (s_about_open) {
-            /* One thing on screen and one way off it, like the QR overlay:
-             * the press or the hold returns, and the knob has nothing to
-             * move. */
             if (action == BOARD_INPUT_ACTION_ENCODER_BUTTON ||
                 action == BOARD_INPUT_ACTION_ENCODER_LONG) {
                 ui_hide_about();
+            } else if (action == BOARD_INPUT_ACTION_ENCODER_LEFT ||
+                       action == BOARD_INPUT_ACTION_ENCODER_RIGHT) {
+                ui_scroll_about(action == BOARD_INPUT_ACTION_ENCODER_RIGHT ? 1 : -1);
             }
             return;
         }
@@ -8575,7 +8605,7 @@ static void ui_handle_input(board_input_action_t action)
             if (!ui_submit_player_command(&command)) return;
             ui_load_source_screen(AUDIO_SOURCE_INTERNET_RADIO);
             if (entry != NULL) ui_scroller_set_text(&s_source_title, entry->name);
-            ui_set_state_line("Connecting", "", false);
+            ui_set_state_line(ui_text(DEVICE_TEXT_STATE_CONNECTING), "", false);
             ui_scroller_set_text(&s_source_detail,
                                          entry == NULL ? "" : entry->name);
             char stream_text[32];
@@ -10180,6 +10210,11 @@ static void ui_touch_drag_quick(const ui_touch_event_t *event)
 
 static void ui_touch_drag(ui_touch_target_t target, const ui_touch_event_t *event)
 {
+    if (target == UI_TOUCH_TARGET_OVERLAY && s_about_open) {
+        if (event->coasting) ui_touch_gesture_stop_coast(&s_touch);
+        else if (event->axis == UI_TOUCH_AXIS_VERTICAL) ui_scroll_about(-event->steps);
+        return;
+    }
     if (target == UI_TOUCH_TARGET_PLAYER) {
         ui_touch_drag_player(event);
         return;

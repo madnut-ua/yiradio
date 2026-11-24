@@ -2,6 +2,7 @@
 
 const assert = require('assert');
 const fs = require('fs');
+const {localeResponse} = require('./web_locale_fixture');
 const vm = require('vm');
 
 class ClassList {
@@ -37,6 +38,7 @@ class Element {
   }
   get value() { return this.currentValue; }
   setAttribute(name, value) { this.attributes[name] = String(value); }
+  removeAttribute(name) { delete this.attributes[name]; }
   getAttribute(name) { return Object.hasOwn(this.attributes, name) ? this.attributes[name] : null; }
   addEventListener(type, callback) { (this.listeners[type] ||= []).push(callback); }
   emit(type, event = {}) {
@@ -73,9 +75,8 @@ const section = Object.fromEntries(sectionCards.map((card) => [card.dataset.sect
 const ids = [
   'socket-state', 'wifi-form', 'wifi-ssid', 'wifi-password', 'wifi-password-reveal',
   'wifi-submit',
-  'about-firmware', 'about-built', 'about-web', 'about-idf', 'about-notice',
+  'about-firmware', 'about-build', 'about-built', 'about-web', 'about-idf', 'about-compiler', 'about-notice',
   'about-module-label', 'about-module',
-  'about-author',
   'wifi-status', 'wifi-active', 'wifi-ip', 'wifi-host', 'saved-networks',
   'saved-networks-empty', 'wifi-add', 'wifi-cancel', 'wifi-scan',
   'wifi-scan-block', 'scan-networks', 'scan-empty', 'wifi-chosen',
@@ -109,7 +110,8 @@ const ids = [
   'device-idle-brightness-value', 'device-screensaver-after-row', 'device-screensaver-when',
   'device-screensaver-when-row',
   'device-idle-brightness-row',
-  'device-timezone', 'device-ntp', 'sleep-select', 'device-name', 'device-name-note',
+  'device-timezone', 'device-timezone-filter', 'device-timezone-search',
+  'device-timezone-error', 'device-ntp', 'sleep-select', 'device-name', 'device-name-note',
   'device-alarm', 'device-alarm-time', 'device-alarm-station', 'device-alarm-volume',
   'device-alarm-volume-value', 'device-alarm-time-row', 'device-alarm-days-row',
   'device-alarm-station-row', 'device-alarm-volume-row',
@@ -236,13 +238,15 @@ let stationsReply = {
           {index: 2, label: 'Nightwave Plaza'}],
 };
 let settingsPostFails = false;
+let timezoneCatalogReply;
 // GET /api/about. The versions differ on purpose: a page that ignored the
 // answer and printed the same string twice would still look right if they
 // matched.
 let aboutReply = {
   firmware: {version: 'v1.2.0', built: 'Sep  6 2026', present: true},
   web: {version: 'v1.1.0', built: '2026-09-01', present: true},
-  idf: 'v5.5.5', matched: false, author: 'someone@example.com',
+  idf: 'v5.5.5', matched: false,
+  build: 'ST7789/MAX98357A/RDA5807FP', compiler: 'GCC 14.2.0',
 };
 // What window.confirm() answers, and every question it was asked.
 let confirmAnswer = true;
@@ -263,7 +267,7 @@ let restoreOk = true;
 let restoreFetchFails = false;
 
 const timerHandles = new Map();
-// What the browser remembers between loads: the language and the open section.
+// What the browser remembers between loads: the open section.
 const store = {};
 /* How wide the page is being looked at. The sections fold on a phone and stand
    open on a screen with room for the two columns, so both have to be drivable.
@@ -302,6 +306,8 @@ const context = {
       return confirmAnswer;
     },
     fetch(url, options) {
+      const locale = localeResponse(url);
+      if (locale) return locale;
       fetchCalls.push({url, options});
       if (String(url).startsWith('/api/wifi-scan')) {
         if (options && options.method === 'POST') {
@@ -371,6 +377,11 @@ const context = {
           json: () => Promise.resolve(settingsReply),
         });
       }
+      if (url === '/timezones.json') {
+        return Promise.resolve({
+          ok: Boolean(timezoneCatalogReply), json: () => Promise.resolve(timezoneCatalogReply),
+        });
+      }
       if (String(url).startsWith('/api/restore')) {
         if (restoreFetchFails) return Promise.reject(new Error('offline'));
         return Promise.resolve({ok: restoreOk, json: () => Promise.resolve(restoreReply)});
@@ -424,17 +435,17 @@ assert.equal(elements['#saved-networks'].children.length, 1);
 
 // The field starts hidden, whatever the markup happened to say.
 assert.equal(elements['#wifi-password'].type, 'password');
-assert.equal(elements['#wifi-password-reveal'].textContent, 'Показать');
+assert.equal(elements['#wifi-password-reveal'].textContent, 'Show');
 assert.equal(elements['#wifi-password-reveal'].getAttribute('aria-pressed'), 'false');
 
 // And the button shows it, then hides it again.
 elements['#wifi-password-reveal'].emit('click');
 assert.equal(elements['#wifi-password'].type, 'text');
-assert.equal(elements['#wifi-password-reveal'].textContent, 'Скрыть');
+assert.equal(elements['#wifi-password-reveal'].textContent, 'Hide');
 assert.equal(elements['#wifi-password-reveal'].getAttribute('aria-pressed'), 'true');
 elements['#wifi-password-reveal'].emit('click');
 assert.equal(elements['#wifi-password'].type, 'password');
-assert.equal(elements['#wifi-password-reveal'].textContent, 'Показать');
+assert.equal(elements['#wifi-password-reveal'].textContent, 'Show');
 
 elements['#wifi-ssid'].value = 'new-ap';
 elements['#wifi-password'].value = 'topsecret42';
@@ -448,7 +459,7 @@ assert.equal(elements['#wifi-password'].value, '');
 assert.equal(elements['#wifi-password'].type, 'password');
 assert.equal(elements['#wifi-password-reveal'].getAttribute('aria-pressed'), 'false');
 assert.equal(elements['#wifi-submit'].disabled, true);
-assert.equal(elements['#wifi-status'].textContent, 'Проверка…');
+assert.equal(elements['#wifi-status'].textContent, 'Checking…');
 assert.deepEqual(JSON.parse(first.sent.at(-1)), {
   type: 'command', id: 'settings-1', action: 'wifi.save',
   ssid: 'new-ap', password: 'topsecret42',
@@ -465,7 +476,7 @@ sendEvent(first, {
   wifi: {mode: 'sta_connecting', active_ssid: 'new-ap', ip: '',
     save_pending: true, last_error: 0, saved: [{ssid: 'home', blocked: false}]},
 });
-assert.equal(elements['#wifi-status'].textContent, 'Подключение…');
+assert.equal(elements['#wifi-status'].textContent, 'Connecting…');
 assert.equal(elements['#wifi-submit'].disabled, true);
 
 sendEvent(first, {
@@ -473,7 +484,7 @@ sendEvent(first, {
   wifi: {mode: 'sta_connected', active_ssid: 'new-ap', ip: '192.168.1.20',
     save_pending: false, last_error: 0, saved: [{ssid: 'home', blocked: false}, {ssid: 'new-ap', blocked: false}]},
 });
-assert.equal(elements['#wifi-status'].textContent, 'Сохранено');
+assert.equal(elements['#wifi-status'].textContent, 'Saved');
 assert.equal(elements['#wifi-submit'].disabled, false);
 
 elements['#wifi-ssid'].value = 'bad-ap';
@@ -485,7 +496,7 @@ sendEvent(first, {
   wifi: {mode: 'sta_connected', active_ssid: 'home', ip: '192.168.1.10',
     save_pending: false, last_error: 202, saved: [{ssid: 'home', blocked: false}, {ssid: 'new-ap', blocked: false}]},
 });
-assert.match(elements['#wifi-status'].textContent, /парол/i);
+assert.match(elements['#wifi-status'].textContent, /password/i);
 assert.equal(elements['#wifi-submit'].disabled, false);
 
 sendEvent(first, {
@@ -516,7 +527,7 @@ sendEvent(second, {
   wifi: {mode: 'sta_connected', active_ssid: 'other', ip: '192.168.1.11',
     save_pending: false, last_error: 0, saved: [{ssid: 'home', blocked: false}, {ssid: 'other', blocked: false}]},
 });
-assert.equal(elements['#wifi-status'].textContent, 'Сохранено');
+assert.equal(elements['#wifi-status'].textContent, 'Saved');
 assert.equal(elements['#wifi-submit'].disabled, false);
 sendEvent(first, snapshot(99, {
   mode: 'sta_connected', active_ssid: 'old-socket', ip: '',
@@ -1228,6 +1239,19 @@ function lastYandexTimer() {
   assert.equal(elements['#device-status'].textContent, 'Saved');
   assert.equal(documentRef.documentElement.lang, 'en');
 
+  const languagePicker = elements['#device-language'];
+  assert.equal(languagePicker.disabled, false);
+  assert.deepEqual(languagePicker.children.map(({value, textContent}) => [value, textContent]),
+    [['en', 'English'], ['ru', 'Русский'], ['uk', 'Українська']]);
+  settingsReply = {...settingsReply, language: 'uk'};
+  languagePicker.value = 'uk';
+  languagePicker.emit('change');
+  await settle();
+  assert.deepEqual(JSON.parse(fetchCalls.filter((call) => call.url === '/api/settings' &&
+    call.options?.method === 'POST').at(-1).options.body), {field: 'language', value: 'uk'});
+  assert.equal(documentRef.documentElement.lang, 'uk');
+  assert.equal(elements['#device-status'].textContent, 'Збережено');
+
   // Back to Russian, which is the language the rest of this file is written in.
   settingsReply = {...settingsReply, language: 'ru'};
   elements['#device-language'].value = 'ru';
@@ -1442,6 +1466,8 @@ function lastYandexTimer() {
   // halves disagree, so that is what the reply above sets up.
   assert.ok(fetchCalls.some((call) => call.url === '/api/about'));
   assert.equal(elements['#about-firmware'].textContent, 'v1.2.0');
+  assert.equal(elements['#about-build'].textContent, 'ST7789/MAX98357A/RDA5807FP');
+  assert.equal(elements['#about-compiler'].textContent, 'GCC 14.2.0');
   assert.equal(elements['#about-built'].textContent, 'Sep  6 2026');
   assert.equal(elements['#about-web'].textContent, 'v1.1.0');
   assert.equal(elements['#about-idf'].textContent, 'v5.5.5');
@@ -1449,16 +1475,16 @@ function lastYandexTimer() {
   // No module answered: no line for it at all, rather than "unknown".
   assert.equal(elements['#about-module'].hidden, true);
   assert.equal(elements['#about-module-label'].hidden, true);
-  // The address is the device's answer, not a string written into the page,
-  // and it is offered as something to write to.
-  assert.equal(elements['#about-author'].textContent, 'someone@example.com');
-  assert.equal(elements['#about-author'].href, 'mailto:someone@example.com');
+  const settingsMarkup = fs.readFileSync('data/www/settings.html', 'utf8');
+  assert.match(settingsMarkup, /id="about-firmware"[^<]*<\/dd>\s*<dt[^>]*>Build<\/dt><dd id="about-build"/);
+  assert.match(settingsMarkup, /yiRadio is based on jRadio project\./);
+  assert.doesNotMatch(settingsMarkup, /id="about-author"/);
 
   // Agreement is the quiet case; a module that answers gets its line.
   aboutReply = {
     firmware: {version: 'v1.2.0', built: 'Sep  6 2026', present: true},
     web: {version: 'v1.2.0', built: '2026-09-06', present: true},
-    idf: 'v5.5.5', matched: true, author: 'someone@example.com',
+    idf: 'v5.5.5', matched: true,
     module: {present: true, version: '1.0.0'},
   };
   await reload();
@@ -1477,6 +1503,8 @@ function lastYandexTimer() {
   };
   await reload();
   assert.equal(elements['#about-web'].textContent, 'неизвестно');
+  assert.equal(elements['#about-build'].textContent, 'неизвестно');
+  assert.equal(elements['#about-compiler'].textContent, 'неизвестно');
   assert.equal(elements['#about-notice'].hidden, true);
 
   /* The clock. The zone menu is built from what the device sent, not from the
@@ -1723,6 +1751,7 @@ function lastYandexTimer() {
     type: 'settings.update', revision: 91,
     settings: {...settingsReply, language: 'ru'},
   });
+  await settle();
   assert.equal(documentRef.documentElement.lang, 'ru');
 
   /* The page folds away into five headings, which is what makes it a page a
@@ -1784,6 +1813,40 @@ function lastYandexTimer() {
   assert.equal(remoteCard.hidden, true);
   assert.equal(remoteLearns.length, 0);
 
+  settingsReply = {...settingsReply, timezone: 'Europe/Kyiv', tzdb: 'test'};
+  timezoneCatalogReply = {version: 'test', zones: ['Asia/Tokyo', 'Europe/Berlin', 'Europe/Kyiv']};
+  await refreshSettings();
+  await settle();
+  const zonePicker = elements['#device-timezone'];
+  const zoneFilter = elements['#device-timezone-search'];
+  assert.equal(zonePicker.disabled, false);
+  assert.equal(zonePicker.value, 'Europe/Kyiv');
+  assert.deepEqual(zonePicker.children.map((group) => group.label), ['Asia', 'Europe']);
+  zoneFilter.value = 'tokyo';
+  zoneFilter.emit('input');
+  assert.deepEqual(zonePicker.children.flatMap((group) => group.children.map((option) => option.value)),
+                   ['Asia/Tokyo', 'Europe/Kyiv']);
+  const catalogRequests = fetchCalls.filter((call) => call.url === '/timezones.json').length;
+  assert.ok(catalogRequests > 0);
+  settingsReply = {...settingsReply, timezone: 'Asia/Tokyo'};
+  zonePicker.value = 'Asia/Tokyo';
+  zonePicker.emit('change');
+  await settle();
+  assert.equal(fetchCalls.filter((call) => call.url === '/timezones.json').length, catalogRequests);
+  const lastChange = fetchCalls.filter(({url, options}) => url === '/api/settings' &&
+    options?.method === 'POST').at(-1);
+  assert.deepEqual(JSON.parse(lastChange.options.body), {field: 'timezone', value: 'Asia/Tokyo'});
+  assert.equal(zonePicker.value, 'Asia/Tokyo');
+
+  settingsReply = {...settingsReply, tzdb: 'missing'};
+  timezoneCatalogReply = undefined;
+  await refreshSettings();
+  await settle();
+  assert.equal(zonePicker.disabled, true);
+  assert.equal(zonePicker.value, 'Asia/Tokyo');
+  assert.equal(elements['#device-timezone-error'].hidden, false);
+  assert.equal(elements['#device-ntp'].disabled, false);
+
   /* And the choice outlives the load, so a device that reboots after a restore
      comes back with the section that was being worked in. */
   section.yandex.toggle.emit('click');
@@ -1796,7 +1859,6 @@ function lastYandexTimer() {
   vm.runInContext(fs.readFileSync('data/www/settings.js', 'utf8'), context);
   assert.equal(section.yandex.body.hidden, false);
   assert.equal(section.device.body.hidden, true);
-
   console.log('web settings tests passed');
 })().catch((error) => {
   console.error(error);

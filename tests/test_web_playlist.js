@@ -2,6 +2,7 @@
 
 const assert = require('assert');
 const fs = require('fs');
+const {localeResponse, jsonResponse} = require('./web_locale_fixture');
 const vm = require('vm');
 
 class ClassList {
@@ -84,6 +85,7 @@ const ids = [
 const elements = Object.fromEntries(ids.map((id) => [`#${id}`, new Element()]));
 
 const documentRef = {
+  addEventListener() {},
   querySelector(selector) { return elements[selector]; },
   createElement(tag) { return new Element(tag); },
   createTextNode(text) {
@@ -98,7 +100,10 @@ let nextGetResponse = () => ({ok: true, status: 200, text: async () => ''});
 let nextPostResponse = () => ({ok: true, status: 200, json: async () => ({count: 0})});
 
 function fetchMock(url, options) {
+  const locale = localeResponse(url);
+  if (locale) return locale;
   fetchCalls.push({url, options});
+  if (url === '/api/settings') return jsonResponse({language: 'ru'});
   if (options && options.method === 'POST') return Promise.resolve(nextPostResponse());
   return Promise.resolve(nextGetResponse());
 }
@@ -112,7 +117,7 @@ const context = {
   // The zip reader inflates whatever another tool compressed; nothing else in
   // the page needs it.
   DecompressionStream,
-  window: {confirm: () => true},
+  window: {confirm: () => true, fetch: fetchMock, setTimeout() {}, clearTimeout() {}},
   module: {exports: {}},
 };
 
@@ -185,6 +190,7 @@ function zipWithDeflatedEntry(name, bytes) {
 }
 
 (async () => {
+  await flush();
   // parseCatalogText / serializeCatalog mirror station_catalog_parse_line()
   // in components/internet_radio/station_catalog.c: the third column is `S`
   // or `L` in our own lists, and malformed lines are skipped.
@@ -269,7 +275,7 @@ function zipWithDeflatedEntry(name, bytes) {
 
   /* Script loads and immediately fetches two things: the playlist it edits,
      and the language - this page has no socket to be told over, so it asks
-     once rather than showing the wrong words until a reload. */
+     immediately rather than waiting until its next poll. */
   await flush();
   await flush();
   assert.equal(fetchCalls.length, 2);

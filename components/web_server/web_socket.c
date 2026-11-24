@@ -214,7 +214,10 @@ static void write_player(web_json_writer_t *writer,
         web_json_literal(writer, player->track_disliked ? "true" : "false");
     }
     web_json_literal(writer, ",\"error\":");
-    web_json_string(writer, player->error);
+    const char *const error = player->error_text_id == 0U
+                                  ? "" : device_text((device_text_id_t)(player->error_text_id - 1U),
+                                                     language);
+    web_json_string_bounded(writer, error, PLAYER_ERROR_MAX_LEN - 1U);
     web_json_literal(writer, "}");
 }
 
@@ -362,10 +365,9 @@ int web_socket_serialize_event(char *output, size_t output_size,
     /* Out of the settings the UI published rather than off the card: this
      * runs on the web server's task, and it is the same copy the page is being
      * shown, so the labels in a frame cannot disagree with the language field
-     * beside them. Russian until the UI has published, which is the language
-     * the device comes up in. */
+     * beside them. Use English until settings have been published. */
     const device_language_t language =
-        settings->known ? (device_language_t)settings->view.language : DEVICE_LANGUAGE_RU;
+        settings->known ? settings->view.language : DEVICE_LANGUAGE_EN;
 
     web_json_literal(&writer, "{\"type\":");
     web_json_string(&writer, type);
@@ -485,6 +487,11 @@ uint32_t web_socket_changed_sections(
          !web_settings_view_equal(&previous_settings->view,
                                   &current_settings->view))) {
         changes |= WEB_SOCKET_SECTION_SETTINGS;
+    }
+    if (current_settings->known &&
+        (!previous_settings->known ||
+         previous_settings->view.language != current_settings->view.language)) {
+        changes |= WEB_SOCKET_SECTION_CAPABILITIES | WEB_SOCKET_SECTION_PLAYER;
     }
     return changes;
 }

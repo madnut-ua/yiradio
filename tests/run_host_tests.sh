@@ -98,10 +98,31 @@ idf_path=$(find_idf_path) || {
 cjson_source="${idf_path}/components/json/cJSON/cJSON.c"
 cjson_include="${idf_path}/components/json/cJSON"
 
+export TEST_LOCALES_WWW="${test_build_dir}/www"
+mkdir "${TEST_LOCALES_WWW}"
+python3 "${project_dir}/tools/pack_locales.py" \
+    --source "${project_dir}/locales" --www "${TEST_LOCALES_WWW}"
+python3 "${project_dir}/tests/test_pack_locales.py"
+
 run_test() {
     local name=$1
     shift
-    "${host_cc}" "${common_flags[@]}" "${include_flags[@]}" "$@" \
+    local need_locale=false have_text=false have_cjson=false file
+    local extra=(-I"${cjson_include}")
+    for file in "$@"; do
+        case "${file}" in
+            */device_text.c) need_locale=true; have_text=true ;;
+            */device_settings.c|*/ui_screensaver.c|*/ui_weather_saver.c|*/test_device_locale.c)
+                need_locale=true ;;
+            */cJSON.c) have_cjson=true ;;
+        esac
+    done
+    if "${need_locale}"; then
+        extra+=(components/settings/device_locale.c)
+        if ! "${have_text}"; then extra+=(components/settings/device_text.c); fi
+        if ! "${have_cjson}"; then extra+=("${cjson_source}"); fi
+    fi
+    "${host_cc}" "${common_flags[@]}" "${include_flags[@]}" "$@" "${extra[@]}" \
         -o "${test_build_dir}/${name}"
     ASAN_OPTIONS="${ASAN_OPTIONS:-detect_leaks=1}" "${test_build_dir}/${name}"
 }
@@ -242,6 +263,7 @@ run_test settings_csv tests/test_settings_csv.c components/settings/settings_csv
 # Every word the device shows, in both languages. The count is a compile-time
 # check; this walks the table for an entry that was added empty.
 run_test device_text tests/test_device_text.c components/settings/device_text.c
+run_test device_locale tests/test_device_locale.c
 run_test device_timezone tests/test_device_timezone.c components/settings/device_timezone.c
 # The alarm's calendar arithmetic: the week wrap, and the rule that its own
 # minute answers with the next occurrence rather than with itself.

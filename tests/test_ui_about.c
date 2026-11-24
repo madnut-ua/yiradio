@@ -1,3 +1,4 @@
+#include "locale_fixture.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -27,18 +28,25 @@ static version_info_t both(const char *firmware, const char *web)
 
 static void test_it_names_what_the_device_is_running(void)
 {
-    const version_info_t info = both("v1.2.0", "v1.2.0");
+    version_info_t info = both("v1.2.0", "v1.2.0");
+    strcpy(info.build, "ST7796S/MAX98357A/RDA5807FP/DS3231/FT6336U/jradio-bt/SPDIF/SD/USB/"
+                       "IR/DLNA/Yandex Music");
+    info.compiler = "GCC 14.2.0";
     ui_about_lines_t lines;
-    ui_about_build(&info, false, &lines);
+    ui_about_build(&info, test_locale("ru"), &lines);
     assert(strcmp(lines.firmware, "Прошивка: v1.2.0") == 0);
     assert(strcmp(lines.built, "Собрана: Sep  6 2026") == 0);
     assert(strcmp(lines.web, "Веб-интерфейс: v1.2.0") == 0);
     assert(strcmp(lines.idf, "ESP-IDF: v5.5.5") == 0);
+    assert(strcmp(lines.compiler, "Компилятор: GCC 14.2.0") == 0);
     /* Agreement is the quiet case: nothing to say. */
     assert(lines.notice[0] == '\0');
 
-    ui_about_build(&info, true, &lines);
+    ui_about_build(&info, DEVICE_LANGUAGE_EN, &lines);
     assert(strcmp(lines.firmware, "Firmware: v1.2.0") == 0);
+    assert(strcmp(lines.build, "Build: ST7796S/ MAX98357A/ RDA5807FP/ DS3231/ FT6336U/ "
+                               "jradio-bt/ SPDIF/ SD/ USB/ IR/ DLNA/ Yandex Music") == 0);
+    assert(strcmp(lines.compiler, "Compiler: GCC 14.2.0") == 0);
     assert(strcmp(lines.web, "Web UI: v1.2.0") == 0);
     /* The framework's label is a proper name and is not translated. */
     assert(strcmp(lines.idf, "ESP-IDF: v5.5.5") == 0);
@@ -48,9 +56,9 @@ static void test_a_mismatch_says_so(void)
 {
     const version_info_t info = both("v1.3.0", "v1.2.0");
     ui_about_lines_t lines;
-    ui_about_build(&info, false, &lines);
+    ui_about_build(&info, test_locale("ru"), &lines);
     assert(lines.notice[0] != '\0');
-    ui_about_build(&info, true, &lines);
+    ui_about_build(&info, DEVICE_LANGUAGE_EN, &lines);
     assert(lines.notice[0] != '\0');
     /* And each half still names itself, so the reader can see which is which
        rather than only that something is wrong. */
@@ -66,11 +74,11 @@ static void test_a_missing_web_stamp_is_unknown_and_not_a_mismatch(void)
        matters. */
     const version_info_t info = both("v1.2.0", NULL);
     ui_about_lines_t lines;
-    ui_about_build(&info, false, &lines);
+    ui_about_build(&info, test_locale("ru"), &lines);
     assert(strcmp(lines.web, "Веб-интерфейс: неизвестно") == 0);
     assert(lines.notice[0] == '\0');
 
-    ui_about_build(&info, true, &lines);
+    ui_about_build(&info, DEVICE_LANGUAGE_EN, &lines);
     assert(strcmp(lines.web, "Web UI: unknown") == 0);
     assert(lines.notice[0] == '\0');
 }
@@ -82,7 +90,7 @@ static void test_it_fills_every_line_whatever_it_is_given(void)
     ui_about_lines_t lines;
     version_info_t nothing;
     memset(&nothing, 0, sizeof(nothing));
-    ui_about_build(&nothing, false, &lines);
+    ui_about_build(&nothing, test_locale("ru"), &lines);
     assert(strstr(lines.firmware, "неизвестно") != NULL);
     assert(strstr(lines.built, "неизвестно") != NULL);
     assert(strstr(lines.web, "неизвестно") != NULL);
@@ -90,12 +98,14 @@ static void test_it_fills_every_line_whatever_it_is_given(void)
     assert(lines.notice[0] == '\0');
 
     /* No information at all is the same answer, not a crash. */
-    ui_about_build(NULL, false, &lines);
+    ui_about_build(NULL, test_locale("ru"), &lines);
     assert(strstr(lines.firmware, "неизвестно") != NULL);
-    ui_about_build(NULL, true, &lines);
+    ui_about_build(NULL, DEVICE_LANGUAGE_EN, &lines);
     assert(strstr(lines.firmware, "unknown") != NULL);
+    assert(strcmp(lines.build, "Build: unknown") == 0);
+    assert(strcmp(lines.compiler, "Compiler: unknown") == 0);
     /* And a null destination is simply nothing to do. */
-    ui_about_build(&nothing, false, NULL);
+    ui_about_build(&nothing, test_locale("ru"), NULL);
 }
 
 static void test_the_longest_version_still_fits_its_line(void)
@@ -113,7 +123,7 @@ static void test_the_longest_version_still_fits_its_line(void)
     info.web.present = true;
 
     ui_about_lines_t lines;
-    ui_about_build(&info, false, &lines);
+    ui_about_build(&info, test_locale("ru"), &lines);
     /* Not truncated to nothing, and the label survived. */
     assert(strncmp(lines.web, "Веб-интерфейс: ", strlen("Веб-интерфейс: ")) == 0);
     assert(strlen(lines.web) > strlen("Веб-интерфейс: "));

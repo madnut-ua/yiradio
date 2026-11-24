@@ -22,6 +22,7 @@
 #include "ota_check.h"
 #include "ota_update.h"
 #include "device_settings.h"
+#include "device_locale.h"
 #include "internet_radio.h"
 #include "player_control.h"
 #include "remote_control.h"
@@ -285,14 +286,17 @@ void app_main(void)
      * files were being swapped when the power went is finished or undone
      * here, so the server never starts on half of each. A few stat() calls
      * when there is nothing to do. */
-    if (storage_mounted) ota_update_boot_cleanup();
+    if (storage_mounted) {
+        ota_update_boot_cleanup();
+        device_locale_init("/littlefs/www");
+    }
     const bool settings_read = storage_mounted && device_settings_init(&boot_settings);
     if (!settings_read) {
         ESP_LOGW(TAG, "settings unreadable at boot; splash drawn unflipped");
     } else {
         /* Wi-Fi joins before the UI publishes its copy, and the join takes
          * the DHCP host name from the published device name - unpublished,
-         * every boot went out as the default jradio-XXXX. */
+         * every boot went out as the default yiRadio-XXXX. */
         device_settings_publish(&boot_settings);
     }
     /* Before the board, and the only thing that is: this may not be a boot at
@@ -329,8 +333,7 @@ void app_main(void)
         // not depend on being connected - SNTP retries on its own and the clock
         // reads unset until an answer arrives.
         /* The zone and the server come off the card, and a card that would not
-         * read leaves both at their defaults - a clock on Moscow time is what
-         * this device had before either was a setting. */
+         * read leaves both at their defaults. */
         device_clock_init(settings_read ? boot_settings.ntp_server : NULL,
                           settings_read ? boot_settings.timezone : NULL);
     }

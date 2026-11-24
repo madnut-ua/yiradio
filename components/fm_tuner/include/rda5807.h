@@ -33,7 +33,7 @@ extern "C" {
 // The high byte of 00h on every chip of the family.
 #define RDA5807_CHIP_ID_FAMILY 0x58U
 
-/* The band is fixed at 87-108 MHz - the one Russia and Europe listen on - and
+/* The band is fixed at 87-108 MHz - the one Europe listen on - and
  * the spacing at 100 kHz, which every station on it sits on. */
 #define RDA5807_BAND_MIN_KHZ 87000U
 #define RDA5807_BAND_MAX_KHZ 108000U
@@ -75,7 +75,7 @@ uint16_t rda5807_control_word(const rda5807_state_t *state, bool soft_reset, boo
 /* 03h with TUNE set: go to `khz`. */
 uint16_t rda5807_tune_word(uint32_t khz);
 
-/* 04h: 50 us de-emphasis, the curve European and Russian stations are sent
+/* 04h: 50 us de-emphasis, the curve European stations are sent
  * with; the chip's default is the American 75 us, which sounds dull here.
  * Soft mute off. And the I2S output, when `i2s`. */
 uint16_t rda5807_options_word(bool i2s);

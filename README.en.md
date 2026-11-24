@@ -1,4 +1,4 @@
-# jRadio
+# yiRadio
 
 An audio player on the ESP32-S3: internet radio, music from a USB stick
 and an SD card, a media server on the home network, Yandex Music and
@@ -58,7 +58,7 @@ The full pinout and the choice of parts are in [Hardware](doc/hardware.en.md).
 |---|---|
 | **Internet radio** | Your own station list (up to 99), the track title from the stream, HTTP and HTTPS, reconnects after a drop |
 | **FM radio** | Presets with pictures, the station name and radiotext from RDS, a band scan, free tuning, stereo - [more](doc/usage.en.md#fm-radio) |
-| **Music from USB and SD** | Folders, tags (including Russian ones in legacy encodings), covers, seeking, auto-advance to the next track. `.m3u`, `.m3u8` and `.pls` playlists open as folders, albums with a `.cue` - track by track |
+| **Music from USB and SD** | Folders, tags (including Cyrillic ones in legacy encodings), covers, seeking, auto-advance to the next track. `.m3u`, `.m3u8` and `.pls` playlists open as folders, albums with a `.cue` - track by track |
 | **Yandex Music** | "My Wave" and the account's stations, covers, like / dislike - [more](doc/yandex.en.md) |
 | **Media server (DLNA)** | Finds the server on the network itself, walks the library, tags and covers - [more](doc/dlna.en.md) |
 | **Bluetooth** | Receives from a phone (track, cover, buttons, volume) and plays out to a Bluetooth speaker or headphones - [more](doc/usage.en.md#bluetooth) |
@@ -100,7 +100,7 @@ the waves Yandex picks for the account.
    [Building and flashing](doc/build.en.md); setting up the tools is in
    [Installing the toolchain](doc/toolchain.en.md).
 3. **Connect it to Wi-Fi.** On the first boot the device opens its own access
-   point, `jradio-XXXX`: join it from a phone, open `http://192.168.4.1` and
+   point, `yiRadio-XXXX`: join it from a phone, open `http://192.168.4.1` and
    pick your home network. Then see [How to use it](doc/usage.en.md).
 
 ## Worth knowing up front
@@ -115,6 +115,30 @@ the waves Yandex picks for the account.
   belongs to the stick.
 
 The full list of limits is in [Diagnostics and limits](doc/diagnostics.en.md).
+
+## Interface languages
+
+The display and the radio's web interface share one language setting. English
+is built in; [Russian](locales/ru.json) and [Ukrainian](locales/uk.json) ship as
+UTF-8 JSON packs. An untranslated label still appears in English.
+
+To add a language, copy an existing pack to `locales/<code>.json`, change its
+`code` and native `name`, and translate the `device` and `web` values. Leave
+keys and `{placeholders}` unchanged. Omit untranslated entries. On the display,
+use left-to-right text and glyphs supported by the built-in fonts.
+
+To update only the translations, start with the staged files from the same
+firmware release and run these commands from the repository root:
+
+```shell
+python3 tools/pack_locales.py --source locales --www build/littlefs_data/www
+python3 tools/gzip_www_assets.py build/littlefs_data/www
+python3 tools/pack_www.py --stage build/littlefs_data --out build/www.tar
+```
+
+In **Settings → Firmware update**, select only `www.tar`. The radio restarts
+without replacing the application, Wi-Fi settings, or playlist. A cable flash
+of the entire LittleFS image overwrites the partition; back up first.
 
 ## Documentation
 
@@ -133,6 +157,6 @@ The full list of limits is in [Diagnostics and limits](doc/diagnostics.en.md).
 
 ## Support
 
-If jRadio is useful to you, you can support its development:
+If yiRadio is useful to you, you can support its development:
 
-[![Support on Ko-fi](https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/de4thpunch)
+[![Support on Donatello](https://giphy.com/embed/bNHW6EGTxhPGJes8bK)](https://donatello.to/madnut)

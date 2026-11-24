@@ -20,6 +20,26 @@ If the toolchain is already in place, go to [Building and flashing](build.en.md)
   not bring an interpreter with it, and without one the installation breaks
   halfway with errors that never mention Python.
 
+## Python scripts in tools/
+
+To run the standalone scripts in `tools/`, create a separate environment from
+the project root and install their dependencies:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r tools/requirements.txt
+```
+
+On Windows, use `python -m venv .venv` and
+`.venv\Scripts\python -m pip install -r tools/requirements.txt` instead.
+In VS Code, choose this interpreter with **Python: Select Interpreter**.
+Run a script with `.venv/bin/python tools/<script>.py` (on Windows,
+`.venv\Scripts\python tools\<script>.py`). After dependencies change, run the
+install command again. This environment is separate from ESP-IDF's environment;
+the scripts may also require input files or external programs.
+The boot splash generator uses the bundled fonts in `tools/fonts/`; their
+upstream source and license are documented there.
+
 ## 1. System packages
 
 ### Linux (Debian, Ubuntu)

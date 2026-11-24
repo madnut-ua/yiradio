@@ -105,7 +105,7 @@ jobs:
           case "$version" in v*) ;; *) version="$(git describe --tags --always)";; esac
           mkdir -p site/firmware
           cp flasher/* site/
-          cp data/www/style.css data/www/theme.js data/www/i18n.js site/
+          cp data/www/style.css data/www/theme.js site/
           displays=()
           for dir in builds/firmware-*; do
             display="${dir#builds/firmware-}"

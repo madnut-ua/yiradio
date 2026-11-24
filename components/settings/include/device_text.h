@@ -1,8 +1,10 @@
 #pragma once
 
-#include "device_settings.h"
+#include <stddef.h>
 
-/* Every word the device shows, in both languages, in one place.
+#include "device_language.h"
+
+/* Device copy, indexed by ID with stable catalog keys and English defaults.
  *
  * It lives beside the settings rather than in `ui` because the screen is not
  * the only face: the same source names and the same error lines go out to the
@@ -19,10 +21,7 @@
  *   to anybody - translating those would break the matching;
  * - anything the user typed or a server sent: station names, track titles,
  *   folder names.
- *
- * Adding an id without adding its two strings does not compile - see the
- * static assertion in device_text.c - and a host test walks every id in both
- * languages, so a half-translated build cannot ship. */
+ */
 
 typedef enum {
     /* Sources, as the menu, the player block and the browser all name them. */
@@ -55,8 +54,6 @@ typedef enum {
     DEVICE_TEXT_GROUP_SOUND,
     DEVICE_TEXT_GROUP_DISPLAY,
     DEVICE_TEXT_ROW_LANGUAGE,
-    DEVICE_TEXT_LANGUAGE_RUSSIAN,
-    DEVICE_TEXT_LANGUAGE_ENGLISH,
     DEVICE_TEXT_ROW_HOME_SCREEN,
     DEVICE_TEXT_HOME_SCREEN_LIST,
     DEVICE_TEXT_HOME_SCREEN_FEED,
@@ -127,6 +124,8 @@ typedef enum {
     /* The About overlay. */
     DEVICE_TEXT_ABOUT_TITLE,
     DEVICE_TEXT_ABOUT_FIRMWARE,
+    DEVICE_TEXT_ABOUT_BUILD,
+    DEVICE_TEXT_ABOUT_COMPILER,
     DEVICE_TEXT_ABOUT_BUILT,
     DEVICE_TEXT_ABOUT_WEB,
     DEVICE_TEXT_ABOUT_UNKNOWN,
@@ -245,10 +244,81 @@ typedef enum {
     DEVICE_TEXT_OTA_OTHER_CANCELS,
     DEVICE_TEXT_OTA_RESTARTING,
 
+    /* Date templates and their arguments. Months use the form following a
+     * day number, which is not necessarily the standalone month name. */
+    DEVICE_TEXT_DATE_SHORT,
+    DEVICE_TEXT_DATE_FULL,
+    DEVICE_TEXT_MONTH_JANUARY,
+    DEVICE_TEXT_MONTH_FEBRUARY,
+    DEVICE_TEXT_MONTH_MARCH,
+    DEVICE_TEXT_MONTH_APRIL,
+    DEVICE_TEXT_MONTH_MAY,
+    DEVICE_TEXT_MONTH_JUNE,
+    DEVICE_TEXT_MONTH_JULY,
+    DEVICE_TEXT_MONTH_AUGUST,
+    DEVICE_TEXT_MONTH_SEPTEMBER,
+    DEVICE_TEXT_MONTH_OCTOBER,
+    DEVICE_TEXT_MONTH_NOVEMBER,
+    DEVICE_TEXT_MONTH_DECEMBER,
+    DEVICE_TEXT_WEEKDAY_SUNDAY,
+    DEVICE_TEXT_WEEKDAY_MONDAY,
+    DEVICE_TEXT_WEEKDAY_TUESDAY,
+    DEVICE_TEXT_WEEKDAY_WEDNESDAY,
+    DEVICE_TEXT_WEEKDAY_THURSDAY,
+    DEVICE_TEXT_WEEKDAY_FRIDAY,
+    DEVICE_TEXT_WEEKDAY_SATURDAY,
+    DEVICE_TEXT_WEEKDAY_SHORT_SUNDAY,
+    DEVICE_TEXT_WEEKDAY_SHORT_MONDAY,
+    DEVICE_TEXT_WEEKDAY_SHORT_TUESDAY,
+    DEVICE_TEXT_WEEKDAY_SHORT_WEDNESDAY,
+    DEVICE_TEXT_WEEKDAY_SHORT_THURSDAY,
+    DEVICE_TEXT_WEEKDAY_SHORT_FRIDAY,
+    DEVICE_TEXT_WEEKDAY_SHORT_SATURDAY,
+
+    DEVICE_TEXT_WEATHER_NONE,
+    DEVICE_TEXT_WEATHER_TODAY,
+    DEVICE_TEXT_WEATHER_HUMIDITY,
+    DEVICE_TEXT_WEATHER_PRESSURE,
+    DEVICE_TEXT_WEATHER_PRESSURE_VALUE,
+    DEVICE_TEXT_WEATHER_FEELS,
+    DEVICE_TEXT_WEATHER_FEELS_BRIEF,
+    DEVICE_TEXT_WEATHER_WIND,
+    DEVICE_TEXT_WEATHER_WIND_CALM,
+    DEVICE_TEXT_WEATHER_WIND_VALUE,
+    DEVICE_TEXT_WEATHER_WIND_DIRECTION_VALUE,
+    DEVICE_TEXT_WEATHER_WIND_GUSTS,
+    DEVICE_TEXT_WEATHER_WIND_N,
+    DEVICE_TEXT_WEATHER_WIND_NE,
+    DEVICE_TEXT_WEATHER_WIND_E,
+    DEVICE_TEXT_WEATHER_WIND_SE,
+    DEVICE_TEXT_WEATHER_WIND_S,
+    DEVICE_TEXT_WEATHER_WIND_SW,
+    DEVICE_TEXT_WEATHER_WIND_W,
+    DEVICE_TEXT_WEATHER_WIND_NW,
+    DEVICE_TEXT_WEATHER_CLOUDS,
+    DEVICE_TEXT_WEATHER_NO_RAIN,
+    DEVICE_TEXT_WEATHER_RAIN,
+    DEVICE_TEXT_WEATHER_SKY,
+
+    DEVICE_TEXT_BRAND,
     DEVICE_TEXT_COUNT,
 } device_text_id_t;
 
-/* Never NULL, and never empty: an id out of range answers with its own name in
- * neither language but something visible, because a blank on a panel reads as
- * a screen that failed rather than as a string nobody wrote. */
+/* Catalog metadata; NULL for an invalid ID. */
+const char *device_text_key(device_text_id_t id);
+const char *device_text_english(device_text_id_t id);
+
+/* Immutable lookup with English fallback. An invalid ID displays "?". */
 const char *device_text(device_text_id_t id, device_language_t language);
+
+typedef struct {
+    const char *name;
+    const char *value;
+} device_text_arg_t;
+
+/* Substitutes {name} with a prepared string, never interpreting the value or
+ * the template as a printf format. Missing arguments display "?". Truncation
+ * preserves whole UTF-8 code points and always leaves room for the NUL. */
+void device_text_format(char *out, size_t out_size, device_text_id_t id,
+                        device_language_t language, const device_text_arg_t *args,
+                        size_t arg_count);

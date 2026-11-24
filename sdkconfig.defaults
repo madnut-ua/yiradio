@@ -126,7 +126,7 @@ CONFIG_VFS_MAX_COUNT=12
 CONFIG_FATFS_VOLUME_COUNT=2
 # Without long-file-name support
 # readdir() returns 8.3 aliases, which makes a music browser useless: a track
-# named in Russian comes back as "______~1.MP3", identical for every such file.
+# named in Cyrillic comes back as "______~1.MP3", identical for every such file.
 # UTF-8 API encoding hands those names straight to LVGL and the web UI, and
 # code page 866 keeps the DOS short-name aliases Cyrillic rather than 437.
 CONFIG_FATFS_LFN_HEAP=y

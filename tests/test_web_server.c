@@ -1,9 +1,11 @@
+#include "locale_fixture.h"
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "cJSON.h"
+#include "device_text.h"
 #include "web_server.h"
 #include "web_socket.h"
 #include "station_catalog.h"
@@ -66,7 +68,7 @@ static web_socket_settings_state_t sample_settings(void)
     web_socket_settings_state_t settings = {
         .known = true,
         .view = {
-            .language = DEVICE_LANGUAGE_RU,
+            .language = test_locale("ru"),
             .home_screen = DEVICE_HOME_SCREEN_FEED,
             .scroll = DEVICE_SCROLL_BOUNCE,
             .buffer_view = DEVICE_BUFFER_VIEW_TEXT,
@@ -310,6 +312,14 @@ static void test_section_diff_and_update_types_are_bounded(void)
             WEB_SOCKET_SECTION_SETTINGS) != 0U);
     previous_settings = current_settings;
 
+    current_settings.view.language = test_locale("uk");
+    assert(web_socket_changed_sections(&previous_player, &previous_wifi,
+                                       &previous_settings, &current_player,
+                                       &current_wifi, &current_settings) ==
+           (WEB_SOCKET_SECTION_SETTINGS | WEB_SOCKET_SECTION_CAPABILITIES |
+            WEB_SOCKET_SECTION_PLAYER));
+    previous_settings = current_settings;
+
     const web_socket_event_kind_t kinds[] = {
         WEB_SOCKET_EVENT_CAPABILITIES_UPDATE,
         WEB_SOCKET_EVENT_LIST_UPDATE,
@@ -369,7 +379,7 @@ static void test_the_frame_does_not_grow_with_the_catalogue(void)
     fill_json_expensive_text(player.context, sizeof(player.context));
     fill_json_expensive_text(player.stream_title, sizeof(player.stream_title));
     fill_json_expensive_text(player.codec, sizeof(player.codec));
-    fill_json_expensive_text(player.error, sizeof(player.error));
+    player.error_text_id = DEVICE_TEXT_ERROR_STATION_FAILED + 1U;
 
     web_socket_wifi_state_t wifi = sample_wifi();
     wifi.saved_count = WIFI_SETTINGS_MAX_NETWORKS;

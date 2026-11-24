@@ -59,7 +59,7 @@ cannot reach a serial port.
    interface. The password goes to the board only; the page keeps nothing.
 
    The old way still works: skip this step and the radio opens the
-   `jradio-XXXX` access point - see [First boot](usage.en.md#first-boot).
+   `yiRadio-XXXX` access point - see [First boot](usage.en.md#first-boot).
    Either of the board's two sockets will do; one cable is enough. For a
    radio flashed earlier the step works from the version that brought it:
    such a radio, already on a network, does not look for others (it would
@@ -99,7 +99,7 @@ If something is wrong:
    On Windows the port is `COM3` or similar. If esptool cannot connect, hold
    BOOT, tap RESET, release BOOT and try again.
 
-4. After the write the board reboots and opens the `jradio-XXXX` access point -
+4. After the write the board reboots and opens the `yiRadio-XXXX` access point -
    see [First boot](usage.en.md#first-boot).
 
 The ready-made image is built for the README board: an ST7796S 480×320
@@ -122,6 +122,22 @@ The data partition stays yours. If the release also changed the web interface,
 the device says so on its About screen - then also write
 `jradio-<version>-littlefs.bin` at offset `0x820000`, after taking a backup
 (see [The data on the device](#the-data-on-the-device)).
+
+## Updating the time zone database
+
+The firmware and web catalog use checked-in data from the same IANA tzdb
+release. Ordinary builds need neither `zic` nor network access for this data.
+To update it, change `VERSION` and `SHA256` in
+[`tools/gen_timezones.py`](../tools/gen_timezones.py), download the corresponding
+public-domain `tzdata` and `tzcode` archives from
+[IANA](https://data.iana.org/time-zones/releases/), unpack both into a temporary
+directory, and run `make zic` there. From the repository run
+`python3 tools/gen_timezones.py tzdata2026f.tar.gz --zic /path/to/compiled/zic`
+(substitute the new version and actual paths). Use the matching `zic`: older
+compilers can silently omit future explicit transitions in slim TZif output.
+The generator uses a 2020 cutoff,
+before the device considers its clock synchronized. Include both generated
+files in the change and rebuild the firmware and web package together.
 
 ## The full way: a build from source
 

@@ -1,10 +1,12 @@
 #include "device_settings.h"
+#include "device_locale.h"
 
 #include "settings_csv.h"
 #include "settings_nvs.h"
 #include "device_timezone.h"
 
 #ifdef ESP_PLATFORM
+#include "esp_log.h"
 #include "esp_mac.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -238,7 +240,7 @@ bool device_settings_init_at(device_settings_t *settings, const char *path)
     if (settings == NULL || path == NULL || path[0] == '\0' ||
         strlen(path) >= sizeof(settings->storage_path)) return false;
     *settings = (device_settings_t){
-        .language = DEVICE_LANGUAGE_RU,
+        .language = DEVICE_LANGUAGE_EN,
         .home_screen = DEVICE_HOME_SCREEN_TEXT,
         .volume = DEVICE_VOLUME_DEFAULT,
         .brightness = DEVICE_BRIGHTNESS_DEFAULT,
@@ -287,8 +289,7 @@ bool device_settings_init_at(device_settings_t *settings, const char *path)
     settings_csv_snapshot_load(&csv, path);
     char value[32];
     if (read_value(&csv, "language", value, sizeof(value))) {
-        if (strcmp(value, "en") == 0) settings->language = DEVICE_LANGUAGE_EN;
-        else if (strcmp(value, "ru") != 0) settings->language = DEVICE_LANGUAGE_RU;
+        settings->language = device_locale_resolve(value);
     }
     if (read_value(&csv, "home_screen", value, sizeof(value))) {
         if (strcmp(value, "feed") == 0) settings->home_screen = DEVICE_HOME_SCREEN_FEED;
@@ -311,13 +312,17 @@ bool device_settings_init_at(device_settings_t *settings, const char *path)
     if (read_value(&csv, "files_end", value, sizeof(value)) && strcmp(value, "repeat") == 0) {
         settings->files_end = DEVICE_FILES_END_REPEAT;
     }
-    /* A zone this build does not have leaves the default standing rather than
-     * an empty string: an unset TZ is UTC, and a clock three hours out with no
-     * explanation is worse than one that ignored a line in a file. */
     char zone[DEVICE_TIMEZONE_ID_MAX];
-    if (settings_csv_snapshot_get(&csv, "timezone", zone, sizeof(zone)) &&
-        device_timezone_find(zone) != NULL) {
-        memcpy(settings->timezone, zone, strlen(zone) + 1U);
+    if (settings_csv_snapshot_get(&csv, "timezone", zone, sizeof(zone))) {
+        if (device_timezone_find(zone) != NULL) {
+            memcpy(settings->timezone, zone, strlen(zone) + 1U);
+        }
+#ifdef ESP_PLATFORM
+        else {
+            ESP_LOGW("device_settings", "Unknown timezone in settings.csv; using %s",
+                     DEVICE_TIMEZONE_DEFAULT_ID);
+        }
+#endif
     }
     char server[DEVICE_NTP_SERVER_MAX];
     if (settings_csv_snapshot_get(&csv, "ntp_server", server, sizeof(server)) && server[0] != '\0') {
@@ -687,8 +692,8 @@ bool device_settings_init(device_settings_t *settings)
 
 bool device_settings_set_language(device_settings_t *settings, device_language_t language)
 {
-    if (settings == NULL || language > DEVICE_LANGUAGE_EN) return false;
-    if (!save_value(settings, "language", language == DEVICE_LANGUAGE_EN ? "en" : "ru")) return false;
+    if (settings == NULL || !device_locale_prepare(language)) return false;
+    if (!save_value(settings, "language", device_locale_code(language))) return false;
     settings->language = language;
     return true;
 }
@@ -1138,10 +1143,12 @@ bool device_settings_set_soft_start(device_settings_t *settings, bool enabled)
 
 bool device_settings_set_timezone(device_settings_t *settings, const char *id)
 {
-    if (settings == NULL || device_timezone_find(id) == NULL) return false;
-    if (strcmp(settings->timezone, id) == 0) return true;
-    if (!save_value(settings, "timezone", id)) return false;
-    memcpy(settings->timezone, id, strlen(id) + 1U);
+    if (settings == NULL) return false;
+    const device_timezone_t *zone = device_timezone_at(device_timezone_index_of(id));
+    if (zone == NULL) return false;
+    if (strcmp(settings->timezone, zone->id) == 0) return true;
+    if (!save_value(settings, "timezone", zone->id)) return false;
+    memcpy(settings->timezone, zone->id, strlen(zone->id) + 1U);
     return true;
 }
 
@@ -1190,7 +1197,7 @@ bool device_settings_set_device_name(device_settings_t *settings, const char *na
 void device_settings_default_name(const unsigned char mac[6], char *out, size_t size)
 {
     if (out == NULL || size == 0U) return;
-    snprintf(out, size, "jradio-%02X%02X", mac == NULL ? 0U : mac[4], mac == NULL ? 0U : mac[5]);
+    snprintf(out, size, "yiRadio-%02X%02X", mac == NULL ? 0U : mac[4], mac == NULL ? 0U : mac[5]);
 }
 
 /* а..я in code-point order, then ё. Without this the router shows the
@@ -1775,7 +1782,7 @@ device_language_t device_settings_published_language(void)
 {
     PUBLISH_LOCK();
     const device_language_t language = s_have_published ? s_published.language
-                                                        : DEVICE_LANGUAGE_RU;
+                                                        : DEVICE_LANGUAGE_EN;
     PUBLISH_UNLOCK();
     return language;
 }

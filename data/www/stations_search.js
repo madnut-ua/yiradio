@@ -221,8 +221,11 @@
   const iconsApply = document.querySelector('#icons-apply');
   const limits = {nameBytes: radio.nameBytes, urlBytes: radio.urlBytes};
 
-  function setText(element, text, isError = false) {
-    element.textContent = text;
+  const messages = new Map();
+  const message = (key, values) => () => t(key, values);
+  function setText(element, render, isError = false) {
+    messages.set(element, render);
+    element.textContent = render();
     element.classList.toggle('is-error', isError);
   }
 
@@ -392,41 +395,56 @@
   /* --- search ------------------------------------------------------------ */
 
   let countriesFor = '';
+  let countries = [];
+  let countriesRequest = 0;
+
+  function renderCountries(keep = searchCountry.value) {
+    // Everything but the first option, "any country".
+    while (searchCountry.options && searchCountry.options.length > 1) searchCountry.remove(1);
+    const locales = window.jradioI18n.intlLocales?.() || ['en'];
+    const names = typeof Intl.DisplayNames === 'function'
+      ? new Intl.DisplayNames(locales, {type: 'region'}) : null;
+    const options = countries
+      .filter((country) => /^[A-Z]{2}$/.test(country.code) && country.count >= COUNTRY_MIN_STATIONS)
+      .map((country) => ({code: country.code, label: names?.of(country.code) || country.code}))
+      .sort((a, b) => a.label.localeCompare(b.label, locales));
+    for (const country of options) {
+      const option = document.createElement('option');
+      option.value = country.code;
+      option.textContent = country.label;
+      searchCountry.appendChild(option);
+    }
+    searchCountry.value = keep;
+    if (searchCountry.value !== keep) searchCountry.value = '';
+  }
+
   async function loadCountries() {
     const wanted = chosenSource();
     if (countriesFor === wanted) return;
     countriesFor = wanted;
+    const request = ++countriesRequest;
     const keep = searchCountry.value;
-    // Everything but the first option, "any country".
-    while (searchCountry.options && searchCountry.options.length > 1) searchCountry.remove(1);
+    countries = [];
+    renderCountries();
     try {
       const {value: list} = await ask('countries');
-      const language = window.jradioI18n.language ? window.jradioI18n.language() : 'ru';
-      let names = null;
-      try {
-        names = new Intl.DisplayNames([language], {type: 'region'});
-      } catch (error) {
-        names = null;
-      }
-      const options = list
-        .filter((country) => /^[A-Z]{2}$/.test(country.code) && country.count >= COUNTRY_MIN_STATIONS)
-        .map((country) => ({code: country.code, label: (names && names.of(country.code)) || country.code}))
-        .sort((a, b) => a.label.localeCompare(b.label, language));
-      for (const country of options) {
-        const option = document.createElement('option');
-        option.value = country.code;
-        option.textContent = country.label;
-        searchCountry.appendChild(option);
-      }
-      searchCountry.value = keep;
-      if (searchCountry.value !== keep) searchCountry.value = '';
+      if (request !== countriesRequest) return;
+      countries = list;
+      renderCountries(keep);
     } catch (error) {
       // Searching without a country still works; the list stays at "any".
-      countriesFor = '';
+      if (request === countriesRequest) countriesFor = '';
     }
   }
 
   const preview = {audio: null, uuid: ''};
+
+  function labelPreview(button, playing) {
+    const key = playing ? 'playlist.stop' : 'search.listen';
+    button.textContent = playing ? '■' : '▶';
+    button.setAttribute('data-i18n-aria', key);
+    button.setAttribute('aria-label', t(key));
+  }
 
   function stopPreview() {
     if (preview.audio !== null) {
@@ -435,10 +453,7 @@
       preview.audio.load();
     }
     preview.uuid = '';
-    searchResults.querySelectorAll('.search-result-play').forEach((button) => {
-      button.textContent = '▶';
-      button.setAttribute('aria-label', t('search.listen'));
-    });
+    searchResults.querySelectorAll('.search-result-play').forEach((button) => labelPreview(button, false));
   }
 
   function togglePreview(station, button) {
@@ -448,11 +463,10 @@
     if (preview.audio === null) preview.audio = new Audio();
     preview.audio.src = station.url;
     preview.uuid = station.uuid;
-    button.textContent = '■';
-    button.setAttribute('aria-label', t('playlist.stop'));
+    labelPreview(button, true);
     preview.audio.play().catch(() => {
       stopPreview();
-      setText(searchStatus, t('search.browser_cannot', {name: station.name}), true);
+      setText(searchStatus, message('search.browser_cannot', {name: station.name}), true);
     });
   }
 
@@ -483,16 +497,17 @@
 
   async function addStation(station, button) {
     if (!radio.loaded()) {
-      setText(searchStatus, t('search.list_not_loaded'), true);
+      setText(searchStatus, message('search.list_not_loaded'), true);
       return;
     }
     if (radio.has(station.url)) {
-      setText(searchStatus, t('search.already', {name: station.name}));
+      setText(searchStatus, message('search.already', {name: station.name}));
       return;
     }
     const id = radio.add(station.name, station.url);
     if (id === 0) return;
     button.disabled = true;
+    button.setAttribute('data-i18n', 'search.added_button');
     button.textContent = t('search.added_button');
     // The catalogue counts what people pick; the request is all it asks.
     if (station.live) {
@@ -501,17 +516,17 @@
         .catch(() => {});
     }
     if (station.picture === '') {
-      setText(searchStatus, t('search.added', {name: station.name}));
+      setText(searchStatus, message('search.added', {name: station.name}));
       return;
     }
-    setText(searchStatus, t('search.added_fetching', {name: station.name}));
+    setText(searchStatus, message('search.added_fetching', {name: station.name}));
     try {
       await radio.setPicture(id, await pictureOf(station));
-      setText(searchStatus, t('search.added', {name: station.name}));
+      setText(searchStatus, message('search.added', {name: station.name}));
     } catch (error) {
       const tooLarge = error && error.message === 'HTTP 413';
-      setText(searchStatus, t(tooLarge ? 'search.added_icon_too_large' : 'search.added_no_icon',
-                              {name: station.name}));
+      setText(searchStatus, message(tooLarge ? 'search.added_icon_too_large' : 'search.added_no_icon',
+                                   {name: station.name}));
     }
   }
 
@@ -532,14 +547,15 @@
       const play = document.createElement('button');
       play.type = 'button';
       play.className = 'icon-button search-result-play';
-      play.textContent = '▶';
-      play.setAttribute('aria-label', t('search.listen'));
+      labelPreview(play, false);
       play.addEventListener('click', () => togglePreview(station, play));
       const add = document.createElement('button');
       add.type = 'button';
       add.className = 'secondary-button search-result-add';
       const known = radio.has(station.url);
-      add.textContent = known ? t('search.added_button') : t('search.add');
+      const addKey = known ? 'search.added_button' : 'search.add';
+      add.setAttribute('data-i18n', addKey);
+      add.textContent = t(addKey);
       add.disabled = known;
       add.addEventListener('click', () => { addStation(station, add); });
       item.append(thumbnail(station.picture), text, play, add);
@@ -551,23 +567,26 @@
     const query = searchQuery.value.trim();
     const country = searchCountry.value;
     if (query === '' && country === '') {
-      setText(searchStatus, t('search.need_query'), true);
+      setText(searchStatus, message('search.need_query'), true);
       return;
     }
     searchGo.disabled = true;
-    setText(searchStatus, t('search.searching'));
+    setText(searchStatus, message('search.searching'));
     try {
       const {value, source} = await ask('search', query, country);
       const {usable: stations, hidden} = usableOnly(value);
       renderResults(stations);
-      let text = stations.length > 0 ? t('search.found', {n: stations.length}) : t('search.nothing');
-      if (hidden > 0) text += ` ${t('search.hidden', {n: hidden})}`;
-      if (source !== chosenSource()) {
-        text += ` ${t('search.fell_back', {source: sourceName(chosenSource()), other: sourceName(source)})}`;
-      }
-      setText(searchStatus, text);
+      const wanted = chosenSource();
+      setText(searchStatus, () => {
+        let text = stations.length > 0 ? t('search.found', {n: stations.length}) : t('search.nothing');
+        if (hidden > 0) text += ` ${t('search.hidden', {n: hidden})}`;
+        if (source !== wanted) {
+          text += ` ${t('search.fell_back', {source: sourceName(wanted), other: sourceName(source)})}`;
+        }
+        return text;
+      });
     } catch (error) {
-      setText(searchStatus, t('search.failed'), true);
+      setText(searchStatus, message('search.failed'), true);
     } finally {
       searchGo.disabled = false;
     }
@@ -612,21 +631,21 @@
   async function findIcons() {
     if (iconsRunning) return;
     if (!radio.loaded()) {
-      setText(iconsStatus, t('search.list_not_loaded'), true);
+      setText(iconsStatus, message('search.list_not_loaded'), true);
       return;
     }
     const rows = radio.withoutPicture();
     iconCandidates = [];
     renderCandidates();
     if (rows.length === 0) {
-      setText(iconsStatus, t('icons.all_have'));
+      setText(iconsStatus, message('icons.all_have'));
       return;
     }
     iconsRunning = true;
     updateApply();
     let failed = 0;
     for (const [index, row] of rows.entries()) {
-      setText(iconsStatus, t('icons.looking', {k: index + 1, n: rows.length}));
+      setText(iconsStatus, message('icons.looking', {k: index + 1, n: rows.length}));
       try {
         const {value: {byUrl, byName}} = await ask('lookup', row);
         const match = pickIcon(row, byUrl, byName);
@@ -639,9 +658,11 @@
       }
     }
     iconsRunning = false;
-    const summary = t('icons.found', {n: iconCandidates.length, total: rows.length});
-    setText(iconsStatus, failed > 0 ? `${summary} ${t('icons.some_failed', {n: failed})}` : summary,
-            failed > 0 && iconCandidates.length === 0);
+    const found = iconCandidates.length;
+    setText(iconsStatus, () => {
+      const summary = t('icons.found', {n: found, total: rows.length});
+      return failed > 0 ? `${summary} ${t('icons.some_failed', {n: failed})}` : summary;
+    }, failed > 0 && found === 0);
     updateApply();
   }
 
@@ -653,7 +674,7 @@
     let done = 0;
     let failed = 0;
     for (const [index, candidate] of chosen.entries()) {
-      setText(iconsStatus, t('icons.fetching', {k: index + 1, n: chosen.length}));
+      setText(iconsStatus, message('icons.fetching', {k: index + 1, n: chosen.length}));
       try {
         await radio.setPicture(candidate.row.id, await pictureOf(candidate.match));
         done += 1;
@@ -666,8 +687,8 @@
     iconCandidates = iconCandidates.filter((candidate) => !candidate.checked);
     renderCandidates();
     setText(iconsStatus, failed > 0
-      ? t('icons.applied_some', {n: done, failed})
-      : t('icons.applied', {n: done}), failed > 0 && done === 0);
+      ? message('icons.applied_some', {n: done, failed})
+      : message('icons.applied', {n: done}), failed > 0 && done === 0);
   }
 
   /* --- the two panels ---------------------------------------------------- */
@@ -733,4 +754,9 @@
     runSearch();
   });
   iconsApply.addEventListener('click', applyIcons);
+  window.jradioI18n.onChange?.(() => {
+    for (const [node, render] of messages) node.textContent = render();
+    if (countries.length) renderCountries();
+    if (iconCandidates.length) renderCandidates();
+  });
 })();

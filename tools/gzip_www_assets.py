@@ -16,9 +16,8 @@ import gzip
 import sys
 from pathlib import Path
 
-# The three kinds of file worth compressing. Everything else in www/ is either
-# already compressed or too small to gain from it.
-SUFFIXES = (".html", ".js", ".css")
+# Other assets in www/ are already compressed or too small to gain from it.
+SUFFIXES = (".html", ".js", ".css", ".json")
 
 
 def main(argv: list[str]) -> int:

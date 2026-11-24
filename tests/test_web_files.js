@@ -8,6 +8,7 @@
 
 const assert = require('assert');
 const fs = require('fs');
+const {localeResponse} = require('./web_locale_fixture');
 const vm = require('vm');
 
 let documentRef;
@@ -226,8 +227,8 @@ const context = {
     /* The progress poll, which this test never fires: it must not share the
        hand-driven queue above, or a reply meant for the directory listing
        would be handed to it instead. */
-    fetch() {
-      return new Promise(() => {});
+    fetch(url) {
+      return localeResponse(url) || new Promise(() => {});
     },
   },
 };
@@ -282,6 +283,7 @@ socket.readyState = FakeWebSocket.OPEN;
 socket.emit('open');
 
 (async () => {
+  await context.window.jradioI18n.setLanguage('ru');
   // A USB snapshot carries a header only, and triggers exactly one fetch.
   sendEvent(socket, {
     type: 'snapshot',

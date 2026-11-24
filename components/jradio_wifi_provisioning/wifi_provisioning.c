@@ -312,7 +312,7 @@ static esp_err_t wifi_configure_static_ap_ip(void)
 
 static esp_err_t wifi_start_ap_setup(void)
 {
-    /* The device's own name - "jradio-XXXX" unless the settings say
+    /* The device's own name - "yiRadio-XXXX" unless the settings say
      * otherwise - so the network on the phone's list and the name in its
      * Bluetooth list are the same word. */
     char ssid[WIFI_SETTINGS_SSID_MAX_LEN + 1];

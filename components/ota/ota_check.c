@@ -28,7 +28,7 @@ static const char *TAG = "ota_check";
 /* A bench serves its own release from a laptop by defining this in
  * board_options.local.h; every other build asks GitHub. */
 #ifndef OTA_MANIFEST_URL
-#define OTA_MANIFEST_URL "https://github.com/jmper-ha/jradio/releases/latest/download/ota.json"
+#define OTA_MANIFEST_URL "https://github.com/madnut-ua/yiradio/releases/latest/download/ota.json"
 #endif
 
 #define OTA_CHECK_FIRST_DELAY_US (5LL * 60 * 1000 * 1000)
@@ -378,9 +378,9 @@ esp_err_t ota_check_start(void)
 {
     if (s_offer_lock == NULL) s_offer_lock = xSemaphoreCreateMutexStatic(&s_offer_lock_buffer);
     char value[32] = "";
-    const bool enabled = !settings_csv_get(DEVICE_SETTINGS_PATH, KEY_ENABLED, value,
-                                           sizeof(value)) ||
-                         strcmp(value, "0") != 0;
+    const bool enabled = settings_csv_get(DEVICE_SETTINGS_PATH, KEY_ENABLED, value,
+                                          sizeof(value)) &&
+                         strcmp(value, "1") == 0;
     char skipped[32] = "";
     (void)settings_csv_get(DEVICE_SETTINGS_PATH, KEY_SKIPPED, skipped, sizeof(skipped));
     if (strcmp(skipped, SKIPPED_NONE) == 0) skipped[0] = '\0';

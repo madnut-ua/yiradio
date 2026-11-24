@@ -222,7 +222,7 @@ static void improv_handle(improv_port_t port, improv_decoder_t *decoder)
         else improv_send_current(port, IMPROV_COMMAND_GET_STATE);
         break;
     case IMPROV_COMMAND_GET_INFO: {
-        const char *strings[] = {"jRadio", s_version, "ESP32-S3", s_name};
+        const char *strings[] = {"yiRadio", s_version, "ESP32-S3", s_name};
         improv_send_result(port, IMPROV_COMMAND_GET_INFO, strings, 4U);
         break;
     }

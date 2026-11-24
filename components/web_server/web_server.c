@@ -19,6 +19,7 @@ static void web_server_secure_zero(void *memory, size_t size)
 #include <strings.h>
 
 #include "cJSON.h"
+#include "device_locale.h"
 #include "esp_check.h"
 #include "esp_log.h"
 #include "esp_mac.h"
@@ -418,6 +419,53 @@ static esp_err_t web_server_settings_js_get(httpd_req_t *request)
                                 "application/javascript; charset=utf-8");
 }
 
+static esp_err_t web_server_timezones_get(httpd_req_t *request)
+{
+    return web_server_send_file(request, WEB_SERVER_WEB_ROOT "/timezones.json", "application/json");
+}
+
+static esp_err_t web_server_locales_get(httpd_req_t *request)
+{
+    web_json_writer_t writer;
+    web_json_init(&writer, s_file_chunk_buffer, sizeof(s_file_chunk_buffer),
+                  sizeof(s_file_chunk_buffer));
+    web_json_literal(&writer, "{\"schema\":1,\"locales\":[");
+    for (size_t i = 0U; i < device_locale_count(); ++i) {
+        const device_language_t language = (device_language_t)i;
+        if (i != 0U) web_json_literal(&writer, ",");
+        web_json_literal(&writer, "{\"code\":");
+        web_json_string(&writer, device_locale_code(language));
+        web_json_literal(&writer, ",\"name\":");
+        web_json_string(&writer, device_locale_name(language));
+        web_json_literal(&writer, "}");
+    }
+    web_json_literal(&writer, "]}");
+    if (!web_json_valid(&writer)) {
+        return httpd_resp_send_err(request, HTTPD_500_INTERNAL_SERVER_ERROR, "Language index too large");
+    }
+    httpd_resp_set_type(request, "application/json; charset=utf-8");
+    httpd_resp_set_hdr(request, "Cache-Control", "no-store");
+    return httpd_resp_send(request, s_file_chunk_buffer, web_json_length(&writer));
+}
+
+static esp_err_t web_server_locale_get(httpd_req_t *request)
+{
+    char query[80];
+    char code[DEVICE_LOCALE_CODE_MAX];
+    if (httpd_req_get_url_query_str(request, query, sizeof(query)) != ESP_OK ||
+        httpd_query_key_value(query, "code", code, sizeof(code)) != ESP_OK) {
+        return httpd_resp_send_err(request, HTTPD_400_BAD_REQUEST, "Missing language code");
+    }
+    const device_language_t language = device_locale_find(code);
+    if (language == DEVICE_LOCALE_INVALID || language == DEVICE_LANGUAGE_EN) {
+        return httpd_resp_send_err(request, HTTPD_404_NOT_FOUND, "No external language package");
+    }
+    char path[48];
+    snprintf(path, sizeof(path), WEB_SERVER_WEB_ROOT "/locale-%s-web.json",
+             device_locale_code(language));
+    return web_server_send_file(request, path, "application/json; charset=utf-8");
+}
+
 static esp_err_t web_server_update_js_get(httpd_req_t *request)
 {
     return web_server_send_file(request, WEB_SERVER_WEB_ROOT "/update.js",
@@ -768,7 +816,8 @@ static esp_err_t web_server_about_get(httpd_req_t *request)
         cJSON_AddBoolToObject(module, "present", module_version[0] != '\0');
         cJSON_AddStringToObject(module, "version", module_version);
     }
-    cJSON_AddStringToObject(root, "author", VERSION_INFO_AUTHOR);
+    cJSON_AddStringToObject(root, "build", info.build);
+    cJSON_AddStringToObject(root, "compiler", info.compiler);
 
     char *json = cJSON_PrintUnformatted(root);
     cJSON_Delete(root);
@@ -1962,6 +2011,10 @@ static esp_err_t web_server_settings_api_post(httpd_req_t *request)
         httpd_resp_send_err(request, HTTPD_400_BAD_REQUEST, "Unknown setting");
         return ESP_FAIL;
     }
+    if (change.field == WEB_SETTINGS_FIELD_LANGUAGE &&
+        !device_locale_prepare(device_locale_find(change.text))) {
+        return httpd_resp_send_err(request, HTTPD_400_BAD_REQUEST, "Language package unavailable");
+    }
     /* The one field on the page that is not a setting: a secret, on its way
      * to its own file. The weather task is told by the store itself, so there
      * is no flag to raise for the UI. */
@@ -2487,7 +2540,7 @@ esp_err_t web_server_start(void)
         // Fifty-two are registered below plus /ws; the spare ones exist
         // because running out is not a build error - httpd_register_uri_handler
         // fails at startup and takes the whole web server down with it.
-        config.max_uri_handlers = 56;
+        config.max_uri_handlers = 58;
         config.max_open_sockets = WEB_SOCKET_SERVER_SOCKET_CAPACITY;
         config.send_wait_timeout = 1;
         config.lru_purge_enable = false;
@@ -2501,6 +2554,7 @@ esp_err_t web_server_start(void)
             {.uri = "/style.css", .method = HTTP_GET, .handler = web_server_style_get},
             {.uri = "/settings", .method = HTTP_GET, .handler = web_server_settings_get},
             {.uri = "/settings.js", .method = HTTP_GET, .handler = web_server_settings_js_get},
+            {.uri = "/timezones.json", .method = HTTP_GET, .handler = web_server_timezones_get},
             {.uri = "/update.js", .method = HTTP_GET, .handler = web_server_update_js_get},
             {.uri = "/remote", .method = HTTP_GET, .handler = web_server_remote_page_get},
             {.uri = "/remote.js", .method = HTTP_GET, .handler = web_server_remote_js_get},
@@ -2525,6 +2579,8 @@ esp_err_t web_server_start(void)
             {.uri = "/api/yandex", .method = HTTP_POST, .handler = web_server_yandex_post},
             {.uri = "/api/settings", .method = HTTP_GET, .handler = web_server_settings_api_get},
             {.uri = "/api/settings", .method = HTTP_POST, .handler = web_server_settings_api_post},
+            {.uri = "/api/locales", .method = HTTP_GET, .handler = web_server_locales_get},
+            {.uri = "/api/locale", .method = HTTP_GET, .handler = web_server_locale_get},
             {.uri = "/api/station-test", .method = HTTP_POST, .handler = web_server_station_test_post},
             {.uri = "/api/station-icon", .method = HTTP_POST, .handler = web_server_station_icon_post},
             {.uri = "/api/station-icon", .method = HTTP_GET, .handler = web_server_station_icon_get},

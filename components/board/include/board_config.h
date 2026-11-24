@@ -240,6 +240,11 @@ bool board_config_dac_fits(uint8_t wired, uint8_t built);
  * "ili9341_320_240". NULL for an id there is no firmware for. */
 const char *board_config_display_name(unsigned display);
 
+/* Slash-separated component models and optional features, for About. */
+#define BOARD_BUILD_SUMMARY_SIZE 128U
+void board_config_build_summary(const board_config_t *config,
+                                char text[BOARD_BUILD_SUMMARY_SIZE]);
+
 /* The code as the editor names it: "pin_conflict", "bus_unwired". */
 const char *board_config_issue_name(board_issue_code_t code);
 

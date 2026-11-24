@@ -11,7 +11,7 @@ described in [Building and flashing](build.en.md#from-the-browser). A running
 radio can change networks the same way, plugged into a computer.
 
 Without a cable: while the device knows no network, it opens its own access
-point named `jradio-XXXX` (XXXX comes from the board's serial number):
+point named `yiRadio-XXXX` (XXXX comes from the board's MAC address):
 
 1. Join it from a phone or a computer.
 2. Open `http://192.168.4.1`.
@@ -241,7 +241,7 @@ entering the source.
 
 With the [jradio-bt](hardware.en.md#bluetooth-the-jradio-bt-module) module the
 menu has a Bluetooth source. Choosing it opens the player screen, and the
-device is visible in the phone's Bluetooth under its name (`jradio-XXXX` or
+device is visible in the phone's Bluetooth under its name (`yiRadio-XXXX` or
 the one set in the settings) for about two minutes; a known phone connects by
 itself. Then it is like the radio: the phone's name in place of the station,
 the track and the cover from the phone, Prev/Next walk its queue, the encoder is
@@ -403,7 +403,7 @@ detail, the alarm, the sleep timer, the backup.
 - **Device name** - how it is called in Bluetooth, as the setup access
   point and in the router's list of devices (there in Latin letters:
   "Радио на кухне" becomes `Radio-na-kukhne`). An empty field is the built-in
-  `jradio-XXXX`. The same Latin name with `.local` opens the web interface:
+  `yiRadio-XXXX`. The same Latin name with `.local` opens the web interface:
   `http://Radio-na-kukhne.local`.
 - **Yandex Music**, **DLNA** - the switches remove the source everywhere; a
   playback already running is not stopped.
@@ -528,7 +528,7 @@ from the network a couple of seconds after Wi-Fi connects.
 The temperature and a sky icon next to the clock on every screen and on the
 screensaver. The source is your choice: **Open-Meteo** (no key), **wttr.in**
 (no key) or **OpenWeatherMap** (a key is needed). The coordinates are typed
-in - latitude and longitude in degrees, as a map writes them; Moscow by
+in - latitude and longitude in degrees, as a map writes them; Kyiv by
 default. The icon tells day from night. Polled every fifteen minutes; under
 the source choice the page shows what the panel shows, or the reason nothing
 is there.

@@ -13,7 +13,7 @@ void ui_web_address_text(wifi_provisioning_mode_t mode, const char *ipv4, const 
      * provisioning never started, and its status is the zero it was born
      * with - which reads as a setup AP that has not published its name. */
     if (!storage_mounted) {
-        snprintf(out, out_size, "%s", device_text(DEVICE_TEXT_DATA_NOT_FLASHED, language));
+        device_text_format(out, out_size, DEVICE_TEXT_DATA_NOT_FLASHED, language, NULL, 0U);
         return;
     }
 
@@ -25,7 +25,8 @@ void ui_web_address_text(wifi_provisioning_mode_t mode, const char *ipv4, const 
      * it cannot be typed anywhere until the phone has joined, and by then the
      * QR behind this band has already opened it. */
     if (mode == WIFI_PROVISIONING_AP_SETUP && ssid != NULL && ssid[0] != '\0') {
-        snprintf(out, out_size, device_text(DEVICE_TEXT_JOIN_NETWORK, language), ssid);
+        const device_text_arg_t arg = {"ssid", ssid};
+        device_text_format(out, out_size, DEVICE_TEXT_JOIN_NETWORK, language, &arg, 1U);
         return;
     }
 
@@ -36,7 +37,7 @@ void ui_web_address_text(wifi_provisioning_mode_t mode, const char *ipv4, const 
      * network": the wait ends either with an address or with the setup AP
      * above, and both are worth waiting for. */
     if (ipv4 == NULL || ipv4[0] == '\0' || mode == WIFI_PROVISIONING_STA_CONNECTING) {
-        snprintf(out, out_size, "%s", device_text(DEVICE_TEXT_WIFI_CONNECTING, language));
+        device_text_format(out, out_size, DEVICE_TEXT_WIFI_CONNECTING, language, NULL, 0U);
         return;
     }
     /* The setup-AP line above already prints the address bare, beside the
@@ -52,7 +53,7 @@ static bool append_text(char *out, size_t out_size, size_t *length, const char *
     for (const char *ch = text; *ch != '\0'; ++ch) {
         /* The WIFI: form separates its fields with these, so an SSID
          * containing one has to say it is not a separator. The setup AP names
-         * itself jradio-XXXX and needs none of it, but the name arrives as
+         * itself yiRadio-XXXX and needs none of it, but the name arrives as
          * text from the provisioning status, and a payload that quietly means
          * something else is worse than the few lines it takes to be right. */
         if (escape && (*ch == '\\' || *ch == ';' || *ch == ',' || *ch == ':' || *ch == '"')) {

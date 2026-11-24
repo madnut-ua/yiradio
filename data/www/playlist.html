@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark light">
   <meta name="theme-color" content="#0c0f13">
-  <title>jRadio — станции</title>
+  <title>yiRadio — stations</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3CradialGradient id='g' cx='50%25' cy='45%25' r='55%25'%3E%3Cstop offset='0%25' stop-color='%237bffb0'/%3E%3Cstop offset='55%25' stop-color='%2322e06a'/%3E%3Cstop offset='100%25' stop-color='%230a8f3c'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='%23121417'/%3E%3Ccircle cx='16' cy='16' r='11' fill='url(%23g)'/%3E%3Cpath d='M16 16 12.9 5.6a11 11 0 0 1 6.2 0Z' fill='%23103a22'/%3E%3Ccircle cx='16' cy='16' r='3.7' fill='%230d1a12'/%3E%3Ccircle cx='16' cy='16' r='12.3' fill='none' stroke='%238c96a3' stroke-width='1.4'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/style.css">
   <script src="/theme.js"></script>
@@ -14,7 +14,7 @@
 <body data-i18n-page="title.playlist">
   <header class="site-header">
     <div class="header-inner">
-      <a class="brand" href="/" data-i18n-aria="nav.back_to_player" aria-label="Вернуться к плееру">
+      <a class="brand" href="/" data-i18n-aria="nav.back_to_player" aria-label="Back to the player">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 32 32" focusable="false">
             <defs>
@@ -31,18 +31,18 @@
             <path class="eye-ticks" d="M16 1.6v2.2M30.4 16h-2.2M1.6 16h2.2"/>
           </svg>
         </span>
-        <span class="brand-word">jRadio</span>
+        <span class="brand-word" data-i18n="brand.name">yiRadio</span>
       </a>
 
-      <nav class="source-tabs" data-i18n-aria="nav.sections" aria-label="Разделы">
-        <a class="source-tab" href="/" data-i18n="nav.player">Плеер</a>
-        <a class="source-tab is-active" href="/playlist" aria-current="page" data-i18n="nav.playlist">Станции</a>
-        <a class="source-tab" href="/settings" data-i18n="nav.settings">Настройки</a>
+      <nav class="source-tabs" data-i18n-aria="nav.sections" aria-label="Sections">
+        <a class="source-tab" href="/" data-i18n="nav.player">Player</a>
+        <a class="source-tab is-active" href="/playlist" aria-current="page" data-i18n="nav.playlist">Stations</a>
+        <a class="source-tab" href="/settings" data-i18n="nav.settings">Settings</a>
       </nav>
 
       <div class="header-actions">
         <button id="theme-toggle" class="icon-button theme-toggle" type="button"
-                data-i18n-aria="theme.toggle" aria-label="Сменить тему">
+                data-i18n-aria="theme.toggle" aria-label="Switch theme">
           <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="M20 14.5A8 8 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/>
           </svg>
@@ -57,25 +57,25 @@
 
   <main class="page-shell">
     <div class="page-heading">
-      <h1 data-i18n="nav.playlist">Станции</h1>
-      <p data-i18n="stations.lead">Станции, которые играет устройство: интернет-радио и, если в нём есть тюнер, FM.</p>
+      <h1 data-i18n="nav.playlist">Stations</h1>
+      <p data-i18n="stations.lead">The stations the device plays: internet radio and, when it has a tuner, FM.</p>
     </div>
 
     <div class="stations-bar">
       <!-- The FM tab is there only on a board with a tuner; fm.js says which. -->
-      <div id="stations-tabs" class="stations-tabs" role="tablist" data-i18n-aria="stations.kinds" aria-label="Виды станций">
+      <div id="stations-tabs" class="stations-tabs" role="tablist" data-i18n-aria="stations.kinds" aria-label="Kinds of stations">
         <button id="stations-tab-radio" class="stations-tab is-active" type="button" role="tab" aria-selected="true"
-                aria-controls="stations-radio" data-station-tab="radio" data-i18n="stations.tab_radio">Интернет-радио</button>
+                aria-controls="stations-radio" data-station-tab="radio" data-i18n="stations.tab_radio">Internet radio</button>
         <button id="stations-tab-fm" class="stations-tab" type="button" role="tab" aria-selected="false"
                 aria-controls="stations-fm" data-station-tab="fm" hidden data-i18n="stations.tab_fm">FM</button>
       </div>
       <!-- One import and one export for both lists: the file says which it holds. -->
       <div class="stations-io">
         <label class="secondary-button file-button" for="playlist-import-input">
-          <span data-i18n="playlist.import">Импорт</span>
+          <span data-i18n="playlist.import">Import</span>
           <input id="playlist-import-input" type="file" accept=".csv,.zip,text/plain,application/zip" hidden>
         </label>
-        <button id="playlist-export" class="secondary-button" type="button" data-i18n="playlist.export">Экспорт</button>
+        <button id="playlist-export" class="secondary-button" type="button" data-i18n="playlist.export">Export</button>
       </div>
     </div>
     <p id="stations-io-status" class="settings-status" role="status" aria-live="polite"></p>
@@ -83,14 +83,14 @@
     <div id="stations-radio" role="tabpanel" aria-labelledby="stations-tab-radio">
     <section class="card" aria-labelledby="playlist-title">
       <div class="card-head">
-        <h2 id="playlist-title" data-i18n="stations.tab_radio">Интернет-радио</h2>
-        <span id="playlist-status" class="settings-status" role="status" aria-live="polite" data-i18n="common.loading">Загрузка…</span>
+        <h2 id="playlist-title" data-i18n="stations.tab_radio">Internet radio</h2>
+        <span id="playlist-status" class="settings-status" role="status" aria-live="polite" data-i18n="common.loading">Loading…</span>
         <div class="playlist-toolbar">
           <button id="search-open" class="secondary-button" type="button" aria-expanded="false"
-                  aria-controls="search-panel" data-i18n="search.open">Найти станции</button>
+                  aria-controls="search-panel" data-i18n="search.open">Find stations</button>
           <button id="icons-open" class="secondary-button" type="button" aria-expanded="false"
-                  aria-controls="icons-panel" data-i18n="icons.open">Подобрать иконки</button>
-          <button id="playlist-add" class="secondary-button" type="button" data-i18n="playlist.add">Добавить</button>
+                  aria-controls="icons-panel" data-i18n="icons.open">Find pictures</button>
+          <button id="playlist-add" class="secondary-button" type="button" data-i18n="playlist.add">Add</button>
         </div>
       </div>
 
@@ -98,82 +98,82 @@
            browser. stations_search.js. -->
       <div id="search-panel" class="search-panel" hidden>
         <div class="search-panel-head">
-          <h3 data-i18n="search.title">Поиск станций</h3>
-          <button class="icon-button search-close" type="button" data-i18n-aria="search.close" aria-label="Закрыть" data-close="search">
+          <h3 data-i18n="search.title">Find stations</h3>
+          <button class="icon-button search-close" type="button" data-i18n-aria="search.close" aria-label="Close" data-close="search">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg>
           </button>
         </div>
         <form id="search-form" class="search-form" role="search">
           <input id="search-query" type="search" autocomplete="off"
-                 data-i18n-placeholder="search.placeholder" placeholder="Название или жанр: jazz, rock, новости"
-                 data-i18n-aria="search.placeholder" aria-label="Название или жанр">
-          <select id="search-country" data-i18n-aria="search.country" aria-label="Страна">
-            <option value="" data-i18n="search.any_country">Любая страна</option>
+                 data-i18n-placeholder="search.placeholder" placeholder="Name or genre: jazz, rock, news"
+                 data-i18n-aria="search.placeholder" aria-label="Name or genre: jazz, rock, news">
+          <select id="search-country" data-i18n-aria="search.country" aria-label="Country">
+            <option value="" data-i18n="search.any_country">Any country</option>
           </select>
-          <select id="search-source" data-i18n-aria="search.source" aria-label="Каталог">
-            <option value="mirror" data-i18n="search.source_mirror">Зеркало jRadio</option>
+          <select id="search-source" data-i18n-aria="search.source" aria-label="Catalogue">
+            <option value="mirror" data-i18n="search.source_mirror">jRadio copy</option>
             <option value="live" data-i18n="search.source_live">radio-browser.info</option>
           </select>
-          <button id="search-go" class="primary-button" type="submit" data-i18n="search.go">Искать</button>
+          <button id="search-go" class="primary-button" type="submit" data-i18n="search.go">Search</button>
         </form>
         <p id="search-status" class="settings-status" role="status" aria-live="polite"></p>
-        <ul id="search-results" class="search-results" data-i18n-aria="search.results" aria-label="Найденные станции"></ul>
-        <p class="field-note" data-i18n="search.note">Станции из открытого каталога radio-browser.info — напрямую или из зеркала jRadio на GitHub, которое обновляется раз в сутки и открывается там, где сам каталог недоступен. Если выбранный не отвечает, страница спросит другой. Добавленная станция появится в списке ниже; чтобы она попала на радио, нажмите «Сохранить на устройстве».</p>
+        <ul id="search-results" class="search-results" data-i18n-aria="search.results" aria-label="Stations found"></ul>
+        <p class="field-note" data-i18n="search.note">Stations from the open radio-browser.info catalogue — directly or from the jRadio copy on GitHub, which is refreshed once a day and opens where the catalogue itself does not. If the chosen one does not answer, the page asks the other. An added station appears in the list below; press "Save to the device" to send it to the radio.</p>
       </div>
 
       <!-- Pictures for stations that have none, found in the same catalogue. -->
       <div id="icons-panel" class="search-panel" hidden>
         <div class="search-panel-head">
-          <h3 data-i18n="icons.title">Иконки для станций без них</h3>
-          <button class="icon-button search-close" type="button" data-i18n-aria="search.close" aria-label="Закрыть" data-close="icons">
+          <h3 data-i18n="icons.title">Pictures for stations without one</h3>
+          <button class="icon-button search-close" type="button" data-i18n-aria="search.close" aria-label="Close" data-close="icons">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg>
           </button>
         </div>
         <p id="icons-status" class="settings-status" role="status" aria-live="polite"></p>
-        <ul id="icons-results" class="search-results" data-i18n-aria="icons.results" aria-label="Найденные иконки"></ul>
+        <ul id="icons-results" class="search-results" data-i18n-aria="icons.results" aria-label="Pictures found"></ul>
         <div class="settings-actions">
-          <button id="icons-apply" class="primary-button" type="button" disabled data-i18n="icons.apply">Поставить отмеченные</button>
+          <button id="icons-apply" class="primary-button" type="button" disabled data-i18n="icons.apply">Use the ticked ones</button>
         </div>
-        <p class="field-note" data-i18n="icons.note">Совпадение по адресу потока надёжно, по названию — проверьте глазами. Ищется в каталоге, выбранном в поиске станций. Картинки из зеркала берутся сразу, остальные скачивает само радио; на радио они попадут после «Сохранить на устройстве».</p>
+        <p class="field-note" data-i18n="icons.note">A match by stream address is reliable, a match by name is worth a look. The catalogue chosen in the station search is used. Pictures from the copy come at once, the rest the radio fetches; they reach the radio with "Save to the device".</p>
       </div>
 
-      <ul id="playlist-rows" class="playlist-rows" data-i18n-aria="playlist.rows" aria-label="Станции плейлиста"></ul>
-      <p id="playlist-empty" class="empty-state" data-i18n="playlist.empty">Список пока пуст — добавьте станцию или импортируйте файл</p>
+      <ul id="playlist-rows" class="playlist-rows" data-i18n-aria="playlist.rows" aria-label="Playlist stations"></ul>
+      <p id="playlist-empty" class="empty-state" data-i18n="playlist.empty">Nothing here yet — add a station or import a file</p>
 
       <div class="playlist-save-bar">
-        <button id="playlist-save" class="primary-button" type="button" disabled data-i18n="playlist.save">Сохранить на устройстве</button>
+        <button id="playlist-save" class="primary-button" type="button" disabled data-i18n="playlist.save">Save to the device</button>
         <p id="playlist-save-status" class="command-status" role="status" aria-live="polite"></p>
       </div>
 
-      <p class="field-note" data-i18n="playlist.note_order">Порядок станций меняется перетаскиванием строки за ручку слева; с клавиатуры — стрелками вверх и вниз на ней. Иконка станции снимается кнопкой «Убрать» в её карточке.</p>
-      <p class="field-note" data-i18n="playlist.note_format">Формат файла: одна станция на строку, поля разделены табуляцией — имя, URL, флаг «имя из списка» (0 или 1).</p>
-      <p class="field-note" data-i18n="playlist.lead">Импорт из файла заменяет список целиком, экспорт сохраняет то, что сейчас на экране.</p>
+      <p class="field-note" data-i18n="playlist.note_order">Reorder by dragging a row by the handle on the left; from the keyboard, the up and down arrows on it. A station's icon is removed by the "Remove" button in its card.</p>
+      <p class="field-note" data-i18n="playlist.note_format">File format: one station per line, fields separated by tabs — name, URL, and the "name from the list" flag (0 or 1).</p>
+      <p class="field-note" data-i18n="playlist.lead">Importing replaces the whole list; exporting saves what is on screen.</p>
     </section>
     </div>
 
     <div id="stations-fm" role="tabpanel" aria-labelledby="stations-tab-fm" hidden>
     <section class="card" id="fm-card" aria-labelledby="fm-title">
       <div class="card-head">
-        <h2 id="fm-title" data-i18n="fm.title">FM-станции</h2>
+        <h2 id="fm-title" data-i18n="fm.title">FM stations</h2>
         <span id="fm-status" class="settings-status" role="status" aria-live="polite"></span>
       </div>
 
-      <p class="field-note" data-i18n="note.fm">«Сканировать» проходит весь диапазон, и найденные станции заменяют этот список. Станцию можно и добавить по частоте, и поправить частоту в строке. Дайте им имена и картинки и сохраните: на устройстве список открывается двойным нажатием, а Prev и Next листают его; пока список пуст, они ищут ближайшую станцию. Станция без имени получает его по RDS.</p>
+      <p class="field-note" data-i18n="note.fm">Scan sweeps the whole band, and the stations it finds replace this list. A station can also be added by its frequency, and a row's frequency corrected. Name them, give them pictures and save: on the device a double press opens the list, and Prev and Next step through it; while it is empty, they search for the nearest station. A station with no name takes the one it sends over RDS.</p>
 
       <ul id="fm-presets" class="saved-networks fm-list"></ul>
-      <p id="fm-presets-empty" class="empty-state" data-i18n="fm.saved_empty">Станций пока нет — нажмите «Сканировать» или добавьте частоту</p>
+      <p id="fm-presets-empty" class="empty-state" data-i18n="fm.saved_empty">No stations yet - press Scan or add a frequency</p>
 
       <!-- A station the scan missed, without scanning the list away. -->
       <div class="fm-add">
         <input id="fm-add-frequency" class="fm-frequency" type="text" inputmode="decimal" maxlength="6"
-               data-i18n-placeholder="fm.frequency" placeholder="Частота, МГц"
-               data-i18n-aria="fm.frequency" aria-label="Частота, МГц">
-        <button id="fm-add" class="secondary-button" type="button" data-i18n="fm.add">Добавить</button>
+               data-i18n-placeholder="fm.frequency" placeholder="Frequency, MHz"
+               data-i18n-aria="fm.frequency" aria-label="Frequency, MHz">
+        <button id="fm-add" class="secondary-button" type="button" data-i18n="fm.add">Add</button>
       </div>
 
       <div class="settings-actions">
-        <button id="fm-scan" class="secondary-button" type="button" data-i18n="fm.scan">Сканировать</button>
-        <button id="fm-save" class="primary-button" type="button" disabled data-i18n="fm.save">Сохранить</button>
+        <button id="fm-scan" class="secondary-button" type="button" data-i18n="fm.scan">Scan</button>
+        <button id="fm-save" class="primary-button" type="button" disabled data-i18n="fm.save">Save</button>
       </div>
     </section>
     </div>
@@ -182,11 +182,11 @@
   <!-- To the Save button at the foot of whichever list is open, when it is out
        of sight: with 99 stations it is a long way down. -->
   <button id="stations-to-save" class="to-save-button" type="button" hidden
-          data-i18n-aria="stations.to_save" aria-label="К кнопке «Сохранить»" title="">
+          data-i18n-aria="stations.to_save" aria-label="Down to Save" title="">
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5v13M6 12l6 6 6-6"/></svg>
   </button>
 
-  <noscript><p class="noscript-message">Для редактора плейлиста требуется JavaScript. / JavaScript is required for the playlist editor.</p></noscript>
+  <noscript><p class="noscript-message">JavaScript is required for the playlist editor.</p></noscript>
   <script src="/playlist.js"></script>
   <script src="/fm.js"></script>
   <script src="/stations_search.js"></script>

@@ -37,14 +37,23 @@
   let lastLearningCode = null;
   let pressed = null;
   const rows = new Map();
+  let statusMessage = null;
 
   function isObject(value) {
     return value !== null && typeof value === 'object' && !Array.isArray(value);
   }
 
-  function setStatus(text, error) {
-    status.textContent = text;
+  function setStatus(key, error, values) {
+    statusMessage = {key, values};
+    renderStatus();
     status.classList.toggle('is-error', error === true);
+  }
+
+  function renderStatus() {
+    if (!statusMessage) return;
+    const {key, values} = statusMessage;
+    status.textContent = t(key, key === 'remote.press'
+      ? {function: t(`remote.f.${values.function}`)} : values);
   }
 
   function buildRows() {
@@ -101,7 +110,7 @@
       row.children[3].hidden = !bound || armed;
     }
     if (learning !== null) {
-      setStatus(t('remote.press', {function: t(`remote.f.${learning}`)}), false);
+      setStatus('remote.press', false, {function: learning});
       lastLearningCode = typeof keys[learning] === 'string' ? keys[learning] : null;
     } else if (lastLearning !== null) {
       /* The arming ended, with a key or with the thirty seconds. The device
@@ -112,7 +121,7 @@
       const bound = typeof body.learned === 'boolean'
         ? body.learned
         : code !== null && code !== lastLearningCode;
-      setStatus(bound ? t('remote.learned') : t('remote.timeout'), !bound);
+      setStatus(bound ? 'remote.learned' : 'remote.timeout', !bound);
     }
     lastLearning = learning;
   }
@@ -127,7 +136,7 @@
     if (name !== null && rows.has(name)) rows.get(name).classList.add('is-pressed');
     pressed = name !== null && rows.has(name) ? name : null;
     if (fresh && name === null && learning === null && typeof last.code === 'string') {
-      setStatus(t('remote.unknown', {code: last.code}), false);
+      setStatus('remote.unknown', false, {code: last.code});
     }
   }
 
@@ -169,7 +178,7 @@
         showPressed(body.last);
         return undefined;
       })
-      .catch(() => setStatus(t('remote.failed'), true))
+      .catch(() => setStatus('remote.failed', true))
       .then(schedulePoll);
   }
 
@@ -182,25 +191,23 @@
   }
 
   function learnFunction(name) {
-    setStatus(t('remote.press', {function: t(`remote.f.${name}`)}), false);
+    setStatus('remote.press', false, {function: name});
     return post('/api/remote/learn', name)
       .then(() => load())
-      .catch(() => setStatus(t('remote.failed'), true));
+      .catch(() => setStatus('remote.failed', true));
   }
 
   function forgetFunction(name) {
     return post('/api/remote/forget', name)
       .then(() => load())
-      .catch(() => setStatus(t('remote.failed'), true));
+      .catch(() => setStatus('remote.failed', true));
   }
 
   window.jradioI18n.onChange(() => {
     /* The rows carry their keys, so the dictionary re-translates them; only
        the status line and the armed row's text are built by hand. */
-    if (learning !== null) {
-      setStatus(t('remote.press', {function: t(`remote.f.${learning}`)}), false);
-      rows.get(learning).children[1].textContent = t('remote.waiting');
-    }
+    renderStatus();
+    if (rows.has(learning)) rows.get(learning).children[1].textContent = t('remote.waiting');
   });
 
   /* A tab in the background asks nothing; brought back, it asks at once. */
@@ -210,5 +217,6 @@
   });
 
   buildRows();
-  loadTable().catch(() => setStatus(t('remote.failed'), true)).then(schedulePoll);
+  loadTable().catch(() => setStatus('remote.failed', true)).then(schedulePoll);
+  window.jradioI18n.followSettings();
 })();

@@ -181,7 +181,7 @@ typedef enum {
 /* What the device calls itself where a name is shown to a stranger: the
  * Bluetooth name a phone or a speaker sees, and the setup access point's
  * SSID. Up to 32 bytes, an SSID's limit, which Bluetooth allows too. Empty
- * means the built-in "jradio-XXXX", from the last two bytes of the Wi-Fi
+ * means the built-in "yiRadio-XXXX", from the last two bytes of the Wi-Fi
  * MAC - the name the setup network has always had. */
 #define DEVICE_NAME_MAX 33
 
@@ -201,8 +201,8 @@ typedef enum {
  * default time zone is on, so the two defaults agree with each other. The
  * device cannot find itself - this network's exit resolves to Amsterdam - and
  * a wrong city with the right time is easier to notice than the reverse. */
-#define DEVICE_WEATHER_LATITUDE_DEFAULT "55.75"
-#define DEVICE_WEATHER_LONGITUDE_DEFAULT "37.62"
+#define DEVICE_WEATHER_LATITUDE_DEFAULT "50.45"
+#define DEVICE_WEATHER_LONGITUDE_DEFAULT "30.52"
 
 /* The alarm before anyone has set it: seven in the morning, every day, the
  * first station, and quieter than the device's own default - being woken is
@@ -464,7 +464,7 @@ bool device_settings_set_ntp_server(device_settings_t *settings, const char *hos
  * surrounding spaces; a comma or a control character is refused, the first
  * because it would cut the settings line in two. */
 bool device_settings_set_device_name(device_settings_t *settings, const char *name);
-/* The built-in name for a Wi-Fi MAC: "jradio-XXXX". */
+/* The built-in name for a Wi-Fi MAC: "yiRadio-XXXX". */
 void device_settings_default_name(const unsigned char mac[6], char *out, size_t size);
 /* The name as a router's client list can carry it - DHCP's host name, which
  * is letters, digits and hyphens, at most 32 of them. Russian letters are

@@ -543,12 +543,12 @@
     renderTone();
   }
 
-  /* One decimal, and no minus: the words say which way. A decimal comma in
-     Russian, as on the panel. */
+  /* One decimal, and no minus: the words say which way. */
   function levelDb(db) {
-    const english = Boolean(window.jradioI18n.language) && window.jradioI18n.language() === 'en';
-    const text = Math.abs(db).toFixed(1);
-    return english ? text : text.replace('.', ',');
+    const locales = window.jradioI18n.intlLocales?.() || ['en'];
+    return Math.abs(db).toLocaleString(locales, {
+      minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false,
+    });
   }
 
   /* What the levelling is doing with what is playing, in a line. The case
@@ -766,17 +766,7 @@
     /* The language is a device setting like any other, so it arrives here -
        which is what makes the switch on the settings page, and the row on the
        device's own screen, relabel this tab without a reload. */
-    if (typeof value.language === 'string' &&
-        window.jradioI18n.setLanguage(value.language)) {
-      /* The markup is relabelled by i18n itself; these are the parts this page
-         drew, which it has to draw again. */
-      renderPlayer();
-      renderList();
-      renderSources();
-      /* The connection chip too: it is written when the socket opens, which is
-         before the device has said which language it wants. */
-      setConnected(state.connected);
-    }
+    if (typeof value.language === 'string') window.jradioI18n.setLanguage(value.language);
     applyAlarm(value);
     const level = value.volume;
     if (!Number.isSafeInteger(level) || level < 0 || level > 100) return;
@@ -1104,7 +1094,9 @@
     nextItem.disabled = !stepReady;
 
     playToggle.classList.toggle('is-playing', playing);
-    playToggle.setAttribute('aria-label', t(playing ? 'player.pause' : 'player.play'));
+    const playLabel = playing ? 'player.pause' : 'player.play';
+    playToggle.setAttribute('data-i18n-aria', playLabel);
+    playToggle.setAttribute('aria-label', t(playLabel));
     playToggle.setAttribute('aria-pressed', String(playing));
 
     const metadata = [];
@@ -1860,9 +1852,10 @@
      card. On a large screen the button is hidden - everything fits there. */
   playerExpand.addEventListener('click', () => {
     const expanded = playerBar.classList.toggle('is-expanded');
+    const key = expanded ? 'player.collapse' : 'player.expand';
     playerExpand.setAttribute('aria-expanded', String(expanded));
-    playerExpand.setAttribute('aria-label',
-      expanded ? t('player.collapse') : t('player.expand'));
+    playerExpand.setAttribute('data-i18n-aria', key);
+    playerExpand.setAttribute('aria-label', t(key));
   });
   likeTrack.addEventListener('click', () => sendCommand('player.like'));
   dislikeTrack.addEventListener('click', () => sendCommand('player.dislike'));
@@ -1873,5 +1866,12 @@
   renderPlayer();
   renderList();
   scheduleProgress(progressIdleDelay);
+  window.jradioI18n.onChange?.(() => {
+    setConnected(state.connected); // Also renders the player.
+    renderList();
+    renderSources();
+    renderAlarm();
+    renderTone();
+  });
   connect();
 })();

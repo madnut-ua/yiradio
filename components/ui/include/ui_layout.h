@@ -792,24 +792,14 @@ _Static_assert(UI_SETTINGS_MAX_ROWS >= 3U,
 #ifndef UI_ABOUT_ROW_Y
 #define UI_ABOUT_ROW_Y (UI_ABOUT_TITLE_Y + UI_FONT_TITLE_LINE_H + 10)
 #endif
-#ifndef UI_ABOUT_ROW_PITCH
-#define UI_ABOUT_ROW_PITCH (UI_SRC_LINE_H + 2)
-#endif
-/* Firmware, when it was built, the web assets, the framework, and a line that
- * speaks up only when the first and the third disagree. */
-#define UI_ABOUT_ROWS 5U
-/* The two lines pinned to the bottom: who to write to, and how to leave. The
- * air around them is the shape's to trim - the short panel has none to give. */
-#ifndef UI_ABOUT_AUTHOR_Y
-#define UI_ABOUT_AUTHOR_Y (TFT_HEIGHT - 2 * UI_SRC_LINE_H - 12)
-#endif
 #ifndef UI_ABOUT_HINT_Y
 #define UI_ABOUT_HINT_Y (TFT_HEIGHT - UI_SRC_LINE_H - 6)
 #endif
 _Static_assert(UI_ABOUT_HINT_Y + UI_SRC_LINE_H <= TFT_HEIGHT,
                "the About screen's last line runs off the panel");
-_Static_assert(UI_ABOUT_ROW_Y + (int)UI_ABOUT_ROWS * UI_ABOUT_ROW_PITCH <= UI_ABOUT_AUTHOR_Y,
-               "the About screen's rows run into the address at the bottom");
+#define UI_ABOUT_BODY_H (UI_ABOUT_HINT_Y - UI_ABOUT_ROW_Y - 2)
+_Static_assert(UI_ABOUT_BODY_H >= 4 * UI_SRC_LINE_H,
+               "the About screen needs room for at least four rows");
 
 
 #define UI_LIST_RULE_Y (UI_LIST_ROW_Y + (int)UI_STATION_LIST_MAX_ROWS * UI_LIST_ROW_PITCH + 6)

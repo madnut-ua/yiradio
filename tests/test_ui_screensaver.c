@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "locale_fixture.h"
 #include "ui_screensaver.h"
 
 #define AREA_W 480
@@ -206,23 +207,26 @@ static void test_the_date_line_in_both_languages(void)
     /* Thursday 11 September: the day first in Russian and in the genitive,
      * the weekday first in English. Weekday 4 is Thursday counting from
      * Sunday, as struct tm does. */
-    ui_screensaver_date_text(text, sizeof(text), DEVICE_LANGUAGE_RU, true, 11, 9, 4);
+    const device_language_t ru = test_locale("ru");
+    ui_screensaver_date_text(text, sizeof(text), ru, true, 11, 9, 4);
     assert(strcmp(text, "11 сентября, четверг") == 0);
     ui_screensaver_date_text(text, sizeof(text), DEVICE_LANGUAGE_EN, true, 11, 9, 4);
     assert(strcmp(text, "Thursday, 11 September") == 0);
-    ui_screensaver_date_text(text, sizeof(text), DEVICE_LANGUAGE_RU, true, 1, 1, 0);
+    ui_screensaver_date_text(text, sizeof(text), ru, true, 1, 1, 0);
     assert(strcmp(text, "1 января, воскресенье") == 0);
     ui_screensaver_date_text(text, sizeof(text), DEVICE_LANGUAGE_EN, true, 31, 12, 6);
     assert(strcmp(text, "Saturday, 31 December") == 0);
+    ui_screensaver_date_text(text, sizeof(text), test_locale("uk"), true, 12, 9, 5);
+    assert(strcmp(text, "12 вересня, п'ятниця") == 0);
     /* Nothing until the clock is set, and nothing for a date off the
      * calendar. */
-    ui_screensaver_date_text(text, sizeof(text), DEVICE_LANGUAGE_RU, false, 11, 9, 4);
+    ui_screensaver_date_text(text, sizeof(text), ru, false, 11, 9, 4);
     assert(text[0] == '\0');
-    ui_screensaver_date_text(text, sizeof(text), DEVICE_LANGUAGE_RU, true, 11, 13, 4);
+    ui_screensaver_date_text(text, sizeof(text), ru, true, 11, 13, 4);
     assert(text[0] == '\0');
-    ui_screensaver_date_text(text, sizeof(text), DEVICE_LANGUAGE_RU, true, 11, 9, 7);
+    ui_screensaver_date_text(text, sizeof(text), ru, true, 11, 9, 7);
     assert(text[0] == '\0');
-    ui_screensaver_date_text(NULL, 0, DEVICE_LANGUAGE_RU, true, 11, 9, 4);
+    ui_screensaver_date_text(NULL, 0, ru, true, 11, 9, 4);
 }
 
 static void test_the_track_line(void)
@@ -256,15 +260,16 @@ static void test_the_track_line(void)
 static void test_the_short_date_drops_the_weekday(void)
 {
     char text[64];
-    ui_screensaver_date_short_text(text, sizeof(text), DEVICE_LANGUAGE_RU, true, 16, 9);
+    const device_language_t ru = test_locale("ru");
+    ui_screensaver_date_short_text(text, sizeof(text), ru, true, 16, 9);
     assert(strcmp(text, "16 сентября") == 0);
     ui_screensaver_date_short_text(text, sizeof(text), DEVICE_LANGUAGE_EN, true, 16, 9);
     assert(strcmp(text, "16 September") == 0);
     /* And it is empty on an unset clock, like the long one: an empty line is
      * what the layout reads as "no date to place". */
-    ui_screensaver_date_short_text(text, sizeof(text), DEVICE_LANGUAGE_RU, false, 16, 9);
+    ui_screensaver_date_short_text(text, sizeof(text), ru, false, 16, 9);
     assert(text[0] == '\0');
-    ui_screensaver_date_short_text(text, sizeof(text), DEVICE_LANGUAGE_RU, true, 0, 13);
+    ui_screensaver_date_short_text(text, sizeof(text), ru, true, 0, 13);
     assert(text[0] == '\0');
 }
 
