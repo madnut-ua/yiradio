@@ -94,13 +94,21 @@ def scaled(value):
     return int(round(value * SS))
 
 
+def glow_value(value: int) -> int:
+    return value * 62 // 100
+
+
+def mask_value(value: int) -> int:
+    return 255 if value > 6 else 0
+
+
 def background():
     """Near-black with a faint green lift behind the tube."""
     edge = Image.new("RGB", (W * SS, H * SS), (5, 6, 6))
     core = Image.new("RGB", (W * SS, H * SS), (16, 24, 20))
     # radial_gradient is square and black in the middle, so it doubles as the
     # blend mask: centre keeps `core`, edges fall to `edge`.
-    mask = Image.radial_gradient("L").resize((W * SS, H * SS), Image.LANCZOS)
+    mask = Image.radial_gradient("L").resize((W * SS, H * SS), Image.Resampling.LANCZOS)
     return Image.composite(edge, core, mask)
 
 
@@ -159,7 +167,7 @@ def tube_layer():
            fill=(146, 158, 148), width=scaled(4))
 
     glow_mask = shade.filter(ImageFilter.GaussianBlur(scaled(11)))
-    glow_mask = glow_mask.point(lambda v: v * 62 // 100)
+    glow_mask = glow_mask.point(glow_value)
     glow = Image.new("RGB", size, (0, 0, 0))
     glow.paste(Image.new("RGB", size, GREEN_DIM), mask=glow_mask)
     return layer, glow
@@ -174,7 +182,8 @@ def wordmark(font_key):
     probe = ImageDraw.Draw(Image.new("L", (1, 1)))
     box = probe.textbbox((0, 0), text, font=font, stroke_width=scaled(2))
     pad = scaled(26)
-    tw, th = box[2] - box[0] + 2 * pad, box[3] - box[1] + 2 * pad
+    tw = math.ceil(box[2] - box[0] + 2 * pad)
+    th = math.ceil(box[3] - box[1] + 2 * pad)
     layer = Image.new("RGBA", (tw, th), (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
     ox, oy = pad - box[0], pad - box[1]
@@ -204,15 +213,15 @@ def compose(font_key, out_path):
     tube, glow = tube_layer()
     canvas = Image.blend(canvas, Image.new("RGB", canvas.size, (0, 0, 0)), 0.0)
     canvas = ImageMath_add(canvas, glow)
-    canvas.paste(tube, mask=tube.convert("L").point(lambda v: 255 if v > 6 else 0))
+    canvas.paste(tube, mask=tube.convert("L").point(mask_value))
 
-    text_layer = wordmark(font_key).rotate(22, resample=Image.BICUBIC, expand=True)
+    text_layer = wordmark(font_key).rotate(22, resample=Image.Resampling.BICUBIC, expand=True)
     # Right and down of the tube centre, so the eye stays visible above it.
     centre = (scaled(WORDMARK[0]), scaled(WORDMARK[1]))
     pos = (centre[0] - text_layer.width // 2, centre[1] - text_layer.height // 2)
     canvas.paste(text_layer, pos, text_layer)
 
-    final = canvas.resize((W, H), Image.LANCZOS)
+    final = canvas.resize((W, H), Image.Resampling.LANCZOS)
     final.save(out_path)
     return final
 

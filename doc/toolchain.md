@@ -19,6 +19,24 @@ VS Code с расширением ESP-IDF: оно само скачает фре
   интерпретатор с собой, а без него установка обрывается на середине с
   ошибками, в которых про Python ни слова.
 
+## Python-скрипты в tools/
+
+Для самостоятельного запуска скриптов из `tools/` создайте отдельное
+окружение из корня проекта и установите зависимости:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r tools/requirements.txt
+```
+
+В Windows используйте `python -m venv .venv` и
+`.venv\Scripts\python -m pip install -r tools/requirements.txt`.
+В VS Code выберите этот интерпретатор через **Python: Select Interpreter**.
+Запускайте скрипт командой `.venv/bin/python tools/<script>.py` (в Windows —
+`.venv\Scripts\python tools\<script>.py`). После изменения зависимостей
+повторите команду установки. Это окружение отдельно от окружения ESP-IDF;
+скриптам также могут понадобиться входные файлы или внешние программы.
+
 ## 1. Системные пакеты
 
 ### Linux (Debian, Ubuntu)
