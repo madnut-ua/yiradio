@@ -37,6 +37,8 @@ Run a script with `.venv/bin/python tools/<script>.py` (on Windows,
 `.venv\Scripts\python tools\<script>.py`). After dependencies change, run the
 install command again. This environment is separate from ESP-IDF's environment;
 the scripts may also require input files or external programs.
+The boot splash generator uses the bundled fonts in `tools/fonts/`; their
+upstream source and license are documented there.
 
 ## 1. System packages
 

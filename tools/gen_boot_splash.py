@@ -33,10 +33,11 @@ SS = 4  # supersampling factor
 # closest thing installed here to 50s American sign lettering.
 CHOSEN = "script"
 
+FONT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
 FONTS = {
-    "bookman": ("/usr/share/fonts/opentype/urw-base35/URWBookman-DemiItalic.otf", 44),
-    "script": ("/usr/share/fonts/opentype/urw-base35/Z003-MediumItalic.otf", 62),
-    "palatino": ("/usr/share/fonts/opentype/urw-base35/P052-BoldItalic.otf", 44),
+    "bookman": (os.path.join(FONT_DIR, "URWBookman-DemiItalic.otf"), 44),
+    "script": (os.path.join(FONT_DIR, "Z003-MediumItalic.otf"), 62),
+    "palatino": (os.path.join(FONT_DIR, "P052-BoldItalic.otf"), 44),
 }
 
 # Tube: centred, sitting a touch above the middle so the wordmark has room
@@ -174,10 +175,10 @@ def tube_layer():
 
 
 def wordmark(font_key):
-    """The rotated 'yiRadio' as an RGBA layer, already positioned on the canvas."""
+    """The rotated 'їRadio' as an RGBA layer, already positioned on the canvas."""
     path, size = FONTS[font_key]
     font = ImageFont.truetype(path, size * SS)
-    text = "yiRadio"
+    text = "їRadio"
 
     probe = ImageDraw.Draw(Image.new("L", (1, 1)))
     box = probe.textbbox((0, 0), text, font=font, stroke_width=scaled(2))
