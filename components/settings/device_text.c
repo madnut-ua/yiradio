@@ -97,6 +97,8 @@ static const device_text_entry_t k_text[] = {
 
     [DEVICE_TEXT_ABOUT_TITLE] = {"about_title", "About"},
     [DEVICE_TEXT_ABOUT_FIRMWARE] = {"about_firmware", "Firmware"},
+    [DEVICE_TEXT_ABOUT_BUILD] = {"about_build", "Build"},
+    [DEVICE_TEXT_ABOUT_COMPILER] = {"about_compiler", "Compiler"},
     [DEVICE_TEXT_ABOUT_BUILT] = {"about_built", "Built"},
     [DEVICE_TEXT_ABOUT_WEB] = {"about_web", "Web UI"},
     [DEVICE_TEXT_ABOUT_UNKNOWN] = {"about_unknown", "unknown"},

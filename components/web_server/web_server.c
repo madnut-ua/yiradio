@@ -816,7 +816,8 @@ static esp_err_t web_server_about_get(httpd_req_t *request)
         cJSON_AddBoolToObject(module, "present", module_version[0] != '\0');
         cJSON_AddStringToObject(module, "version", module_version);
     }
-    cJSON_AddStringToObject(root, "author", VERSION_INFO_AUTHOR);
+    cJSON_AddStringToObject(root, "build", info.build);
+    cJSON_AddStringToObject(root, "compiler", info.compiler);
 
     char *json = cJSON_PrintUnformatted(root);
     cJSON_Delete(root);

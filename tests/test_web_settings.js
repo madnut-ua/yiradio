@@ -75,9 +75,8 @@ const section = Object.fromEntries(sectionCards.map((card) => [card.dataset.sect
 const ids = [
   'socket-state', 'wifi-form', 'wifi-ssid', 'wifi-password', 'wifi-password-reveal',
   'wifi-submit',
-  'about-firmware', 'about-built', 'about-web', 'about-idf', 'about-notice',
+  'about-firmware', 'about-build', 'about-built', 'about-web', 'about-idf', 'about-compiler', 'about-notice',
   'about-module-label', 'about-module',
-  'about-author',
   'wifi-status', 'wifi-active', 'wifi-ip', 'wifi-host', 'saved-networks',
   'saved-networks-empty', 'wifi-add', 'wifi-cancel', 'wifi-scan',
   'wifi-scan-block', 'scan-networks', 'scan-empty', 'wifi-chosen',
@@ -246,7 +245,8 @@ let timezoneCatalogReply;
 let aboutReply = {
   firmware: {version: 'v1.2.0', built: 'Sep  6 2026', present: true},
   web: {version: 'v1.1.0', built: '2026-09-01', present: true},
-  idf: 'v5.5.5', matched: false, author: 'someone@example.com',
+  idf: 'v5.5.5', matched: false,
+  build: 'ST7789/MAX98357A/RDA5807FP', compiler: 'GCC 14.2.0',
 };
 // What window.confirm() answers, and every question it was asked.
 let confirmAnswer = true;
@@ -1466,6 +1466,8 @@ function lastYandexTimer() {
   // halves disagree, so that is what the reply above sets up.
   assert.ok(fetchCalls.some((call) => call.url === '/api/about'));
   assert.equal(elements['#about-firmware'].textContent, 'v1.2.0');
+  assert.equal(elements['#about-build'].textContent, 'ST7789/MAX98357A/RDA5807FP');
+  assert.equal(elements['#about-compiler'].textContent, 'GCC 14.2.0');
   assert.equal(elements['#about-built'].textContent, 'Sep  6 2026');
   assert.equal(elements['#about-web'].textContent, 'v1.1.0');
   assert.equal(elements['#about-idf'].textContent, 'v5.5.5');
@@ -1473,16 +1475,16 @@ function lastYandexTimer() {
   // No module answered: no line for it at all, rather than "unknown".
   assert.equal(elements['#about-module'].hidden, true);
   assert.equal(elements['#about-module-label'].hidden, true);
-  // The address is the device's answer, not a string written into the page,
-  // and it is offered as something to write to.
-  assert.equal(elements['#about-author'].textContent, 'someone@example.com');
-  assert.equal(elements['#about-author'].href, 'mailto:someone@example.com');
+  const settingsMarkup = fs.readFileSync('data/www/settings.html', 'utf8');
+  assert.match(settingsMarkup, /id="about-firmware"[^<]*<\/dd>\s*<dt[^>]*>Build<\/dt><dd id="about-build"/);
+  assert.match(settingsMarkup, /yiRadio is based on jRadio project\./);
+  assert.doesNotMatch(settingsMarkup, /id="about-author"/);
 
   // Agreement is the quiet case; a module that answers gets its line.
   aboutReply = {
     firmware: {version: 'v1.2.0', built: 'Sep  6 2026', present: true},
     web: {version: 'v1.2.0', built: '2026-09-06', present: true},
-    idf: 'v5.5.5', matched: true, author: 'someone@example.com',
+    idf: 'v5.5.5', matched: true,
     module: {present: true, version: '1.0.0'},
   };
   await reload();
@@ -1501,6 +1503,8 @@ function lastYandexTimer() {
   };
   await reload();
   assert.equal(elements['#about-web'].textContent, 'неизвестно');
+  assert.equal(elements['#about-build'].textContent, 'неизвестно');
+  assert.equal(elements['#about-compiler'].textContent, 'неизвестно');
   assert.equal(elements['#about-notice'].hidden, true);
 
   /* The clock. The zone menu is built from what the device sent, not from the

@@ -22,12 +22,15 @@
  * and this leaves room for a version string of full length beside its label
  * in either language. */
 #define UI_ABOUT_LINE_MAX 63U
+#define UI_ABOUT_BUILD_LINE_SIZE (2U * VERSION_INFO_BUILD_SIZE + UI_ABOUT_LINE_MAX)
 
 typedef struct {
     char firmware[UI_ABOUT_LINE_MAX + 1U];
+    char build[UI_ABOUT_BUILD_LINE_SIZE];
     char built[UI_ABOUT_LINE_MAX + 1U];
     char web[UI_ABOUT_LINE_MAX + 1U];
     char idf[UI_ABOUT_LINE_MAX + 1U];
+    char compiler[UI_ABOUT_LINE_MAX + 1U];
     /* Empty unless the two halves came from different builds, which is the
      * one thing on this screen that is a problem rather than a fact. */
     char notice[UI_ABOUT_LINE_MAX + 1U];

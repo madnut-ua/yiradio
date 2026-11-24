@@ -523,6 +523,8 @@
     "yandex.list_failed": "Could not fetch the stations",
     "about.title": "About",
     "about.firmware": "Firmware",
+    "about.build": "Build",
+    "about.compiler": "Compiler",
     "about.built": "Built",
     "about.web": "Web UI",
     "about.module": "Bluetooth module",

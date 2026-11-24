@@ -28,18 +28,25 @@ static version_info_t both(const char *firmware, const char *web)
 
 static void test_it_names_what_the_device_is_running(void)
 {
-    const version_info_t info = both("v1.2.0", "v1.2.0");
+    version_info_t info = both("v1.2.0", "v1.2.0");
+    strcpy(info.build, "ST7796S/MAX98357A/RDA5807FP/DS3231/FT6336U/jradio-bt/SPDIF/SD/USB/"
+                       "IR/DLNA/Yandex Music");
+    info.compiler = "GCC 14.2.0";
     ui_about_lines_t lines;
     ui_about_build(&info, test_locale("ru"), &lines);
     assert(strcmp(lines.firmware, "Прошивка: v1.2.0") == 0);
     assert(strcmp(lines.built, "Собрана: Sep  6 2026") == 0);
     assert(strcmp(lines.web, "Веб-интерфейс: v1.2.0") == 0);
     assert(strcmp(lines.idf, "ESP-IDF: v5.5.5") == 0);
+    assert(strcmp(lines.compiler, "Компилятор: GCC 14.2.0") == 0);
     /* Agreement is the quiet case: nothing to say. */
     assert(lines.notice[0] == '\0');
 
     ui_about_build(&info, DEVICE_LANGUAGE_EN, &lines);
     assert(strcmp(lines.firmware, "Firmware: v1.2.0") == 0);
+    assert(strcmp(lines.build, "Build: ST7796S/ MAX98357A/ RDA5807FP/ DS3231/ FT6336U/ "
+                               "jradio-bt/ SPDIF/ SD/ USB/ IR/ DLNA/ Yandex Music") == 0);
+    assert(strcmp(lines.compiler, "Compiler: GCC 14.2.0") == 0);
     assert(strcmp(lines.web, "Web UI: v1.2.0") == 0);
     /* The framework's label is a proper name and is not translated. */
     assert(strcmp(lines.idf, "ESP-IDF: v5.5.5") == 0);
@@ -95,6 +102,8 @@ static void test_it_fills_every_line_whatever_it_is_given(void)
     assert(strstr(lines.firmware, "неизвестно") != NULL);
     ui_about_build(NULL, DEVICE_LANGUAGE_EN, &lines);
     assert(strstr(lines.firmware, "unknown") != NULL);
+    assert(strcmp(lines.build, "Build: unknown") == 0);
+    assert(strcmp(lines.compiler, "Compiler: unknown") == 0);
     /* And a null destination is simply nothing to do. */
     ui_about_build(&nothing, test_locale("ru"), NULL);
 }
