@@ -2585,20 +2585,17 @@ static void player_note_nothing_started(player_snapshot_t *snapshot)
     const uint32_t bt_old = atomic_load_explicit(&s_bt_module_old_at_ms, memory_order_acquire);
     if ((bt_old != 0U && (uint32_t)(now_ms - bt_old) < PLAYER_NO_RESUME_NOTICE_MS) ||
         bt_link_output_needs_new_module()) {
-        snprintf(snapshot->error, sizeof(snapshot->error), "%s",
-                 player_text(DEVICE_TEXT_ERROR_BT_MODULE_OLD));
+        snapshot->error_text_id = DEVICE_TEXT_ERROR_BT_MODULE_OLD + 1U;
         return;
     }
     if (player_control_browse_failed()) {
-        snprintf(snapshot->error, sizeof(snapshot->error), "%s",
-                 player_text(DEVICE_TEXT_ERROR_FOLDER_FAILED));
+        snapshot->error_text_id = DEVICE_TEXT_ERROR_FOLDER_FAILED + 1U;
         return;
     }
     const uint32_t at = atomic_load_explicit(&s_no_resume_at_ms, memory_order_acquire);
     if (at == 0U) return;
     if ((uint32_t)(now_ms - at) >= PLAYER_NO_RESUME_NOTICE_MS) return;
-    snprintf(snapshot->error, sizeof(snapshot->error), "%s",
-             player_text(DEVICE_TEXT_ERROR_NOTHING_TO_RESUME));
+    snapshot->error_text_id = DEVICE_TEXT_ERROR_NOTHING_TO_RESUME + 1U;
 }
 
 void player_control_get_snapshot(player_snapshot_t *snapshot)
@@ -2692,8 +2689,7 @@ void player_control_get_snapshot(player_snapshot_t *snapshot)
         snprintf(snapshot->codec, sizeof(snapshot->codec), "FM");
         if (atomic_load_explicit(&s_fm_failed, memory_order_acquire)) {
             snapshot->playback_state = PLAYER_PLAYBACK_ERROR;
-            snprintf(snapshot->error, sizeof(snapshot->error), "%s",
-                     player_text(DEVICE_TEXT_ERROR_FM_TUNER));
+            snapshot->error_text_id = DEVICE_TEXT_ERROR_FM_TUNER + 1U;
             return;
         }
         if (!atomic_load_explicit(&s_fm_on, memory_order_acquire)) {
@@ -2754,8 +2750,7 @@ void player_control_get_snapshot(player_snapshot_t *snapshot)
         const bool connected = state.status.connection == JBT_CONN_CONNECTED;
         if (!bt_link_alive()) {
             snapshot->playback_state = PLAYER_PLAYBACK_ERROR;
-            snprintf(snapshot->error, sizeof(snapshot->error), "%s",
-                     player_text(DEVICE_TEXT_ERROR_BLUETOOTH_MODULE));
+            snapshot->error_text_id = DEVICE_TEXT_ERROR_BLUETOOTH_MODULE + 1U;
         } else if (!connected) {
             snapshot->playback_state = PLAYER_PLAYBACK_STOPPED;
         } else if (state.status.play == JBT_PLAY_PLAYING) {
@@ -2798,8 +2793,7 @@ void player_control_get_snapshot(player_snapshot_t *snapshot)
         snapshot->sample_rate_hz = usb_status.sample_rate_hz;
         snapshot->track_tag_revision = usb_status.tags_revision;
         if (usb_status.state == FILE_PLAYER_STATE_ERROR) {
-            snprintf(snapshot->error, sizeof(snapshot->error), "%s",
-                     player_text(DEVICE_TEXT_ERROR_FILE_FAILED));
+            snapshot->error_text_id = DEVICE_TEXT_ERROR_FILE_FAILED + 1U;
         }
         return;
     }
@@ -2889,11 +2883,9 @@ void player_control_get_snapshot(player_snapshot_t *snapshot)
          * like a station that would not open. */
         if (snapshot->active_source == AUDIO_SOURCE_YANDEX &&
             yandex_rotor_last_error() == ESP_ERR_NOT_SUPPORTED) {
-            snprintf(snapshot->error, sizeof(snapshot->error), "%s",
-                     player_text(DEVICE_TEXT_ERROR_YANDEX_SUBSCRIPTION));
+            snapshot->error_text_id = DEVICE_TEXT_ERROR_YANDEX_SUBSCRIPTION + 1U;
         } else {
-            snprintf(snapshot->error, sizeof(snapshot->error),
-                     "%s", player_text(DEVICE_TEXT_ERROR_STATION_FAILED));
+            snapshot->error_text_id = DEVICE_TEXT_ERROR_STATION_FAILED + 1U;
         }
     }
 }

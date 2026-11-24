@@ -88,9 +88,11 @@ void ui_yandex_view_build(const yandex_auth_status_t *status,
             view->code = status->user_code;
             view->url = status->verification_url;
             if (status->seconds_left > 0U) {
-                snprintf(view->countdown, sizeof(view->countdown),
-                         device_text(DEVICE_TEXT_YANDEX_SECONDS_LEFT, language),
-                         (unsigned int)status->seconds_left);
+                char seconds[12];
+                snprintf(seconds, sizeof(seconds), "%u", (unsigned int)status->seconds_left);
+                const device_text_arg_t arg = {"seconds", seconds};
+                device_text_format(view->countdown, sizeof(view->countdown),
+                                   DEVICE_TEXT_YANDEX_SECONDS_LEFT, language, &arg, 1U);
             }
         }
         break;

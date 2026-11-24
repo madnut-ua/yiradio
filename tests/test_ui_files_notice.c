@@ -1,3 +1,4 @@
+#include "locale_fixture.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -6,14 +7,14 @@
 
 static void test_a_readable_drive_with_files_opens_without_a_notice(void)
 {
-    assert(ui_files_notice(AUDIO_SOURCE_USB, FILE_BROWSER_MEDIA_READY, 8U, DEVICE_LANGUAGE_RU) == NULL);
+    assert(ui_files_notice(AUDIO_SOURCE_USB, FILE_BROWSER_MEDIA_READY, 8U, test_locale("ru")) == NULL);
     assert(ui_files_can_open(AUDIO_SOURCE_USB, FILE_BROWSER_MEDIA_READY, 8U));
     assert(ui_files_can_open(AUDIO_SOURCE_USB, FILE_BROWSER_MEDIA_READY, 1U));
 }
 
 static void test_a_missing_drive_asks_for_one(void)
 {
-    const char *notice = ui_files_notice(AUDIO_SOURCE_USB, FILE_BROWSER_MEDIA_ABSENT, 0U, DEVICE_LANGUAGE_RU);
+    const char *notice = ui_files_notice(AUDIO_SOURCE_USB, FILE_BROWSER_MEDIA_ABSENT, 0U, test_locale("ru"));
     assert(notice != NULL);
     assert(strcmp(notice, "Вставьте USB-флешку") == 0);
     assert(!ui_files_can_open(AUDIO_SOURCE_USB, FILE_BROWSER_MEDIA_ABSENT, 0U));
@@ -24,7 +25,7 @@ static void test_an_unreadable_drive_is_not_told_to_be_inserted(void)
     /* The whole reason the media state is not a bool: the drive is already
      * there, so repeating "insert a drive" sends the user looking in the wrong
      * place. */
-    const char *notice = ui_files_notice(AUDIO_SOURCE_USB, FILE_BROWSER_MEDIA_UNREADABLE, 0U, DEVICE_LANGUAGE_RU);
+    const char *notice = ui_files_notice(AUDIO_SOURCE_USB, FILE_BROWSER_MEDIA_UNREADABLE, 0U, test_locale("ru"));
     assert(notice != NULL);
     assert(strstr(notice, "Вставьте") == NULL);
     assert(strstr(notice, "FAT32") != NULL);
@@ -35,14 +36,14 @@ static void test_an_unreadable_drive_stays_unreadable_whatever_the_count(void)
 {
     /* A stale count from a previous drive must not make an unreadable one look
      * usable. */
-    const char *notice = ui_files_notice(AUDIO_SOURCE_USB, FILE_BROWSER_MEDIA_UNREADABLE, 12U, DEVICE_LANGUAGE_RU);
+    const char *notice = ui_files_notice(AUDIO_SOURCE_USB, FILE_BROWSER_MEDIA_UNREADABLE, 12U, test_locale("ru"));
     assert(notice != NULL);
     assert(!ui_files_can_open(AUDIO_SOURCE_USB, FILE_BROWSER_MEDIA_UNREADABLE, 12U));
 }
 
 static void test_an_empty_drive_says_so_rather_than_showing_a_blank_list(void)
 {
-    const char *notice = ui_files_notice(AUDIO_SOURCE_USB, FILE_BROWSER_MEDIA_READY, 0U, DEVICE_LANGUAGE_RU);
+    const char *notice = ui_files_notice(AUDIO_SOURCE_USB, FILE_BROWSER_MEDIA_READY, 0U, test_locale("ru"));
     assert(notice != NULL);
     assert(strcmp(notice, "На флешке нет файлов") == 0);
     /* Not an error, but an empty browser looks like one, so it is still not
@@ -52,9 +53,9 @@ static void test_an_empty_drive_says_so_rather_than_showing_a_blank_list(void)
 
 static void test_each_state_gets_its_own_wording(void)
 {
-    const char *absent = ui_files_notice(AUDIO_SOURCE_USB, FILE_BROWSER_MEDIA_ABSENT, 0U, DEVICE_LANGUAGE_RU);
-    const char *unreadable = ui_files_notice(AUDIO_SOURCE_USB, FILE_BROWSER_MEDIA_UNREADABLE, 0U, DEVICE_LANGUAGE_RU);
-    const char *empty = ui_files_notice(AUDIO_SOURCE_USB, FILE_BROWSER_MEDIA_READY, 0U, DEVICE_LANGUAGE_RU);
+    const char *absent = ui_files_notice(AUDIO_SOURCE_USB, FILE_BROWSER_MEDIA_ABSENT, 0U, test_locale("ru"));
+    const char *unreadable = ui_files_notice(AUDIO_SOURCE_USB, FILE_BROWSER_MEDIA_UNREADABLE, 0U, test_locale("ru"));
+    const char *empty = ui_files_notice(AUDIO_SOURCE_USB, FILE_BROWSER_MEDIA_READY, 0U, test_locale("ru"));
 
     assert(strcmp(absent, unreadable) != 0);
     assert(strcmp(absent, empty) != 0);
@@ -78,10 +79,10 @@ static void test_the_card_is_not_called_a_flash_drive(void)
     /* The wording is the whole job of this file. Sending someone to the USB
      * socket when they asked for the card is worse than saying nothing: it
      * describes a fault that is not there. */
-    const char *absent = ui_files_notice(AUDIO_SOURCE_SD, FILE_BROWSER_MEDIA_ABSENT, 0U, DEVICE_LANGUAGE_RU);
+    const char *absent = ui_files_notice(AUDIO_SOURCE_SD, FILE_BROWSER_MEDIA_ABSENT, 0U, test_locale("ru"));
     const char *unreadable =
-        ui_files_notice(AUDIO_SOURCE_SD, FILE_BROWSER_MEDIA_UNREADABLE, 0U, DEVICE_LANGUAGE_RU);
-    const char *empty = ui_files_notice(AUDIO_SOURCE_SD, FILE_BROWSER_MEDIA_READY, 0U, DEVICE_LANGUAGE_RU);
+        ui_files_notice(AUDIO_SOURCE_SD, FILE_BROWSER_MEDIA_UNREADABLE, 0U, test_locale("ru"));
+    const char *empty = ui_files_notice(AUDIO_SOURCE_SD, FILE_BROWSER_MEDIA_READY, 0U, test_locale("ru"));
     assert(strstr(absent, "карту") != NULL);
     assert(strstr(absent, "USB") == NULL);
     assert(strstr(unreadable, "Карта") != NULL);
@@ -89,14 +90,14 @@ static void test_the_card_is_not_called_a_flash_drive(void)
     assert(strstr(empty, "карте") != NULL);
     /* The states themselves behave exactly as they do for the drive: only the
      * words differ. */
-    assert(ui_files_notice(AUDIO_SOURCE_SD, FILE_BROWSER_MEDIA_READY, 3U, DEVICE_LANGUAGE_RU) == NULL);
+    assert(ui_files_notice(AUDIO_SOURCE_SD, FILE_BROWSER_MEDIA_READY, 3U, test_locale("ru")) == NULL);
     assert(ui_files_can_open(AUDIO_SOURCE_SD, FILE_BROWSER_MEDIA_READY, 3U));
     assert(!ui_files_can_open(AUDIO_SOURCE_SD, FILE_BROWSER_MEDIA_ABSENT, 3U));
     for (size_t count = 0U; count < 3U; ++count) {
         assert(strcmp(ui_files_notice(AUDIO_SOURCE_SD, FILE_BROWSER_MEDIA_ABSENT, count,
-                                      DEVICE_LANGUAGE_RU),
+                                      test_locale("ru")),
                       ui_files_notice(AUDIO_SOURCE_USB, FILE_BROWSER_MEDIA_ABSENT,
-                                      count, DEVICE_LANGUAGE_RU)) != 0);
+                                      count, test_locale("ru"))) != 0);
     }
 }
 
@@ -105,7 +106,7 @@ static void test_the_card_is_not_called_a_flash_drive(void)
 static void test_the_notice_follows_the_language(void)
 {
     const char *ru = ui_files_notice(AUDIO_SOURCE_SD, FILE_BROWSER_MEDIA_ABSENT, 0U,
-                                     DEVICE_LANGUAGE_RU);
+                                     test_locale("ru"));
     const char *en = ui_files_notice(AUDIO_SOURCE_SD, FILE_BROWSER_MEDIA_ABSENT, 0U,
                                      DEVICE_LANGUAGE_EN);
     assert(ru != NULL && en != NULL);

@@ -92,7 +92,7 @@ uint32_t web_view_snapshot_changes(const player_snapshot_t *previous,
          * lines the frame carries come out of the tags, and their arrival
          * changes nothing else in the snapshot. */
         previous->track_tag_revision != current->track_tag_revision ||
-        memcmp(previous->error, current->error, sizeof(previous->error)) != 0) {
+        previous->error_text_id != current->error_text_id) {
         changes |= WEB_VIEW_SECTION_PLAYER;
     }
     if (previous->active_item_index != current->active_item_index ||

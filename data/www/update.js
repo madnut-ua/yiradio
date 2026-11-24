@@ -63,14 +63,15 @@
     busy: 'update.err_busy',
   });
 
-  function errorFor(code, table = errorText) {
-    const key = table[code];
-    return key ? t(key) : t('update.err_refused');
+  function errorKey(code, table = errorText) {
+    return Object.hasOwn(table, code) ? table[code] : 'update.err_refused';
   }
 
-  function setLine(line, text, kind) {
+  const messages = new Map();
+  function setLine(line, key, kind, values) {
     if (!line) return;
-    line.textContent = text;
+    messages.set(line, {key, values});
+    line.textContent = t(key, values);
     line.classList.toggle('is-error', kind === 'error');
     line.classList.toggle('is-success', kind === 'success');
   }
@@ -106,15 +107,15 @@
           .then((about) => {
             const running = about && about.firmware ? about.firmware.version : '';
             if (running === expected) {
-              say(t('update.installed', {version: running}), 'success');
+              say('update.installed', 'success', {version: running});
             } else {
-              say(t('update.came_back_old', {version: running}), 'error');
+              say('update.came_back_old', 'error', {version: running});
             }
             done(running);
           })
           .catch(() => {
             if (Date.now() - startedAt > RETURN_GIVE_UP_MS) {
-              say(t('update.no_return'), 'error');
+              say('update.no_return', 'error');
               done('');
               return;
             }
@@ -135,8 +136,8 @@
   const bannerSkip = $('#update-banner-skip');
   let installing = false;
 
-  function english() {
-    return Boolean(window.jradioI18n.language) && window.jradioI18n.language() === 'en';
+  function notesLanguage() {
+    return window.jradioI18n.language?.() || 'en';
   }
 
   /* "New:" and "- an item" lines, as tools/ota_manifest.py hands them over:
@@ -189,31 +190,31 @@
   }
 
   function watchInstall(version) {
-    const sayBanner = (text, kind) => setLine(bannerStatus, text, kind);
+    const sayBanner = (key, kind, values) => setLine(bannerStatus, key, kind, values);
     window.setTimeout(() => {
       getJson('/api/ota')
         .then((status) => {
           const check = status.check || {};
           if (status.state === 'restarting') {
-            sayBanner(t('update.restarting'));
+            sayBanner('update.restarting');
             waitForReturn(version, sayBanner, installDone);
             return;
           }
           if (!check.installing) {
             installDone();
-            sayBanner(errorFor(check.error || status.error, releaseErrorText), 'error');
+            sayBanner(errorKey(check.error || status.error, releaseErrorText), 'error');
             renderBanner(status);
             return;
           }
           if (status.state === 'receiving' && status.total > 0) {
             const percent = Math.floor(status.done * 100 / status.total);
-            sayBanner(t('update.downloading', {percent}));
+            sayBanner('update.downloading', undefined, {percent});
           }
           watchInstall(version);
         })
         /* The device can drop off between two polls only by restarting. */
         .catch(() => {
-          sayBanner(t('update.restarting'));
+          sayBanner('update.restarting');
           waitForReturn(version, sayBanner, installDone);
         });
     }, POLL_MS);
@@ -232,7 +233,7 @@
   const historyBlock = $('#update-history-block');
   const historyList = $('#update-history');
   const changelogLink = $('#update-changelog');
-  const say = (text, kind) => setLine(statusLine, text, kind);
+  const say = (key, kind, values) => setLine(statusLine, key, kind, values);
 
   let busy = false;
   let expected = '';
@@ -240,8 +241,8 @@
 
   /* What the update brings: every version newer than the running one, each
      with its list - a radio that skipped releases is shown them all. A
-     version with no English text is shown in Russian rather than left
-     out. */
+     version without text in the current locale uses English, or the
+     original Russian notes if English is also unavailable. */
   function renderHistory(check) {
     if (!historyBlock) return;
     const history = Array.isArray(check.history) ? check.history : [];
@@ -250,15 +251,17 @@
     historyBlock.hidden = history.length === 0 || check.available !== true;
     const parts = [];
     for (const entry of history) {
+      if (!entry || typeof entry.version !== 'string') continue;
       const heading = document.createElement('h4');
       heading.textContent = entry.version;
-      const text = english() && entry.en ? entry.en : entry.ru;
+      const text = [notesLanguage(), 'en', 'ru'].map((code) => entry[code])
+        .find((value) => typeof value === 'string' && value.trim() !== '');
       parts.push(heading, notesList(text));
     }
     historyList.replaceChildren(...parts);
     if (changelogLink) {
       changelogLink.href = 'https://github.com/jmper-ha/jradio/blob/main/doc/' +
-        (english() ? 'changelog.en.md' : 'changelog.md');
+        (notesLanguage() === 'ru' ? 'changelog.md' : 'changelog.en.md');
     }
   }
 
@@ -269,7 +272,8 @@
     current.textContent = status.running || '—';
     if (check.latest) {
       latestLine.textContent = check.checked_at > 0
-        ? `${check.latest} · ${new Date(check.checked_at * 1000).toLocaleString()}`
+        ? `${check.latest} · ${new Date(check.checked_at * 1000).toLocaleString(
+          window.jradioI18n.intlLocales?.() || ['en'])}`
         : check.latest;
     } else {
       latestLine.textContent = '—';
@@ -294,12 +298,12 @@
       const version = last.check.latest;
       installing = true;
       renderBanner(last);
-      setLine(bannerStatus, t('update.starting'));
+      setLine(bannerStatus, 'update.starting');
       action('install').then((code) => {
         if (code !== '') {
           installDone();
           renderBanner(last);
-          setLine(bannerStatus, errorFor(code, releaseErrorText), 'error');
+          setLine(bannerStatus, errorKey(code, releaseErrorText), 'error');
           return;
         }
         watchInstall(version);
@@ -309,7 +313,7 @@
       if (installing) return;
       action('skip').then((code) => {
         if (code !== '') {
-          setLine(bannerStatus, errorFor(code, releaseErrorText), 'error');
+          setLine(bannerStatus, errorKey(code, releaseErrorText), 'error');
           return;
         }
         if (last) last.check = {...last.check, available: false, skipped: last.check.latest};
@@ -317,13 +321,13 @@
         renderCard(last);
       });
     });
-    if (window.jradioI18n.onChange) {
-      window.jradioI18n.onChange(() => {
-        renderBanner(last);
-        renderCard(last);
-      });
-    }
   }
+
+  window.jradioI18n.onChange?.(() => {
+    renderBanner(last);
+    renderCard(last);
+    for (const [line, {key, values}] of messages) line.textContent = t(key, values);
+  });
 
   /* The firmware and its web files, picked together or either alone; a
      choice that is neither, or two of one kind, is null. */
@@ -358,18 +362,18 @@
           if (status.state === 'confirm') {
             watchConfirm();
           } else if (status.state === 'restarting') {
-            say(t('update.restarting'));
+            say('update.restarting');
             waitForReturn(expected, say, finish);
           } else if (status.error === 'declined') {
-            say(t('update.declined'), 'error');
+            say('update.declined', 'error');
             finish();
           } else {
-            say(errorFor(status.error), 'error');
+            say(errorKey(status.error), 'error');
             finish();
           }
         })
         .catch(() => {
-          say(t('update.restarting'));
+          say('update.restarting');
           waitForReturn(expected, say, finish);
         });
     }, POLL_MS);
@@ -387,7 +391,7 @@
         if (!event.lengthComputable) return;
         const percent = Math.floor((before + event.loaded) * 100 / total);
         progress.value = percent;
-        say(t('update.sending', {percent}));
+        say('update.sending', undefined, {percent});
       });
       request.addEventListener('load', () => {
         let payload = {};
@@ -412,13 +416,13 @@
     refreshButton();
     progress.value = 0;
     progress.hidden = false;
-    say(t('update.sending', {percent: 0}));
+    say('update.sending', undefined, {percent: 0});
     const total = (chosen.web ? chosen.web.size || 0 : 0) + (chosen.app ? chosen.app.size || 0 : 0);
     const webDone = chosen.web ? chosen.web.size || 0 : 0;
     const sendWeb = chosen.web
       ? upload(`/api/ota/www?app=${chosen.app ? 1 : 0}`, chosen.web, 0, total || 1)
         .then((answer) => {
-          if (answer.status !== 200) throw errorFor(answer.payload.error, webErrorText);
+          if (answer.status !== 200) throw errorKey(answer.payload.error, webErrorText);
           return answer.payload;
         })
       : Promise.resolve(null);
@@ -426,18 +430,18 @@
       .then((webAnswer) => {
         if (!chosen.app) return webAnswer;
         return upload('/api/ota/app', chosen.app, webDone, total || 1).then((answer) => {
-          if (answer.status !== 200) throw errorFor(answer.payload.error);
+          if (answer.status !== 200) throw errorKey(answer.payload.error);
           return answer.payload;
         });
       })
       .then((payload) => {
         expected = payload && typeof payload.version === 'string' ? payload.version : '';
         progress.value = 100;
-        say(t('update.press', {version: expected}));
+        say('update.press', undefined, {version: expected});
         watchConfirm();
       })
-      .catch((text) => {
-        say(typeof text === 'string' ? text : t('update.err_upload'), 'error');
+      .catch((key) => {
+        say(typeof key === 'string' ? key : 'update.err_upload', 'error');
         finish();
       });
   }
@@ -448,12 +452,12 @@
     if (checking) return;
     checking = true;
     checkButton.disabled = true;
-    say(t('update.checking'));
+    say('update.checking');
     const startedAt = Date.now();
-    const stop = (text, kind) => {
+    const stop = (key, kind, values) => {
       checking = false;
       checkButton.disabled = false;
-      say(text, kind);
+      say(key, kind, values);
     };
     const poll = () => {
       window.setTimeout(() => {
@@ -469,19 +473,19 @@
             renderCard(status);
             renderBanner(status);
             if (check.state === 'failed') {
-              stop(errorFor(check.error, releaseErrorText), 'error');
+              stop(errorKey(check.error, releaseErrorText), 'error');
             } else if (check.available) {
-              stop(t('update.available', {version: check.latest}), 'success');
+              stop('update.available', 'success', {version: check.latest});
             } else {
-              stop(t('update.up_to_date'), 'success');
+              stop('update.up_to_date', 'success');
             }
           })
-          .catch(() => stop(t('update.err_network'), 'error'));
+          .catch(() => stop('update.err_network', 'error'));
       }, POLL_MS);
     };
     action('check').then((code) => {
       if (code !== '') {
-        stop(errorFor(code, releaseErrorText), 'error');
+        stop(errorKey(code, releaseErrorText), 'error');
         return;
       }
       poll();
@@ -495,9 +499,9 @@
       if (files.length === 0) {
         say('');
       } else if (chosenFiles() === null) {
-        say(t('update.err_choice'), 'error');
+        say('update.err_choice', 'error');
       } else {
-        say(t('backup.chosen', {name: files.map((file) => file.name).join(', ')}));
+        say('backup.chosen', undefined, {name: files.map((file) => file.name).join(', ')});
       }
     });
     sendButton.addEventListener('click', send);
@@ -507,7 +511,7 @@
       action('auto', wanted).then((code) => {
         if (code === '') return;
         autoCheck.checked = !wanted;
-        say(errorFor(code, releaseErrorText), 'error');
+        say(errorKey(code, releaseErrorText), 'error');
       });
     });
     refreshButton();
@@ -543,7 +547,7 @@
         expected = status.version;
         busy = true;
         refreshButton();
-        say(t('update.press', {version: status.version}));
+        say('update.press', undefined, {version: status.version});
         watchConfirm();
       }
     })

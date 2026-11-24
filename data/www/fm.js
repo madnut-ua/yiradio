@@ -137,9 +137,11 @@
   // Whether the board has a tuner, which the settings say; the import and the
   // export of the page are told only once it is known.
   let tunerAvailable = false;
+  let statusMessage = null;
 
-  function setStatus(text, error) {
-    status.textContent = text;
+  function setStatus(key, error, values) {
+    statusMessage = {key, values};
+    status.textContent = t(key, values);
     status.classList.toggle('is-error', error === true);
   }
 
@@ -156,13 +158,13 @@
     return khz >= BAND_MIN && khz <= BAND_MAX ? khz : null;
   }
 
-  /* Why `khz` cannot go into the list at `except` (or at the end), or ''. */
+  /* Why `khz` cannot go into the list at `except` (or at the end). */
   function frequencyProblem(khz, except) {
-    if (khz === null) return t('fm.bad_frequency');
+    if (khz === null) return {key: 'fm.bad_frequency'};
     if (presets.some((preset, at) => at !== except && preset.khz === khz)) {
-      return t('fm.already', {frequency: mhz(khz)});
+      return {key: 'fm.already', values: {frequency: mhz(khz)}};
     }
-    return '';
+    return null;
   }
 
   function isIconName(value) {
@@ -309,7 +311,7 @@
   function markDirty() {
     dirty = true;
     saveButton.disabled = false;
-    setStatus(t('fm.unsaved'), false);
+    setStatus('fm.unsaved', false);
   }
 
   function smallButton(labelKey, text, onClick) {
@@ -317,6 +319,8 @@
     button.type = 'button';
     button.className = 'secondary-button';
     button.textContent = text;
+    button.setAttribute('data-i18n-aria', labelKey);
+    button.setAttribute('data-i18n-title', labelKey);
     button.setAttribute('aria-label', t(labelKey));
     button.setAttribute('title', t(labelKey));
     button.addEventListener('click', onClick);
@@ -329,6 +333,8 @@
     input.className = 'fm-name';
     input.maxLength = 40;
     input.value = value;
+    input.setAttribute('data-i18n-placeholder', 'fm.name');
+    input.setAttribute('data-i18n-aria', 'fm.name');
     input.setAttribute('placeholder', t('fm.name'));
     input.setAttribute('aria-label', t('fm.name'));
     input.addEventListener('input', () => onInput(input.value));
@@ -343,6 +349,7 @@
     cell.className = 'fm-picture-cell';
     const pick = document.createElement('label');
     pick.className = 'fm-picture';
+    pick.setAttribute('data-i18n-title', 'playlist.icon');
     pick.setAttribute('title', t('playlist.icon'));
     let source = '';
     if (preset.picture !== null) source = preset.picture.url;
@@ -358,11 +365,12 @@
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
+    input.setAttribute('data-i18n-aria', 'playlist.icon');
     input.setAttribute('aria-label', t('playlist.icon'));
     input.addEventListener('change', () => {
       const file = input.files && input.files[0];
       if (!file) return;
-      setStatus(t('playlist.icon_preparing'), false);
+      setStatus('playlist.icon_preparing', false);
       scaleImage(file).then((blob) => {
         dropPicture(presets[index]);
         presets[index] = {...presets[index], icon: '', picture: makePicture(blob)};
@@ -371,7 +379,7 @@
       }).catch((error) => {
         const key = error && error.message === ICON_TOO_LARGE
           ? 'playlist.icon_too_large' : 'playlist.icon_failed';
-        setStatus(t(key, {kb: Math.round(ICON_MAX_BYTES / 1024)}), true);
+        setStatus(key, true, {kb: Math.round(ICON_MAX_BYTES / 1024)});
       });
     });
     pick.append(input);
@@ -399,13 +407,14 @@
     input.setAttribute('inputmode', 'decimal');
     input.maxLength = 6;
     input.value = mhz(presets[index].khz);
+    input.setAttribute('data-i18n-aria', 'fm.frequency');
     input.setAttribute('aria-label', t('fm.frequency'));
     input.addEventListener('change', () => {
       const khz = parseMhz(input.value);
       const problem = frequencyProblem(khz, index);
-      if (problem !== '') {
+      if (problem) {
         input.value = mhz(presets[index].khz);
-        setStatus(problem, true);
+        setStatus(problem.key, true, problem.values);
         return;
       }
       input.value = mhz(khz);
@@ -422,10 +431,10 @@
   function addFrequency() {
     const khz = parseMhz(addField.value);
     const problem = presets.length >= MAX_PRESETS && khz !== null
-      ? t('fm.full', {count: MAX_PRESETS}) : frequencyProblem(khz, -1);
-    addField.classList.toggle('is-error', problem !== '');
-    if (problem !== '') {
-      setStatus(problem, true);
+      ? {key: 'fm.full', values: {count: MAX_PRESETS}} : frequencyProblem(khz, -1);
+    addField.classList.toggle('is-error', problem !== null);
+    if (problem) {
+      setStatus(problem.key, true, problem.values);
       return;
     }
     presets = [...presets, {name: '', khz, icon: '', picture: null}];
@@ -483,14 +492,14 @@
         saveButton.disabled = true;
         renderPresets();
       })
-      .catch(() => setStatus(t('fm.load_failed'), true));
+      .catch(() => setStatus('fm.load_failed', true));
   }
 
   function save() {
     saveButton.disabled = true;
     return uploadPendingPictures().catch(() => {
       saveButton.disabled = !dirty;
-      setStatus(t('fm.picture_upload_failed'), true);
+      setStatus('fm.picture_upload_failed', true);
       throw new Error('picture upload');
     }).then(() => window.fetch('/api/fm/presets', {
       method: 'POST',
@@ -503,14 +512,14 @@
       })
       .then((answer) => {
         dirty = false;
-        setStatus(t('fm.saved_ok', {count: Number(answer.count) || 0}), false);
+        setStatus('fm.saved_ok', false, {count: Number(answer.count) || 0});
         /* Back from the device, so what is shown is what it kept. */
         return load();
       })
       .catch((error) => {
         saveButton.disabled = !dirty;
         // A picture that would not go up has said so already.
-        if (!error || error.message !== 'picture upload') setStatus(t('fm.save_failed'), true);
+        if (!error || error.message !== 'picture upload') setStatus('fm.save_failed', true);
       });
   }
 
@@ -539,7 +548,7 @@
       .then((response) => response.json())
       .then((answer) => {
         if (answer.running === true) {
-          setStatus(t('fm.scanning', {frequency: mhz(Number(answer.khz) || BAND_MIN)}), false);
+          setStatus('fm.scanning', false, {frequency: mhz(Number(answer.khz) || BAND_MIN)});
           window.setTimeout(poll, POLL_MS);
           return null;
         }
@@ -548,17 +557,17 @@
         /* Nothing found is an aerial that came off, not an empty city:
            wiping the list for it would be the worst answer. */
         if (found.length === 0) {
-          setStatus(t('fm.scan_nothing'), true);
+          setStatus('fm.scan_nothing', true);
           return null;
         }
         replaceWith(found);
         return save().then(() => {
-          if (!dirty) setStatus(t('fm.scan_saved', {count: presets.length}), false);
+          if (!dirty) setStatus('fm.scan_saved', false, {count: presets.length});
         });
       })
       .catch(() => {
         scanButton.disabled = false;
-        setStatus(t('fm.load_failed'), true);
+        setStatus('fm.load_failed', true);
       });
   }
 
@@ -572,12 +581,12 @@
       .then((response) => {
         /* 409 is a scan somebody else started: follow that one. */
         if (!response.ok && response.status !== 409) throw new Error(String(response.status));
-        if (response.status === 409) setStatus(t('fm.scan_busy'), false);
+        if (response.status === 409) setStatus('fm.scan_busy', false);
         return poll();
       })
       .catch(() => {
         scanButton.disabled = false;
-        setStatus(t('fm.load_failed'), true);
+        setStatus('fm.load_failed', true);
       });
   }
 
@@ -655,9 +664,9 @@
     });
     addField.addEventListener('input', () => addField.classList.remove('is-error'));
   }
-  /* Rows are built here, not in the markup, so a language switch has to
-     rebuild them for their labels. */
-  window.jradioI18n.onChange(renderPresets);
+  window.jradioI18n.onChange(() => {
+    if (statusMessage) status.textContent = t(statusMessage.key, statusMessage.values);
+  });
 
   setupTabs();
   setupToSave();

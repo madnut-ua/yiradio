@@ -26,7 +26,7 @@ bool ui_files_can_open(audio_source_t source, file_browser_media_t media,
 {
     /* Any language will do for a yes/no: the question is whether there is a
      * notice at all, and the table has an entry in both or in neither. */
-    return ui_files_notice(source, media, entry_count, DEVICE_LANGUAGE_RU) == NULL;
+    return ui_files_notice(source, media, entry_count, DEVICE_LANGUAGE_EN) == NULL;
 }
 
 bool ui_files_media_present(file_browser_media_t media)

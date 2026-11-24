@@ -116,6 +116,30 @@ the waves Yandex picks for the account.
 
 The full list of limits is in [Diagnostics and limits](doc/diagnostics.en.md).
 
+## Interface languages
+
+The display and the radio's web interface share one language setting. English
+is built in; [Russian](locales/ru.json) and [Ukrainian](locales/uk.json) ship as
+UTF-8 JSON packs. An untranslated label still appears in English.
+
+To add a language, copy an existing pack to `locales/<code>.json`, change its
+`code` and native `name`, and translate the `device` and `web` values. Leave
+keys and `{placeholders}` unchanged. Omit untranslated entries. On the display,
+use left-to-right text and glyphs supported by the built-in fonts.
+
+To update only the translations, start with the staged files from the same
+firmware release and run these commands from the repository root:
+
+```shell
+python3 tools/pack_locales.py --source locales --www build/littlefs_data/www
+python3 tools/gzip_www_assets.py build/littlefs_data/www
+python3 tools/pack_www.py --stage build/littlefs_data --out build/www.tar
+```
+
+In **Settings → Firmware update**, select only `www.tar`. The radio restarts
+without replacing the application, Wi-Fi settings, or playlist. A cable flash
+of the entire LittleFS image overwrites the partition; back up first.
+
 ## Documentation
 
 | Page | About |

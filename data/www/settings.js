@@ -85,8 +85,8 @@
      itself can be without: a build with no Yandex Music or no media server has
      no switch for it, and a board with only one place to go has no home screen
      to choose. */
+  const deviceLanguage = document.querySelector('#device-language');
   const deviceFields = [
-    {field: 'language', kind: 'choice', node: document.querySelector('#device-language')},
     {field: 'home_screen', kind: 'choice', node: document.querySelector('#device-home-screen'),
      row: document.querySelector('#device-home-screen-row'), gate: 'home_screen'},
     /* Which way the encoder turns the carousel. Only the carousel has one, so
@@ -231,6 +231,19 @@
   let yandexTimer = null;
   let yandexBusy = false;
   let deviceBusy = false;
+  let deviceStatusKey = '';
+  let deviceLanguageCode = 'en';
+  let localeChoices = null;
+  let liveLanguageRevision = 0;
+  let lastWifiScan = null;
+  let wifiStatusMessage = null;
+  let backupStatusMessage = null;
+  let lastSpeakers = null;
+  let lastWeather = null;
+  let weatherKeySet = null;
+  let lastYandex = null;
+  let lastAbout = null;
+  let yandexOffline = false;
   // The field whose handle is being held right now, if any. A push from the
   // device must not move a control the visitor has hold of.
   let deviceHeld = '';
@@ -265,12 +278,19 @@
 
   function setConnected(value) {
     connected = value;
-    socketState.textContent = value ? t('wifi.connected') : t('wifi.no_link');
+    setTextKey(socketState, value ? 'wifi.connected' : 'wifi.no_link');
     socketState.classList.toggle('is-online', value);
     socketState.classList.toggle('is-offline', !value);
     socketState.classList.remove('is-connecting');
     submitButton.disabled = !value || saveInFlight;
   }
+
+  function setTextKey(node, key) {
+    node.setAttribute('data-i18n', key);
+    node.textContent = t(key);
+  }
+
+  const messageFor = (key, values) => () => t(key, values);
 
   function networkButton(label, action, ssid) {
     const button = document.createElement('button');
@@ -312,22 +332,24 @@
     savedNetworksEmpty.hidden = rows.length !== 0;
   }
 
-  function failureText(error) {
-    if (passwordErrors.has(error)) return t('wifi.bad_password');
+  function failureMessage(error) {
+    if (passwordErrors.has(error)) return messageFor('wifi.bad_password');
     // ESP_ERR_NO_MEM as the device reports it: the list holds five networks and
     // this one would have been the sixth. Worth its own words - the visitor can
     // do something about it, unlike a write that failed.
-    if (error === 257) return t('wifi.full');
-    if (error === 258) return t('wifi.bad_name');
-    if (error < 0 || error >= 256) return t('wifi.write_failed');
-    if (error === 201) return t('wifi.ap_not_found');
-    return t('wifi.connect_failed', {code: error});
+    if (error === 257) return messageFor('wifi.full');
+    if (error === 258) return messageFor('wifi.bad_name');
+    if (error < 0 || error >= 256) return messageFor('wifi.write_failed');
+    if (error === 201) return messageFor('wifi.ap_not_found');
+    return messageFor('wifi.connect_failed', {code: error});
   }
 
-  function setWifiStatus(message, error = false) {
-    wifiStatus.textContent = message;
+  function setWifiStatus(message, error = false, success = false) {
+    wifiStatusMessage = message;
+    wifiStatus.removeAttribute('data-i18n');
+    wifiStatus.textContent = message();
     wifiStatus.classList.toggle('is-error', error);
-    wifiStatus.classList.remove('is-success');
+    wifiStatus.classList.toggle('is-success', success);
   }
 
   /* Forgetting and switching off both take the connection down with them when
@@ -366,7 +388,7 @@
   function editNetwork(action, ssid) {
     if (!connected || editPending || !socket || socket.readyState !== WebSocket.OPEN) return;
     if (lastWifi && lastWifi.save_pending) {
-      setWifiStatus(t('wifi.busy'), true);
+      setWifiStatus(messageFor('wifi.busy'), true);
       return;
     }
     const isActive = wifiActive.textContent === ssid;
@@ -376,7 +398,7 @@
     }
     requestSequence += 1;
     editRequestId = `settings-${requestSequence}`;
-    setWifiStatus(action === 'wifi.prioritize' ? t('settings.reorder') : t('common.working'));
+    setWifiStatus(messageFor(action === 'wifi.prioritize' ? 'settings.reorder' : 'common.working'));
     const frame = action === 'wifi.disconnect'
       ? {type: 'command', id: editRequestId, action}
       : {type: 'command', id: editRequestId, action, ssid};
@@ -386,15 +408,13 @@
        only spoken about while the socket is still up. */
     editTimer = window.setTimeout(() => {
       editTimer = null;
-      if (editPending && connected) finishEdit(t('common.device_refused'), true);
+      if (editPending && connected) finishEdit(messageFor('common.device_refused'), true);
     }, 5000);
     socket.send(JSON.stringify(frame));
   }
 
-  function finishSave(message, error = false) {
-    wifiStatus.textContent = message;
-    wifiStatus.classList.toggle('is-error', error);
-    wifiStatus.classList.toggle('is-success', !error && message === t('common.saved'));
+  function finishSave(message, error = false, saved = false) {
+    setWifiStatus(message, error, saved);
     saveInFlight = false;
     saveAccepted = false;
     pendingRequestId = '';
@@ -454,6 +474,7 @@
   }
 
   function renderScan(networks) {
+    lastWifiScan = networks;
     const rows = networks
       .filter((network) => isObject(network) && typeof network.ssid === 'string' && network.ssid)
       .map((network) => {
@@ -497,14 +518,14 @@
           }
           scanning = false;
           if (state !== 'done') {
-            scanEmpty.textContent = t('wifi.scan_failed');
+            setTextKey(scanEmpty, 'wifi.scan_failed');
             return;
           }
           renderScan(Array.isArray(body.networks) ? body.networks : []);
         })
         .catch(() => {
           scanning = false;
-          scanEmpty.textContent = t('wifi.scan_failed');
+          setTextKey(scanEmpty, 'wifi.scan_failed');
         });
     }, 700);
   }
@@ -518,7 +539,7 @@
     scanning = true;
     scanNetworks.replaceChildren();
     scanNetworks.hidden = true;
-    scanEmpty.textContent = t('wifi.scanning');
+    setTextKey(scanEmpty, 'wifi.scanning');
     scanEmpty.hidden = false;
     window.fetch('/api/wifi-scan', {method: 'POST'})
       .then((response) => {
@@ -527,7 +548,7 @@
       })
       .catch(() => {
         scanning = false;
-        scanEmpty.textContent = t('wifi.scan_start_failed');
+        setTextKey(scanEmpty, 'wifi.scan_start_failed');
       });
   }
 
@@ -548,6 +569,7 @@
   let btLoaded = false;
 
   function renderSpeakers(body) {
+    lastSpeakers = body;
     const chosen = safeString(body.chosen);
     const chosenName = safeString(body.chosen_name);
     btChosenName.textContent = chosen ? (chosenName || chosen) : t('bt.none');
@@ -767,44 +789,41 @@
     renderSavedNetworks(wifi);
     applyWifiMode(wifi);
     if (editDone) {
-      finishEdit(t('common.ready'), false);
+      finishEdit(messageFor('common.ready'), false);
       return;
     }
 
     if (!saveInFlight) {
       if (wifi.save_pending) {
         saveInFlight = true;
-        wifiStatus.textContent = t('wifi.connecting');
-        wifiStatus.classList.remove('is-error', 'is-success');
+        setWifiStatus(messageFor('wifi.connecting'));
       } else if (wifi.last_error !== 0) {
-        wifiStatus.textContent = failureText(wifi.last_error);
-        wifiStatus.classList.add('is-error');
+        setWifiStatus(failureMessage(wifi.last_error), true);
       } else {
-        wifiStatus.textContent = wifi.mode === 'sta_connected' ? t('wifi.connected') : t('wifi.setup_ready');
-        wifiStatus.classList.remove('is-error', 'is-success');
+        setWifiStatus(messageFor(wifi.mode === 'sta_connected' ? 'wifi.connected' : 'wifi.setup_ready'));
       }
       submitButton.disabled = !connected || saveInFlight;
       return;
     }
 
     if (wifi.save_pending) {
-      wifiStatus.textContent = t('wifi.connecting');
-      wifiStatus.classList.remove('is-error', 'is-success');
+      setWifiStatus(messageFor('wifi.connecting'));
       submitButton.disabled = true;
       return;
     }
     if (wifi.last_error !== 0) {
-      finishSave(failureText(wifi.last_error), true);
+      finishSave(failureMessage(wifi.last_error), true);
       return;
     }
     if (!expectedSsid) {
-      finishSave(wifi.mode === 'sta_connected' ? t('common.saved') : t('wifi.setup_ready'));
+      const saved = wifi.mode === 'sta_connected';
+      finishSave(messageFor(saved ? 'common.saved' : 'wifi.setup_ready'), false, saved);
       return;
     }
     if (saveAccepted && wifi.mode === 'sta_connected' &&
         wifi.active_ssid === expectedSsid &&
         wifi.saved.some((network) => network.ssid === expectedSsid)) {
-      finishSave(t('common.saved'));
+      finishSave(messageFor('common.saved'), false, true);
     }
   }
 
@@ -818,11 +837,11 @@
       // A refusal is final; an acceptance only means it was queued, so that
       // one keeps waiting for the list to change.
       if (message.ok !== true) {
-        finishEdit(safeString(message.error, t('common.command_failed')), true);
+        finishEdit(() => safeString(message.error, t('common.command_failed')), true);
       } else if (lastWifi && editSatisfied(lastWifi)) {
         // Already the way it was asked to be - a reorder of a network that is
         // first anyway. Nothing will change, so nothing will arrive to prove it.
-        finishEdit(t('common.ready'), false);
+        finishEdit(messageFor('common.ready'), false);
       }
       return;
     }
@@ -831,7 +850,7 @@
       saveAccepted = true;
       return;
     }
-    finishSave(safeString(message.error, t('common.command_failed')), true);
+    finishSave(() => safeString(message.error, t('common.command_failed')), true);
   }
 
   function handleMessage(event) {
@@ -878,8 +897,7 @@
     clearPassword();
     if (!connected || saveInFlight || !socket || socket.readyState !== WebSocket.OPEN) return;
     if (!ssid) {
-      wifiStatus.textContent = t('wifi.need_ssid');
-      wifiStatus.classList.add('is-error');
+      setWifiStatus(messageFor('wifi.need_ssid'), true);
       return;
     }
     requestSequence += 1;
@@ -887,8 +905,7 @@
     expectedSsid = ssid;
     saveInFlight = true;
     saveAccepted = false;
-    wifiStatus.textContent = t('common.checking');
-    wifiStatus.classList.remove('is-error', 'is-success');
+    setWifiStatus(messageFor('common.checking'));
     submitButton.disabled = true;
     const frame = JSON.stringify({
       type: 'command', id: pendingRequestId, action: 'wifi.save', ssid, password,
@@ -909,7 +926,7 @@
   function connect() {
     if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) return;
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    socketState.textContent = reconnectAttempt === 0 ? t('wifi.connecting') : t('wifi.no_link');
+    setTextKey(socketState, reconnectAttempt === 0 ? 'wifi.connecting' : 'wifi.no_link');
     socketState.classList.add('is-connecting');
     const currentSocket = new WebSocket(`${protocol}//${window.location.host}/ws`);
     socket = currentSocket;
@@ -953,12 +970,17 @@
      the device pushes about four times a second, and the next one is 250 ms
      away. */
   function applyLiveSettings(payload) {
+    if (isObject(payload) && typeof payload.language === 'string') {
+      liveLanguageRevision += 1;
+      applyLanguage(payload.language);
+    }
     if (deviceBusy || deviceHeld !== '') return;
     applyDeviceSettings(payload);
   }
 
   function setDeviceDisabled(disabled) {
     for (const entry of deviceFields) entry.node.disabled = disabled;
+    deviceLanguage.disabled = disabled || localeChoices === null;
     updateTimezoneControls(disabled);
     sleepSelect.disabled = disabled;
     for (const chip of alarmDayChips) chip.disabled = disabled;
@@ -1110,12 +1132,12 @@
       // decides, and it is what the player page will be counting down.
       .then((payload) => {
         applySleepTimer(payload);
-        deviceStatus.textContent = t('common.saved');
+        setDeviceStatus('common.saved');
         deviceStatus.classList.remove('is-error');
         deviceStatus.classList.add('is-success');
       })
       .catch(() => {
-        deviceStatus.textContent = t('sleep.failed');
+        setDeviceStatus('sleep.failed');
         deviceStatus.classList.remove('is-success');
         deviceStatus.classList.add('is-error');
       })
@@ -1152,7 +1174,7 @@
       const bit = 1 << Number.parseInt(chip.dataset.day, 10);
       const next = days ^ bit;
       if (next === 0) {
-        deviceStatus.textContent = t('alarm.one_day');
+        setDeviceStatus('alarm.one_day');
         deviceStatus.classList.remove('is-success');
         deviceStatus.classList.add('is-error');
         return;
@@ -1301,7 +1323,6 @@
 
   function applyDeviceSettings(payload) {
     if (!isObject(payload)) return false;
-    applyLanguage(payload);
     applySleepTimer(payload.sleep);
     const available = isObject(payload.available) ? payload.available : {};
     applyTimezones(payload);
@@ -1360,6 +1381,7 @@
            card now or was refused - and the placeholder says which state the
            device is in. Only the REST document carries the flag. */
         if (typeof payload.openweathermap_key_set === 'boolean' && deviceHeld !== entry.field) {
+          weatherKeySet = payload.openweathermap_key_set;
           entry.node.value = '';
           entry.node.placeholder =
             t(payload.openweathermap_key_set ? 'settings.key_set' : 'settings.key_unset');
@@ -1471,6 +1493,7 @@
 
   function applyWeatherState(payload) {
     if (typeof payload.weather_state !== 'string') return;
+    lastWeather = payload;
     /* A service that is on with a task that still says off has not been
        told yet: that is a wait, not a blank. */
     if (payload.weather !== 'off' && payload.weather_state === 'off') {
@@ -1494,24 +1517,40 @@
     }
   }
 
-  /* The language is a device setting like any other, so it arrives with the
-     rest of them - which is what lets the row on the device's own screen
-     relabel this page, and the picker on this page relabel the screen. The
-     markup is relabelled by i18n itself; these are the parts the page draws,
-     which have to be drawn again. */
-  function applyLanguage(payload) {
-    if (!isObject(payload) || typeof payload.language !== 'string') return;
-    if (!window.jradioI18n.setLanguage(payload.language)) return;
-    /* The Wi-Fi rows, the account card and the version card carry words this
-       page builds rather than words the markup holds, so they are asked for
-       again. Waiting for their own polls would leave half the page in the
-       language it was in a moment ago. */
-    if (lastWifi !== null) renderSavedNetworks(lastWifi);
-    refreshAbout();
-    refreshYandex();
+  function renderLocaleChoices() {
+    const choices = [...(localeChoices || [{code: 'en', name: 'English'}])];
+    if (!choices.some(({code}) => code === deviceLanguageCode)) {
+      // The settings snapshot and the locale index arrive independently.
+      choices.push({code: deviceLanguageCode, name: deviceLanguageCode, unavailable: true});
+    }
+    deviceLanguage.replaceChildren(...choices.map(({code, name, unavailable}) => {
+      const option = document.createElement('option');
+      option.value = code;
+      option.lang = code;
+      option.textContent = name;
+      option.disabled = unavailable === true;
+      return option;
+    }));
+    deviceLanguage.value = deviceLanguageCode;
+    deviceLanguage.disabled = deviceBusy || localeChoices === null;
+  }
+
+  function applyLanguage(code) {
+    if (typeof code !== 'string') return;
+    if (code !== deviceLanguageCode) {
+      deviceLanguageCode = code;
+      renderLocaleChoices();
+    } else deviceLanguage.value = code;
+    window.jradioI18n.setLanguage(code);
+  }
+
+  function setDeviceStatus(key) {
+    deviceStatusKey = key;
+    deviceStatus.textContent = t(key);
   }
 
   function refreshDeviceSettings() {
+    const revision = liveLanguageRevision;
     return window.fetch('/api/settings', {cache: 'no-store'})
       .then((response) => {
         if (!response || response.ok !== true) throw new Error('request failed');
@@ -1519,20 +1558,22 @@
       })
       .then((payload) => {
         if (!applyDeviceSettings(payload)) throw new Error('unexpected payload');
-        deviceStatus.textContent = t('common.ready');
+        if (revision === liveLanguageRevision) applyLanguage(payload.language);
+        setDeviceStatus('common.ready');
         deviceStatus.classList.remove('is-error', 'is-success');
       })
       .catch(() => {
-        deviceStatus.textContent = t('common.no_device');
+        setDeviceStatus('common.no_device');
         deviceStatus.classList.add('is-error');
       });
   }
 
   function sendDeviceChange(field, value) {
     if (deviceBusy) return Promise.resolve();
+    const revision = liveLanguageRevision;
     deviceBusy = true;
     setDeviceDisabled(true);
-    deviceStatus.textContent = t('settings.saving');
+    setDeviceStatus('settings.saving');
     deviceStatus.classList.remove('is-error', 'is-success');
     return window.fetch('/api/settings', {
       method: 'POST',
@@ -1547,14 +1588,16 @@
         // The answer is the whole document as the device now has it, so a value
         // it refused or adjusted is what ends up on screen.
         if (!applyDeviceSettings(payload)) throw new Error('unexpected payload');
-        deviceStatus.textContent = t('common.saved');
+        if (field === 'language' || revision === liveLanguageRevision) applyLanguage(payload.language);
+        setDeviceStatus('common.saved');
         deviceStatus.classList.add('is-success');
       })
       .catch(() => {
         // Put the controls back to what the device actually holds: a switch
         // left showing a change that never landed is worse than no answer.
         return refreshDeviceSettings().then(() => {
-          deviceStatus.textContent = t('common.save_failed');
+          deviceLanguage.value = deviceLanguageCode;
+          setDeviceStatus('common.save_failed');
           deviceStatus.classList.add('is-error');
           deviceStatus.classList.remove('is-success');
         });
@@ -1566,6 +1609,11 @@
   }
 
   function bindDeviceFields() {
+    deviceLanguage.addEventListener('change', () => {
+      if (localeChoices?.some(({code}) => code === deviceLanguage.value)) {
+        sendDeviceChange('language', deviceLanguage.value);
+      }
+    });
     /* One write that puts all six back, rather than six that each repaint
        the panel on the way. */
     themeResetButton.addEventListener('click', () => { sendDeviceChange('theme_reset', true); });
@@ -1645,8 +1693,9 @@
   });
   let restoreInFlight = false;
 
-  function setBackupStatus(text, kind) {
-    backupStatus.textContent = text;
+  function setBackupStatus(message, kind) {
+    backupStatusMessage = message;
+    backupStatus.textContent = message();
     backupStatus.classList.toggle('is-error', kind === 'error');
     backupStatus.classList.toggle('is-success', kind === 'success');
   }
@@ -1665,7 +1714,7 @@
     }
     restoreInFlight = true;
     backupRestore.disabled = true;
-    setBackupStatus(t('common.sending'));
+    setBackupStatus(messageFor('common.sending'));
     /* The name travels in the query, because a single file is recognised by it
        - an archive says what is in it, but wifi.json on its own does not. */
     return window.fetch(`/api/restore?name=${encodeURIComponent(file.name)}`,
@@ -1682,11 +1731,13 @@
           /* Two of these carry a tail the dictionary keeps separately - a
              list of file names, and a sentence about what to upload instead -
              because neither belongs inside a translated phrase. */
-          const key = restoreErrorText[code];
-          let text = key ? t(key) : t('backup.refused');
-          if (code === 'compressed') text += t('backup.err_compressed_tail');
-          if (code === 'unknown-file') text += 'wifi.json, settings.csv, yandex.json';
-          setBackupStatus(text, 'error');
+          const key = Object.hasOwn(restoreErrorText, code) ? restoreErrorText[code] : 'backup.refused';
+          setBackupStatus(() => {
+            let text = t(key);
+            if (code === 'compressed') text += t('backup.err_compressed_tail');
+            if (code === 'unknown-file') text += 'wifi.json, settings.csv, yandex.json';
+            return text;
+          }, 'error');
           return;
         }
         const restored = Array.isArray(result.payload.restored) ? result.payload.restored : [];
@@ -1695,11 +1746,11 @@
           /* Written, but the device could not read it back - the case that
              would otherwise be discovered as a device on the setup access
              point with nothing said about why. */
-          setBackupStatus(t('backup.restored_warn', {files: restored.join(', ')}) +
+          setBackupStatus(() => t('backup.restored_warn', {files: restored.join(', ')}) +
                           t('backup.unreadable', {files: warnings.join(', ')}) +
                           t('backup.rebooting'), 'error');
         } else {
-          setBackupStatus(t('backup.restored', {files: restored.join(', ')}),
+          setBackupStatus(messageFor('backup.restored', {files: restored.join(', ')}),
                           'success');
         }
         /* The file is cleared either way: the same upload sent twice after a
@@ -1707,7 +1758,7 @@
         backupFile.value = '';
       })
       .catch(() => {
-        setBackupStatus(t('backup.send_failed'), 'error');
+        setBackupStatus(messageFor('backup.send_failed'), 'error');
       })
       .then(() => {
         restoreInFlight = false;
@@ -1723,7 +1774,8 @@
     backupFile.addEventListener('change', () => {
       const file = chosenFile();
       backupRestore.disabled = file === null;
-      setBackupStatus(file === null ? t('common.ready') : t('backup.chosen', {name: file.name}));
+      setBackupStatus(file === null
+        ? messageFor('common.ready') : messageFor('backup.chosen', {name: file.name}));
     });
     backupRestore.addEventListener('click', () => restoreChosenFile());
   }
@@ -1775,6 +1827,8 @@
   }
 
   function applyYandex(value) {
+    lastYandex = value;
+    yandexOffline = false;
     const status = normalizeYandex(value);
     const failed = status.state === 'failed';
     yandexStatus.textContent = failed
@@ -1838,6 +1892,7 @@
   /* Versions never change while the device is running, so this is fetched
      once when the page loads and never polled. */
   function applyAbout(payload) {
+    lastAbout = payload;
     if (!isObject(payload)) return;
     const firmware = isObject(payload.firmware) ? payload.firmware : {};
     const web = isObject(payload.web) ? payload.web : {};
@@ -1889,6 +1944,7 @@
       })
       .then((payload) => scheduleYandexRefresh(applyYandex(payload)))
       .catch(() => {
+        yandexOffline = true;
         yandexStatus.textContent = t('common.no_device');
         yandexStatus.classList.add('is-error');
         scheduleYandexRefresh(false);
@@ -2022,6 +2078,27 @@
   wifiScan.addEventListener('click', () => startScan());
   bindSections();
   bindDeviceFields();
+  window.jradioI18n.onChange(() => {
+    if (deviceStatusKey) setDeviceStatus(deviceStatusKey);
+    if (wifiStatusMessage) wifiStatus.textContent = wifiStatusMessage();
+    if (backupStatusMessage) backupStatus.textContent = backupStatusMessage();
+    setPasswordVisible(passwordVisible);
+    if (lastWifi !== null) renderSavedNetworks(lastWifi);
+    if (lastWifiScan !== null && !scanNetworks.hidden) renderScan(lastWifiScan);
+    if (lastSpeakers !== null) renderSpeakers(lastSpeakers);
+    if (lastWeather !== null) applyWeatherState(lastWeather);
+    if (weatherKeySet !== null && deviceHeld !== 'openweathermap_key') {
+      document.querySelector('#device-weather-key').placeholder =
+        t(weatherKeySet ? 'settings.key_set' : 'settings.key_unset');
+    }
+    if (lastAbout !== null) applyAbout(lastAbout);
+    if (yandexOffline) yandexStatus.textContent = t('common.no_device');
+    else if (lastYandex !== null) applyYandex(lastYandex);
+  });
+  window.jradioI18n.loadLocales().then((locales) => {
+    localeChoices = locales;
+    renderLocaleChoices();
+  }).catch(() => {});
   bindBackup();
   yandexLink.addEventListener('click', () => sendYandexAction('begin'));
   yandexCancel.addEventListener('click', () => sendYandexAction('cancel'));

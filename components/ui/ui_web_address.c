@@ -13,7 +13,7 @@ void ui_web_address_text(wifi_provisioning_mode_t mode, const char *ipv4, const 
      * provisioning never started, and its status is the zero it was born
      * with - which reads as a setup AP that has not published its name. */
     if (!storage_mounted) {
-        snprintf(out, out_size, "%s", device_text(DEVICE_TEXT_DATA_NOT_FLASHED, language));
+        device_text_format(out, out_size, DEVICE_TEXT_DATA_NOT_FLASHED, language, NULL, 0U);
         return;
     }
 
@@ -25,7 +25,8 @@ void ui_web_address_text(wifi_provisioning_mode_t mode, const char *ipv4, const 
      * it cannot be typed anywhere until the phone has joined, and by then the
      * QR behind this band has already opened it. */
     if (mode == WIFI_PROVISIONING_AP_SETUP && ssid != NULL && ssid[0] != '\0') {
-        snprintf(out, out_size, device_text(DEVICE_TEXT_JOIN_NETWORK, language), ssid);
+        const device_text_arg_t arg = {"ssid", ssid};
+        device_text_format(out, out_size, DEVICE_TEXT_JOIN_NETWORK, language, &arg, 1U);
         return;
     }
 
@@ -36,7 +37,7 @@ void ui_web_address_text(wifi_provisioning_mode_t mode, const char *ipv4, const 
      * network": the wait ends either with an address or with the setup AP
      * above, and both are worth waiting for. */
     if (ipv4 == NULL || ipv4[0] == '\0' || mode == WIFI_PROVISIONING_STA_CONNECTING) {
-        snprintf(out, out_size, "%s", device_text(DEVICE_TEXT_WIFI_CONNECTING, language));
+        device_text_format(out, out_size, DEVICE_TEXT_WIFI_CONNECTING, language, NULL, 0U);
         return;
     }
     /* The setup-AP line above already prints the address bare, beside the

@@ -238,7 +238,9 @@ typedef struct {
     /* A scan of the band is under way: whatever was on the air is not now, so
      * the faces drop the station's name and radiotext for one word. */
     bool fm_scanning;
-    char error[PLAYER_ERROR_MAX_LEN];
+    /* A device_text_id_t plus one; zero means no error. The panel and the
+     * WebSocket frame resolve it against their settings snapshot. */
+    uint16_t error_text_id;
 } player_snapshot_t;
 
 typedef enum {

@@ -2,6 +2,7 @@
 
 const assert = require('assert');
 const fs = require('fs');
+const {localeResponse} = require('./web_locale_fixture');
 const vm = require('vm');
 
 let documentRef;
@@ -240,6 +241,8 @@ const context = {
       if (entry) entry.cleared = true;
     },
     fetch(url, options) {
+      const locale = localeResponse(url);
+      if (locale) return locale;
       if (url === '/api/about') {
         if (aboutReply === null) return Promise.reject(new Error('offline'));
         return Promise.resolve({ok: true, json: () => Promise.resolve(aboutReply)});
@@ -343,6 +346,8 @@ const baseSnapshot = {
 vm.createContext(context);
 // The dictionary first, the way every page loads it.
 vm.runInContext(fs.readFileSync('data/www/i18n.js', 'utf8'), context);
+(async () => {
+await context.window.jradioI18n.setLanguage('ru');
 vm.runInContext(fs.readFileSync('data/www/app.js', 'utf8'), context);
 
 const first = FakeWebSocket.instances[0];
@@ -584,7 +589,6 @@ sendEvent(second, {
   player: player('Радио снова'),
 });
 
-(async () => {
   /* Position and cover come over REST rather than the socket: the device
      diffs its snapshot and broadcasts on every change, so a second counter
      would push a frame a second to every open browser. */

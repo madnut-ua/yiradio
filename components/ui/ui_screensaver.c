@@ -2,6 +2,8 @@
 
 #include <stdio.h>
 
+#include "device_text.h"
+
 void ui_screensaver_init(ui_screensaver_t *saver, uint32_t now_ms)
 {
     if (saver == NULL) return;
@@ -111,21 +113,33 @@ void ui_screensaver_time_text(char *out, size_t out_size, bool have_time, int ho
     snprintf(out, out_size, "%02d:%02d", hour, minute);
 }
 
-/* Genitive in Russian, because the day number comes first: "11 сентября",
- * never "11 сентябрь". */
-static const char *const k_months[2][12] = {
-    [DEVICE_LANGUAGE_RU] = {"января", "февраля", "марта", "апреля", "мая", "июня", "июля",
-                            "августа", "сентября", "октября", "ноября", "декабря"},
-    [DEVICE_LANGUAGE_EN] = {"January", "February", "March", "April", "May", "June", "July",
-                            "August", "September", "October", "November", "December"},
+static const device_text_id_t k_months[] = {
+    DEVICE_TEXT_MONTH_JANUARY,   DEVICE_TEXT_MONTH_FEBRUARY, DEVICE_TEXT_MONTH_MARCH,
+    DEVICE_TEXT_MONTH_APRIL,     DEVICE_TEXT_MONTH_MAY,      DEVICE_TEXT_MONTH_JUNE,
+    DEVICE_TEXT_MONTH_JULY,      DEVICE_TEXT_MONTH_AUGUST,   DEVICE_TEXT_MONTH_SEPTEMBER,
+    DEVICE_TEXT_MONTH_OCTOBER,   DEVICE_TEXT_MONTH_NOVEMBER, DEVICE_TEXT_MONTH_DECEMBER,
 };
 
-static const char *const k_weekdays[2][7] = {
-    [DEVICE_LANGUAGE_RU] = {"воскресенье", "понедельник", "вторник", "среда", "четверг",
-                            "пятница", "суббота"},
-    [DEVICE_LANGUAGE_EN] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
-                            "Saturday"},
+static const device_text_id_t k_weekdays[] = {
+    DEVICE_TEXT_WEEKDAY_SUNDAY,    DEVICE_TEXT_WEEKDAY_MONDAY, DEVICE_TEXT_WEEKDAY_TUESDAY,
+    DEVICE_TEXT_WEEKDAY_WEDNESDAY, DEVICE_TEXT_WEEKDAY_THURSDAY,
+    DEVICE_TEXT_WEEKDAY_FRIDAY,    DEVICE_TEXT_WEEKDAY_SATURDAY,
 };
+
+static void format_date(char *out, size_t out_size, device_language_t language,
+                        int day, int month, int weekday)
+{
+    char day_text[3];
+    snprintf(day_text, sizeof(day_text), "%d", day);
+    const device_text_arg_t args[] = {
+        {"day", day_text},
+        {"month", device_text(k_months[month - 1], language)},
+        {"weekday", weekday >= 0 ? device_text(k_weekdays[weekday], language) : NULL},
+    };
+    device_text_format(out, out_size,
+                       weekday < 0 ? DEVICE_TEXT_DATE_SHORT : DEVICE_TEXT_DATE_FULL,
+                       language, args, weekday < 0 ? 2U : 3U);
+}
 
 void ui_screensaver_date_short_text(char *out, size_t out_size, device_language_t language,
                                     bool have_date, int day, int month)
@@ -133,8 +147,7 @@ void ui_screensaver_date_short_text(char *out, size_t out_size, device_language_
     if (out == NULL || out_size == 0U) return;
     out[0] = '\0';
     if (!have_date || day < 1 || day > 31 || month < 1 || month > 12) return;
-    const int lang = language == DEVICE_LANGUAGE_EN ? DEVICE_LANGUAGE_EN : DEVICE_LANGUAGE_RU;
-    snprintf(out, out_size, "%d %s", day, k_months[lang][month - 1]);
+    format_date(out, out_size, language, day, month, -1);
 }
 
 void ui_screensaver_date_text(char *out, size_t out_size, device_language_t language,
@@ -146,14 +159,7 @@ void ui_screensaver_date_text(char *out, size_t out_size, device_language_t lang
         weekday > 6) {
         return;
     }
-    const int lang = language == DEVICE_LANGUAGE_EN ? DEVICE_LANGUAGE_EN : DEVICE_LANGUAGE_RU;
-    if (lang == DEVICE_LANGUAGE_EN) {
-        snprintf(out, out_size, "%s, %d %s", k_weekdays[lang][weekday], day,
-                 k_months[lang][month - 1]);
-    } else {
-        snprintf(out, out_size, "%d %s, %s", day, k_months[lang][month - 1],
-                 k_weekdays[lang][weekday]);
-    }
+    format_date(out, out_size, language, day, month, weekday);
 }
 
 static bool has_text(const char *text)

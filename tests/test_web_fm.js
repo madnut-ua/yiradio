@@ -8,6 +8,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+const {localeResponse} = require('./web_locale_fixture');
 const vm = require('vm');
 
 class ClassList {
@@ -167,7 +168,7 @@ function loadPage(options = {}) {
     document,
     location: {hash: options.hash || ''},
     history: {replaceState: (state, title, url) => { historyCalls.push(url); }},
-    fetch: fakeFetch,
+    fetch: (url, options) => localeResponse(url) || fakeFetch(url, options),
     confirm: (text) => { confirms.push(text); return confirmAnswer; },
     setTimeout: (callback, ms) => { timers.set(++timerId, {callback, ms}); return timerId; },
     clearTimeout: (handle) => { timers.delete(handle); },
@@ -191,7 +192,8 @@ function firePending() {
 }
 
 async function main() {
-  const {document} = loadPage();
+  const {document, window} = loadPage();
+  await window.jradioI18n.setLanguage('ru');
   await settle();
   const $ = (id) => document.body.querySelector(`#${id}`);
   const rows = (id) => $(id).querySelectorAll('li');

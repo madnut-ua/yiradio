@@ -19,6 +19,7 @@
 #include "board_config.h"
 #include "board_display_profile.h"
 #include "device_settings.h"
+#include "device_locale.h"
 #include "file_storage.h"
 #include "player_control.h"
 #include "wifi_provisioning.h"
@@ -1103,14 +1104,14 @@ static void ui_scroller_tick(ui_scroller_t *scroller, ui_text_scroll_mode_t mode
 static const char *ui_radio_state_text(player_playback_state_t state)
 {
     switch (state) {
-    case PLAYER_PLAYBACK_CONNECTING: return "Connecting...";
-    case PLAYER_PLAYBACK_PLAYING: return "Playing";
-    case PLAYER_PLAYBACK_PAUSED: return "Paused";
-    case PLAYER_PLAYBACK_RECONNECTING: return "Reconnecting...";
-    case PLAYER_PLAYBACK_ERROR: return "Connection error";
-    case PLAYER_PLAYBACK_STOPPED: return "Stopped";
+    case PLAYER_PLAYBACK_CONNECTING: return ui_text(DEVICE_TEXT_STATE_CONNECTING);
+    case PLAYER_PLAYBACK_PLAYING: return ui_text(DEVICE_TEXT_STATE_PLAYING);
+    case PLAYER_PLAYBACK_PAUSED: return ui_text(DEVICE_TEXT_STATE_PAUSED);
+    case PLAYER_PLAYBACK_RECONNECTING: return ui_text(DEVICE_TEXT_STATE_RECONNECTING);
+    case PLAYER_PLAYBACK_ERROR: return ui_text(DEVICE_TEXT_STATE_ERROR);
+    case PLAYER_PLAYBACK_STOPPED: return ui_text(DEVICE_TEXT_STATE_STOPPED);
     }
-    return "Unknown";
+    return ui_text(DEVICE_TEXT_STATE_UNKNOWN);
 }
 
 /* The sleep timer's crescent at this panel's strip size. Two levels so the
@@ -2276,7 +2277,7 @@ static bool ui_wx_refresh(bool force)
     if (!weather) {
         changed |= ui_wx_set_image(s_wx_icon, NULL);
         changed |= ui_set_label_text_note_change(
-            s_wx_none, language == DEVICE_LANGUAGE_EN ? "no weather" : "нет данных о погоде");
+            s_wx_none, ui_text(DEVICE_TEXT_WEATHER_NONE));
         return changed;
     }
 
@@ -2289,11 +2290,11 @@ static bool ui_wx_refresh(bool force)
     ui_wx_humidity_text(text, sizeof(text), &report);
     changed |= ui_set_label_text_note_change(s_wx_value[0], text);
     changed |= ui_set_label_text_note_change(
-        s_wx_name[0], language == DEVICE_LANGUAGE_EN ? "humidity" : "влажность");
+        s_wx_name[0], ui_text(DEVICE_TEXT_WEATHER_HUMIDITY));
     ui_wx_pressure_text(text, sizeof(text), language, &report);
     changed |= ui_set_label_text_note_change(s_wx_value[1], text);
     changed |= ui_set_label_text_note_change(
-        s_wx_name[1], language == DEVICE_LANGUAGE_EN ? "pressure" : "давление");
+        s_wx_name[1], ui_text(DEVICE_TEXT_WEATHER_PRESSURE));
     ui_wx_wind_text(text, sizeof(text), language, &report, UI_WX_WIND_POINT);
     changed |= ui_set_label_text_note_change(s_wx_value[2], text);
     ui_wx_wind_label(text, sizeof(text), language, &report);
@@ -2755,8 +2756,11 @@ static void ui_update_footer(void)
         buffer_slot = true;
         buffer_known = player_control_input_fill(&buffer_fill);
         if (buffer_known) {
-            snprintf(left_text, sizeof(left_text), ui_text(DEVICE_TEXT_BUFFER_FORMAT),
-                     (unsigned int)buffer_fill);
+            char percent[12];
+            snprintf(percent, sizeof(percent), "%u", (unsigned int)buffer_fill);
+            const device_text_arg_t arg = {"percent", percent};
+            device_text_format(left_text, sizeof(left_text), DEVICE_TEXT_BUFFER_FORMAT,
+                               s_device_settings.language, &arg, 1U);
         } else {
             // Nothing playing, or a source with no backlog at all. A dash says
             // that; a zero would claim the buffer had run dry.
@@ -2919,7 +2923,7 @@ static void ui_update_playback_marks(const player_snapshot_t *snapshot)
  *
  * A message from the player wins over the name of the state: "Stopped" is true
  * and useless, and why it is stopped is the thing worth the row. Nothing on
- * this panel showed snapshot->error at all until now - it reached the browser
+ * this panel showed playback errors at all until now - they reached the browser
  * and stopped there - so a press that started nothing, or an account without a
  * subscription, was a screen with no explanation on it. */
 static void ui_set_state_line(const char *state, const char *artist, bool error);
@@ -2946,8 +2950,8 @@ static void ui_set_state_line_from(const player_snapshot_t *snapshot,
         ui_set_state_line(ui_text(DEVICE_TEXT_STATE_RECONNECTING), artist, false);
         return;
     }
-    if (snapshot->error[0] != '\0') {
-        ui_set_state_line(snapshot->error, artist, true);
+    if (snapshot->error_text_id != 0U) {
+        ui_set_state_line(ui_text((device_text_id_t)(snapshot->error_text_id - 1U)), artist, true);
         return;
     }
     ui_set_state_line(state, artist, snapshot->playback_state == PLAYER_PLAYBACK_ERROR);
@@ -3064,7 +3068,9 @@ static void ui_update_bluetooth_status(const player_snapshot_t *snapshot)
     if (snapshot->playback_state == PLAYER_PLAYBACK_STOPPED && snapshot->context[0] == '\0') {
         char name[DEVICE_NAME_MAX];
         device_settings_device_name(name, sizeof(name));
-        snprintf(pairing, sizeof(pairing), ui_text(DEVICE_TEXT_BLUETOOTH_PAIRING), name);
+        const device_text_arg_t arg = {"name", name};
+        device_text_format(pairing, sizeof(pairing), DEVICE_TEXT_BLUETOOTH_PAIRING,
+                           s_device_settings.language, &arg, 1U);
         state = pairing;
     } else if (snapshot->playback_state != PLAYER_PLAYBACK_PLAYING &&
                snapshot->playback_state != PLAYER_PLAYBACK_PAUSED &&
@@ -4370,10 +4376,8 @@ static void ui_settings_row_text(const ui_settings_row_t *row, char *text, size_
         /* The value names itself in its own language whichever is in force, so
          * that somebody who cannot read the current setting can still find the
          * way back out of it. */
-        ui_settings_field(text, text_size, DEVICE_TEXT_ROW_LANGUAGE,
-                          s_device_settings.language == DEVICE_LANGUAGE_EN
-                              ? DEVICE_TEXT_LANGUAGE_ENGLISH
-                              : DEVICE_TEXT_LANGUAGE_RUSSIAN);
+        snprintf(text, text_size, "  %s: %s", ui_text(DEVICE_TEXT_ROW_LANGUAGE),
+                 device_locale_name(s_device_settings.language));
         break;
     case UI_SETTINGS_ROW_HOME_SCREEN_FIELD:
         ui_settings_field(text, text_size, DEVICE_TEXT_ROW_HOME_SCREEN,
@@ -4601,12 +4605,8 @@ static bool ui_settings_row_switch(ui_settings_row_id_t id, size_t *index, bool 
  * file, and that belongs to the moment somebody asks rather than to a poll
  * loop that runs every 10 ms. Neither figure can change while the device is
  * running, so once per press is once too often already. */
-static void ui_show_about(void)
+static void ui_render_about(void)
 {
-    if (s_about_open || s_about_overlay == NULL) return;
-    s_about_open = true;
-    s_about_opened_ms = ui_tick_get_ms();
-
     version_info_t info;
     version_info_read(&info);
     ui_about_lines_t lines;
@@ -4619,6 +4619,14 @@ static void ui_show_about(void)
         lv_label_set_text(s_about_rows[row], text[row]);
     }
     lv_label_set_text(s_about_hint, ui_text(DEVICE_TEXT_PRESS_TO_RETURN));
+}
+
+static void ui_show_about(void)
+{
+    if (s_about_open || s_about_overlay == NULL) return;
+    s_about_open = true;
+    s_about_opened_ms = ui_tick_get_ms();
+    ui_render_about();
     lv_obj_clear_flag(s_about_overlay, LV_OBJ_FLAG_HIDDEN);
 }
 
@@ -5013,6 +5021,7 @@ static void ui_reload_settings(void)
     const bool tone_pending = s_tone_save_pending;
     const signed char turning_bass = s_device_settings.tone_bass;
     const signed char turning_treble = s_device_settings.tone_treble;
+    const device_language_t prior_language = s_device_settings.language;
 
     if (!device_settings_init(&s_device_settings)) {
         lv_label_set_text(s_settings_notice, ui_text(DEVICE_TEXT_SETTINGS_READ_FAILED));
@@ -5049,6 +5058,12 @@ static void ui_reload_settings(void)
      * which is the narrower of the two problems. */
     device_settings_publish(&s_device_settings);
     ui_apply_device_name();
+    if (s_device_settings.language != prior_language) {
+        ui_update_menu_highlight();
+        if (s_feed_screen != NULL) ui_update_feed_screen();
+        if (s_about_open) ui_render_about();
+        if (s_qr_open) lv_label_set_text(s_qr_back, ui_text(DEVICE_TEXT_PRESS_TO_RETURN));
+    }
     if (s_settings_open) {
         ui_update_settings();
     } else {
@@ -5454,11 +5469,12 @@ static void ui_settings_change_selected(void)
     const ui_settings_row_id_t selected = ui_settings_model_selected(&s_settings_model);
     bool changed = false;
     switch (selected) {
-    case UI_SETTINGS_ROW_LANGUAGE_FIELD:
-        changed = device_settings_set_language(
-            &s_device_settings,
-            s_device_settings.language == DEVICE_LANGUAGE_EN ? DEVICE_LANGUAGE_RU : DEVICE_LANGUAGE_EN);
+    case UI_SETTINGS_ROW_LANGUAGE_FIELD: {
+        const device_language_t next = device_locale_next(s_device_settings.language);
+        if (next == s_device_settings.language) return;
+        changed = device_settings_set_language(&s_device_settings, next);
         break;
+    }
     case UI_SETTINGS_ROW_HOME_SCREEN_FIELD:
         changed = device_settings_set_home_screen(
             &s_device_settings,
@@ -6261,7 +6277,7 @@ static void ui_load_source_screen(audio_source_t selected_source)
                       ui_menu_item_label((ui_menu_item_t)index, s_device_settings.language));
     lv_screen_load(s_source_screen);
     if (selected_source == AUDIO_SOURCE_INTERNET_RADIO) {
-        ui_set_state_line("Connecting...", "", false);
+        ui_set_state_line(ui_text(DEVICE_TEXT_STATE_CONNECTING), "", false);
         ui_scroller_set_text(&s_source_detail, "");
         ui_set_label_text_if_changed(s_source_stream, "");
         s_waiting_for_source_item = true;
@@ -6297,7 +6313,7 @@ static void ui_load_source_screen(audio_source_t selected_source)
         ui_set_label_text_if_changed(s_source_stream, "");
     } else {
         s_waiting_for_source_item = false;
-        ui_set_state_line("Not implemented", "", false);
+        ui_set_state_line(ui_text(DEVICE_TEXT_NOT_AVAILABLE_YET), "", false);
         ui_scroller_set_text(&s_source_detail, "");
         ui_set_label_text_if_changed(s_source_stream, "");
     }
@@ -8575,7 +8591,7 @@ static void ui_handle_input(board_input_action_t action)
             if (!ui_submit_player_command(&command)) return;
             ui_load_source_screen(AUDIO_SOURCE_INTERNET_RADIO);
             if (entry != NULL) ui_scroller_set_text(&s_source_title, entry->name);
-            ui_set_state_line("Connecting", "", false);
+            ui_set_state_line(ui_text(DEVICE_TEXT_STATE_CONNECTING), "", false);
             ui_scroller_set_text(&s_source_detail,
                                          entry == NULL ? "" : entry->name);
             char stream_text[32];

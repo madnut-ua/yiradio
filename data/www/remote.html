@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark light">
   <meta name="theme-color" content="#0c0f13">
-  <title>jRadio — пульт</title>
+  <title>jRadio — remote control</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3CradialGradient id='g' cx='50%25' cy='45%25' r='55%25'%3E%3Cstop offset='0%25' stop-color='%237bffb0'/%3E%3Cstop offset='55%25' stop-color='%2322e06a'/%3E%3Cstop offset='100%25' stop-color='%230a8f3c'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='%23121417'/%3E%3Ccircle cx='16' cy='16' r='11' fill='url(%23g)'/%3E%3Cpath d='M16 16 12.9 5.6a11 11 0 0 1 6.2 0Z' fill='%23103a22'/%3E%3Ccircle cx='16' cy='16' r='3.7' fill='%230d1a12'/%3E%3Ccircle cx='16' cy='16' r='12.3' fill='none' stroke='%238c96a3' stroke-width='1.4'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/style.css">
   <script src="/theme.js"></script>
@@ -14,7 +14,7 @@
 <body data-i18n-page="title.remote">
   <header class="site-header">
     <div class="header-inner">
-      <a class="brand" href="/" data-i18n-aria="nav.back_to_player" aria-label="Вернуться к плееру">
+      <a class="brand" href="/" data-i18n-aria="nav.back_to_player" aria-label="Back to the player">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 32 32" focusable="false">
             <defs>
@@ -34,15 +34,15 @@
         <span class="brand-word">jRadio</span>
       </a>
 
-      <nav class="source-tabs" data-i18n-aria="nav.sections" aria-label="Разделы">
-        <a class="source-tab" href="/" data-i18n="nav.player">Плеер</a>
-        <a class="source-tab" href="/playlist" data-i18n="nav.playlist">Станции</a>
-        <a class="source-tab" href="/settings" data-i18n="nav.settings">Настройки</a>
+      <nav class="source-tabs" data-i18n-aria="nav.sections" aria-label="Sections">
+        <a class="source-tab" href="/" data-i18n="nav.player">Player</a>
+        <a class="source-tab" href="/playlist" data-i18n="nav.playlist">Stations</a>
+        <a class="source-tab" href="/settings" data-i18n="nav.settings">Settings</a>
       </nav>
 
       <div class="header-actions">
         <button id="theme-toggle" class="icon-button theme-toggle" type="button"
-                data-i18n-aria="theme.toggle" aria-label="Сменить тему">
+                data-i18n-aria="theme.toggle" aria-label="Switch theme">
           <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="M20 14.5A8 8 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/>
           </svg>
@@ -57,23 +57,23 @@
 
   <main class="page-shell">
     <div class="page-heading">
-      <h1 data-i18n="remote.title">Пульт</h1>
-      <p data-i18n="note.remote_page">Любой инфракрасный пульт: нажмите «Обучить» у функции, затем кнопку на пульте. Одна кнопка — одна функция; таблица хранится на устройстве в remote.csv.</p>
+      <h1 data-i18n="remote.title">Remote control</h1>
+      <p data-i18n="note.remote_page">Any infrared remote: press "Learn" beside a function, then the key on the remote. One key, one function; the table lives on the device in remote.csv.</p>
     </div>
 
     <section class="card" aria-labelledby="remote-title">
       <div class="card-head">
-        <h2 id="remote-title" data-i18n="remote.keys">Кнопки</h2>
+        <h2 id="remote-title" data-i18n="remote.keys">Keys</h2>
         <span id="remote-status" class="settings-status" role="status" aria-live="polite"></span>
       </div>
       <div class="card-body">
-        <p id="remote-missing" class="field-note is-error" data-i18n="remote.missing" hidden>В этой сборке нет ИК-приёмника: IR_RECEIVER_GPIO не задан.</p>
+        <p id="remote-missing" class="field-note is-error" data-i18n="remote.missing" hidden>This build has no IR receiver: IR_RECEIVER_GPIO is not set.</p>
         <div id="remote-groups"></div>
       </div>
     </section>
   </main>
 
-  <noscript><p class="noscript-message">Для обучения пульта требуется JavaScript. / JavaScript is required to teach the remote.</p></noscript>
+  <noscript><p class="noscript-message">JavaScript is required to teach the remote.</p></noscript>
   <script src="/remote.js"></script>
 </body>
 </html>

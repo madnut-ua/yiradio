@@ -93,6 +93,8 @@ idf_build_get_property(jradio_project_ver PROJECT_VER)
 add_custom_target(littlefs_stage
     COMMAND ${CMAKE_COMMAND} -E remove_directory "${littlefs_stage_dir}"
     COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/data" "${littlefs_stage_dir}"
+    COMMAND ${python} "${CMAKE_SOURCE_DIR}/tools/pack_locales.py"
+            --source "${CMAKE_SOURCE_DIR}/locales" --www "${littlefs_stage_dir}/www"
     COMMAND ${python} "${CMAKE_SOURCE_DIR}/tools/gzip_www_assets.py" "${littlefs_stage_dir}/www"
     COMMAND ${python} "${CMAKE_SOURCE_DIR}/tools/stamp_version.py"
             --version "${jradio_project_ver}"

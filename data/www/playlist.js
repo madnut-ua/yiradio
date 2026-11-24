@@ -277,25 +277,22 @@
       state.rows.length === 0 || hasErrors();
   }
 
-  function setStatus(text, isError = false) {
-    statusEl.textContent = text;
-    statusEl.classList.toggle('is-error', isError);
-    statusEl.classList.remove('is-success');
+  const messages = new Map();
+  function setMessage(node, render, isError) {
+    messages.set(node, render);
+    node.textContent = render();
+    node.classList.toggle('is-error', isError);
+    node.classList.remove('is-success');
   }
+  const setStatus = (render, isError = false) => setMessage(statusEl, render, isError);
+  const setIoStatus = (render, isError = false) => setMessage(ioStatusEl || statusEl, render, isError);
+  const setSaveStatus = (render, isError = false) => setMessage(saveStatusEl, render, isError);
 
-  function setIoStatus(text, isError = false) {
-    const target = ioStatusEl || statusEl;
-    target.textContent = text;
-    target.classList.toggle('is-error', isError);
-    target.classList.remove('is-success');
-  }
+  const message = (key, values) => () => t(key, values);
 
-  function setSaveStatus(text, isError = false) {
-    saveStatusEl.textContent = text;
-    saveStatusEl.classList.toggle('is-error', isError);
-  }
-
+  const rowNotices = new WeakMap();
   function updateRowErrorDisplay(rowEl, row) {
+    rowNotices.delete(rowEl);
     const error = rowError(row);
     const errorEl = rowEl.querySelector('.playlist-row-error');
     errorEl.textContent = error;
@@ -330,7 +327,9 @@
     });
   }
 
-  function setRowNotice(item, text, isError) {
+  function setRowNotice(item, key, isError, values) {
+    rowNotices.set(item, {key, isError, values});
+    const text = t(key, values);
     const notice = item.querySelector('.playlist-row-error');
     notice.textContent = text;
     notice.hidden = text === '';
@@ -349,14 +348,14 @@
     if (test.audio === null) test.audio = new Audio();
     test.audio.src = row.url;
     test.browser = row.id;
-    setRowNotice(item, t('playlist.trying_browser'), false);
+    setRowNotice(item, 'playlist.trying_browser', false);
     refreshTestButtons();
     test.audio.play().then(() => {
-      setRowNotice(item, t('playlist.playing_browser'), false);
+      setRowNotice(item, 'playlist.playing_browser', false);
     }).catch(() => {
       test.browser = null;
       refreshTestButtons();
-      setRowNotice(item, t('playlist.browser_cannot'), true);
+      setRowNotice(item, 'playlist.browser_cannot', true);
     });
   }
 
@@ -365,7 +364,7 @@
   function playOnDevice(item, row) {
     const stopping = test.device === row.id;
     const body = stopping ? {url: ''} : {url: row.url, name: row.name};
-    setRowNotice(item, stopping ? t('playlist.stopping') : t('playlist.sending_device'), false);
+    setRowNotice(item, stopping ? 'playlist.stopping' : 'playlist.sending_device', false);
     window.fetch('/api/station-test', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -375,10 +374,10 @@
         if (!response || response.ok !== true) throw new Error('request failed');
         test.device = stopping ? null : row.id;
         refreshTestButtons();
-        setRowNotice(item, stopping ? '' : t('playlist.playing_device'), false);
+        setRowNotice(item, stopping ? '' : 'playlist.playing_device', false);
       })
       .catch(() => {
-        setRowNotice(item, t('playlist.device_refused'), true);
+        setRowNotice(item, 'playlist.device_refused', true);
       });
   }
 
@@ -526,11 +525,12 @@
     }
   }
 
-  function field(labelText, input) {
+  function field(labelKey, input) {
     const label = document.createElement('label');
     label.className = 'playlist-row-field';
     const caption = document.createElement('span');
-    caption.textContent = labelText;
+    caption.setAttribute('data-i18n', labelKey);
+    caption.textContent = t(labelKey);
     label.append(caption, input);
     return label;
   }
@@ -553,6 +553,8 @@
     const handle = document.createElement('button');
     handle.type = 'button';
     handle.className = 'icon-button playlist-row-handle';
+    handle.setAttribute('data-i18n-aria', 'playlist.reorder');
+    handle.setAttribute('data-i18n-title', 'playlist.reorder_hint');
     handle.setAttribute('aria-label', t('playlist.reorder'));
     handle.title = t('playlist.reorder_hint');
     handle.innerHTML =
@@ -566,6 +568,7 @@
     const editButton = document.createElement('button');
     editButton.type = 'button';
     editButton.className = 'icon-button playlist-row-edit';
+    editButton.setAttribute('data-i18n-aria', 'playlist.edit');
     editButton.setAttribute('aria-label', t('playlist.edit'));
     editButton.setAttribute('aria-expanded', 'false');
     /* Two glyphs in one button: the pencil says the row can be changed, and
@@ -579,6 +582,7 @@
     const deleteButton = document.createElement('button');
     deleteButton.type = 'button';
     deleteButton.className = 'icon-button playlist-row-delete';
+    deleteButton.setAttribute('data-i18n-aria', 'playlist.delete');
     deleteButton.setAttribute('aria-label', t('playlist.delete'));
     deleteButton.innerHTML =
       '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
@@ -602,6 +606,7 @@
     nameInput.className = 'playlist-row-name-input';
     nameInput.value = row.name;
     nameInput.maxLength = STATION_NAME_BUFFER_BYTES - 1;
+    nameInput.setAttribute('data-i18n-aria', 'playlist.station_name');
     nameInput.setAttribute('aria-label', t('playlist.station_name'));
 
     const urlInput = document.createElement('input');
@@ -609,6 +614,7 @@
     urlInput.className = 'playlist-row-url-input';
     urlInput.value = row.url;
     urlInput.maxLength = STATION_URL_BUFFER_BYTES - 1;
+    urlInput.setAttribute('data-i18n-aria', 'playlist.stream_url');
     urlInput.setAttribute('aria-label', t('playlist.stream_url'));
 
     const flagCaption = t('playlist.name_from_list');
@@ -617,8 +623,12 @@
     const flagInput = document.createElement('input');
     flagInput.type = 'checkbox';
     flagInput.checked = row.flag === 1;
+    flagInput.setAttribute('data-i18n-aria', 'playlist.name_from_list');
     flagInput.setAttribute('aria-label', flagCaption);
-    flagLabel.append(flagInput, document.createTextNode(flagCaption));
+    const flagText = document.createElement('span');
+    flagText.setAttribute('data-i18n', 'playlist.name_from_list');
+    flagText.textContent = flagCaption;
+    flagLabel.append(flagInput, flagText);
 
     /* The picture: a file chooser, a preview of what the station will have,
        and a way to take it off again. The file is scaled here and goes to the
@@ -641,6 +651,7 @@
     const iconClear = document.createElement('button');
     iconClear.type = 'button';
     iconClear.className = 'secondary-button playlist-row-icon-clear';
+    iconClear.setAttribute('data-i18n', 'playlist.icon_remove');
     iconClear.textContent = t('playlist.icon_remove');
     iconClear.hidden = true;
     iconRow.append(iconPreview, iconPick, iconClear);
@@ -663,7 +674,7 @@
     errorEl.className = 'playlist-row-error';
     errorEl.hidden = true;
 
-    editor.append(field(t('playlist.name'), nameInput), field(t('playlist.stream_url'), urlInput),
+    editor.append(field('playlist.name', nameInput), field('playlist.stream_url', urlInput),
                   flagLabel, iconRow, tests, errorEl);
     item.append(head, editor);
 
@@ -751,19 +762,18 @@
     iconInput.addEventListener('change', () => {
       const file = iconInput.files && iconInput.files[0];
       if (!file) return;
-      setRowNotice(item, t('playlist.icon_preparing'), false);
+      setRowNotice(item, 'playlist.icon_preparing', false);
       scaleImage(file).then((blob) => {
         dropPicture(row);
         row.picture = makePicture(blob);
         row.icon = '';
         paintIcon();
         updateSaveAvailability();
-        setRowNotice(item,
-          t('playlist.icon_ready'), false);
+        setRowNotice(item, 'playlist.icon_ready', false);
       }).catch((error) => {
         const key = error && error.message === ICON_TOO_LARGE
           ? 'playlist.icon_too_large' : 'playlist.icon_failed';
-        setRowNotice(item, t(key, {kb: Math.round(ICON_MAX_BYTES / 1024)}), true);
+        setRowNotice(item, key, true, {kb: Math.round(ICON_MAX_BYTES / 1024)});
       }).then(() => {
         // Cleared so that choosing the same file again is a change.
         iconInput.value = '';
@@ -774,18 +784,18 @@
       row.icon = '';
       paintIcon();
       updateSaveAvailability();
-      setRowNotice(item, t('playlist.icon_will_go'), false);
+      setRowNotice(item, 'playlist.icon_will_go', false);
     });
     testBrowser.addEventListener('click', () => {
       if (row.url === '') {
-        setRowNotice(item, t('playlist.need_url_first'), true);
+        setRowNotice(item, 'playlist.need_url_first', true);
         return;
       }
       playInBrowser(item, row);
     });
     testDevice.addEventListener('click', () => {
       if (row.url === '') {
-        setRowNotice(item, t('playlist.need_url_first'), true);
+        setRowNotice(item, 'playlist.need_url_first', true);
         return;
       }
       playOnDevice(item, row);
@@ -798,6 +808,14 @@
       updateSaveAvailability();
     });
 
+    // Keep an open editor and its focused control when the locale changes.
+    item.relabel = () => {
+      paintHead();
+      paintIcon();
+      const notice = rowNotices.get(item);
+      if (notice) setRowNotice(item, notice.key, notice.isError, notice.values);
+      else updateRowErrorDisplay(item, row);
+    };
     updateRowErrorDisplay(item, row);
     return item;
   }
@@ -815,7 +833,7 @@
     state.rows.splice(index, 0, row);
     renderRows();
     updateSaveAvailability();
-    setStatus(t('playlist.order_changed'));
+    setStatus(message('playlist.order_changed'));
     return true;
   }
 
@@ -918,7 +936,7 @@
   }
 
   function loadPlaylist() {
-    setStatus(t('common.loading'));
+    setStatus(message('common.loading'));
     fetch('/api/playlist')
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -932,19 +950,19 @@
         renderRows();
         updateSaveAvailability();
         setStatus(skipped > 0
-          ? t('playlist.loaded_skipped', {n: skipped})
-          : t('playlist.loaded'));
+          ? message('playlist.loaded_skipped', {n: skipped})
+          : message('playlist.loaded'));
       })
       .catch((error) => {
         state.loaded = false;
-        setStatus(t('playlist.load_failed', {error: error.message}), true);
+        setStatus(message('playlist.load_failed', {error: error.message}), true);
         updateSaveAvailability();
       });
   }
 
   function addRow() {
     if (state.rows.length >= STATION_MAX_ENTRIES) {
-      setStatus(t('playlist.limit_reached', {n: STATION_MAX_ENTRIES}), true);
+      setStatus(message('playlist.limit_reached', {n: STATION_MAX_ENTRIES}), true);
       return;
     }
     state.rows.push(makeRow('', '', 0));
@@ -1009,10 +1027,10 @@
     const fmPictures = fmData ? fmData.pictures : [];
     if (named.length === 0 && fmPictures.length === 0 && !fmData) {
       download(new Blob([text], {type: 'text/plain;charset=utf-8'}), 'playlist.csv');
-      setIoStatus(t('playlist.exported', {n: state.rows.length}));
+      setIoStatus(message('playlist.exported', {n: state.rows.length}));
       return;
     }
-    setIoStatus(t('playlist.packing'));
+    setIoStatus(message('playlist.packing'));
     try {
       const files = [{name: 'playlist.csv', bytes: encoder.encode(text)}];
       if (fmData) files.push({name: 'fm_presets.csv', bytes: encoder.encode(fmData.text)});
@@ -1033,10 +1051,10 @@
       download(new Blob([buildZip(files)], {type: 'application/zip'}),
                fmData ? 'stations.zip' : 'playlist.zip');
       setIoStatus(fmData
-        ? t('stations.exported_all', {n: state.rows.length, fm: fmData.count, icons: pictureCount})
-        : t('playlist.exported_icons', {n: state.rows.length, icons: pictureCount}));
+        ? message('stations.exported_all', {n: state.rows.length, fm: fmData.count, icons: pictureCount})
+        : message('playlist.exported_icons', {n: state.rows.length, icons: pictureCount}));
     } catch (error) {
-      setIoStatus(t('playlist.export_failed'), true);
+      setIoStatus(message('playlist.export_failed'), true);
     }
   }
 
@@ -1101,7 +1119,7 @@
      its members, a plain file by its lines - and each list it holds replaces
      the one on the page, to be saved from there. */
   function importStations(file) {
-    setIoStatus(t('playlist.reading'));
+    setIoStatus(message('playlist.reading'));
     readFileBytes(file)
       .then((bytes) => {
         const archive = bytes.length > ZIP_SIGNATURE.length &&
@@ -1118,7 +1136,7 @@
         const dirty = (playlist !== null && state.loaded && isDirty()) ||
           (hasFm && fm && fm.isDirty());
         if (dirty && !window.confirm(t('playlist.unsaved_import'))) {
-          setIoStatus('');
+          setIoStatus(() => '');
           return;
         }
         const notes = [];
@@ -1148,27 +1166,29 @@
           state.rows = rows;
           renderRows();
           updateSaveAvailability();
-          if (skipped > 0) notes.push(t('playlist.rows_skipped', {n: skipped}));
-          if (truncated) notes.push(t('playlist.kept_first', {n: STATION_MAX_ENTRIES}));
-          if (missing > 0) notes.push(t('playlist.icons_missing', {n: missing}));
-          done.push(t('playlist.imported', {n: rows.length}));
+          if (skipped > 0) notes.push(message('playlist.rows_skipped', {n: skipped}));
+          if (truncated) notes.push(message('playlist.kept_first', {n: STATION_MAX_ENTRIES}));
+          if (missing > 0) notes.push(message('playlist.icons_missing', {n: missing}));
+          done.push(message('playlist.imported', {n: rows.length}));
         }
         if (hasFm) {
           if (fm) {
             const result = await fm.importData(fmText, pictures);
-            if (result.missing > 0) notes.push(t('playlist.icons_missing', {n: result.missing}));
-            done.push(t('stations.imported_fm', {n: result.count}));
+            if (result.missing > 0) notes.push(message('playlist.icons_missing', {n: result.missing}));
+            done.push(message('stations.imported_fm', {n: result.count}));
           } else {
-            notes.push(t('stations.no_tuner'));
+            notes.push(message('stations.no_tuner'));
           }
         }
-        const head = done.join('; ');
-        setIoStatus(notes.length > 0
-          ? t('stations.imported_notes', {done: head, notes: notes.join(', ')})
-          : (head !== '' ? head : t('playlist.read_failed')), head === '');
+        setIoStatus(() => {
+          const head = done.map((render) => render()).join('; ');
+          return notes.length > 0
+            ? t('stations.imported_notes', {done: head, notes: notes.map((render) => render()).join(', ')})
+            : (head || t('playlist.read_failed'));
+        }, done.length === 0);
       })
       .catch(() => {
-        setIoStatus(t('playlist.read_failed'), true);
+        setIoStatus(message('playlist.read_failed'), true);
       });
   }
 
@@ -1181,11 +1201,11 @@
          the device does not have yet is a line it will refuse. */
       const pending = state.rows.filter((row) => row.picture !== null).length;
       if (pending > 0) {
-        setSaveStatus(t('playlist.sending_icons', {n: pending}));
+        setSaveStatus(message('playlist.sending_icons', {n: pending}));
         await uploadPendingPictures();
         renderRows();
       }
-      setSaveStatus(t('common.saving'));
+      setSaveStatus(message('common.saving'));
       const text = serializeCatalog(state.rows);
       const response = await fetch('/api/playlist', {
         method: 'POST',
@@ -1204,15 +1224,15 @@
         // differs from what is on screen. Leave the editor marked dirty:
         // treating this as a successful sync would hide the loss until the
         // next page load.
-        setSaveStatus(
+        setSaveStatus(() =>
           t('playlist.partial_save', {n: count, expected}) +
           t('playlist.check_and_save'), true);
       } else {
         state.lastSyncedText = text;
-        setSaveStatus(t('playlist.saved', {n: count}));
+        setSaveStatus(message('playlist.saved', {n: count}));
       }
     } catch (error) {
-      setSaveStatus(t('playlist.save_failed', {error: error.message}), true);
+      setSaveStatus(message('playlist.save_failed', {error: error.message}), true);
     } finally {
       state.saving = false;
       updateSaveAvailability();
@@ -1228,22 +1248,6 @@
     if (file) importStations(file);
   });
 
-  /* This page has no socket - it is a form over one REST endpoint - so the
-     language has to be asked for. Once, at load: it is a device setting, and
-     the only way it changes while this page is open is from another tab or
-     from the device's own screen, neither of which is worth polling for. The
-     browser's memory of it has already been applied by i18n.js, so this is a
-     correction rather than a first paint. */
-  function loadLanguage() {
-    return fetch('/api/settings', {cache: 'no-store'})
-      .then((response) => (response && response.ok ? response.json() : null))
-      .then((payload) => {
-        if (!payload || typeof payload.language !== 'string') return;
-        if (window.jradioI18n.setLanguage(payload.language)) renderRows();
-      })
-      .catch(() => {});
-  }
-
   /* What the station search (stations_search.js) may do to the list: add a
      station and give one a picture. Both only change the page, as typing would;
      the device hears of it when the list is saved. */
@@ -1258,7 +1262,7 @@
        a stream calls itself - so the flag is set. */
     add(name, url) {
       if (state.rows.length >= STATION_MAX_ENTRIES) {
-        setStatus(t('playlist.limit_reached', {n: STATION_MAX_ENTRIES}), true);
+        setStatus(message('playlist.limit_reached', {n: STATION_MAX_ENTRIES}), true);
         return 0;
       }
       const row = makeRow(name, url, 1);
@@ -1288,7 +1292,12 @@
   renderRows();
   updateSaveAvailability();
   loadPlaylist();
-  loadLanguage();
+  window.jradioI18n.onChange?.(() => {
+    for (const [node, render] of messages) node.textContent = render();
+    for (const row of rowsEl.children) row.relabel();
+    refreshTestButtons();
+  });
+  window.jradioI18n.followSettings?.();
 
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = {parseCatalogText, serializeCatalog, rowError, buildZip, readZip,

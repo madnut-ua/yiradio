@@ -222,13 +222,12 @@ static void test_control_pins_are_distinct(void)
 
 static void test_audio_group_matches_the_fixed_i2s_slots(void)
 {
-    assert(AUDIO_DAC == DAC_PCM5102);
     /* Every DAC in the catalogue resolves to the same fixed format and to a
-     * name and a stop policy: the decay before the clock stops is only for
-     * the DAC that needs it, and the PCM5102 keeps the stop it always had. */
+     * name and a stop policy. Only the UDA1334A needs a decay before the
+     * clock stops. */
     assert(AUDIO_BITS_PER_SAMPLE == 16 && AUDIO_CHANNEL_COUNT == 2);
     assert(I2S_SLOT_BIT_WIDTH == AUDIO_BITS_PER_SAMPLE);
-    assert(AUDIO_DAC_STOP_DECAY == 0);
+    assert(AUDIO_DAC_STOP_DECAY == (AUDIO_DAC == DAC_UDA1334A));
     assert(BOARD_DAC_NAME[0] != '\0');
     assert(I2S_DOUT_GPIO == 16);
     assert(I2S_BCLK_GPIO == 18);
@@ -323,7 +322,11 @@ static void test_what_is_wired_is_what_the_firmware_offers(void)
     /* A feature has nothing to wire, so it says so directly - and the two
      * spellings of off, the line deleted and the line set to FEATURE_OFF,
      * have to mean the same thing. */
-    assert(BOARD_HAS_DLNA == (DLNA == FEATURE_ON));
+#if defined(DLNA) && DLNA == FEATURE_ON
+    assert(BOARD_HAS_DLNA == 1);
+#else
+    assert(BOARD_HAS_DLNA == 0);
+#endif
 }
 
 static void test_no_pin_is_claimed_by_two_devices(void)

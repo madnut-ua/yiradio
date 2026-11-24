@@ -1,4 +1,5 @@
 #include "device_settings.h"
+#include "device_locale.h"
 
 #include "settings_csv.h"
 #include "settings_nvs.h"
@@ -239,7 +240,7 @@ bool device_settings_init_at(device_settings_t *settings, const char *path)
     if (settings == NULL || path == NULL || path[0] == '\0' ||
         strlen(path) >= sizeof(settings->storage_path)) return false;
     *settings = (device_settings_t){
-        .language = DEVICE_LANGUAGE_RU,
+        .language = DEVICE_LANGUAGE_EN,
         .home_screen = DEVICE_HOME_SCREEN_TEXT,
         .volume = DEVICE_VOLUME_DEFAULT,
         .brightness = DEVICE_BRIGHTNESS_DEFAULT,
@@ -288,8 +289,7 @@ bool device_settings_init_at(device_settings_t *settings, const char *path)
     settings_csv_snapshot_load(&csv, path);
     char value[32];
     if (read_value(&csv, "language", value, sizeof(value))) {
-        if (strcmp(value, "en") == 0) settings->language = DEVICE_LANGUAGE_EN;
-        else if (strcmp(value, "ru") != 0) settings->language = DEVICE_LANGUAGE_RU;
+        settings->language = device_locale_resolve(value);
     }
     if (read_value(&csv, "home_screen", value, sizeof(value))) {
         if (strcmp(value, "feed") == 0) settings->home_screen = DEVICE_HOME_SCREEN_FEED;
@@ -692,8 +692,8 @@ bool device_settings_init(device_settings_t *settings)
 
 bool device_settings_set_language(device_settings_t *settings, device_language_t language)
 {
-    if (settings == NULL || language > DEVICE_LANGUAGE_EN) return false;
-    if (!save_value(settings, "language", language == DEVICE_LANGUAGE_EN ? "en" : "ru")) return false;
+    if (settings == NULL || !device_locale_prepare(language)) return false;
+    if (!save_value(settings, "language", device_locale_code(language))) return false;
     settings->language = language;
     return true;
 }
@@ -1782,7 +1782,7 @@ device_language_t device_settings_published_language(void)
 {
     PUBLISH_LOCK();
     const device_language_t language = s_have_published ? s_published.language
-                                                        : DEVICE_LANGUAGE_RU;
+                                                        : DEVICE_LANGUAGE_EN;
     PUBLISH_UNLOCK();
     return language;
 }
