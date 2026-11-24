@@ -299,7 +299,7 @@ async function test_a_refused_file_is_said_by_its_code() {
   await settle();
   assert.strictEqual(second.requests.length, 1);
   assert.strictEqual(second.elements['#update-status'].textContent,
-                     'Это не архив веб-интерфейса jradio');
+                     'Это не архив веб-интерфейса їРадіо');
 }
 
 async function test_a_no_on_the_panel_reaches_the_page() {

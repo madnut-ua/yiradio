@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Draw the boot splash: a green magic-eye tube and the jRadio wordmark.
+"""Draw the boot splash: a green magic-eye tube and the yiRadio wordmark.
 
 Everything is drawn at SS times the final size and boxed down, which is what
 keeps the wedge edges and the rotated lettering smooth on a panel that is
@@ -166,10 +166,10 @@ def tube_layer():
 
 
 def wordmark(font_key):
-    """The rotated 'jRadio' as an RGBA layer, already positioned on the canvas."""
+    """The rotated 'yiRadio' as an RGBA layer, already positioned on the canvas."""
     path, size = FONTS[font_key]
     font = ImageFont.truetype(path, size * SS)
-    text = "jRadio"
+    text = "yiRadio"
 
     probe = ImageDraw.Draw(Image.new("L", (1, 1)))
     box = probe.textbbox((0, 0), text, font=font, stroke_width=scaled(2))

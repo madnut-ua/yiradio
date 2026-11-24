@@ -88,7 +88,7 @@ async function verifyLoadingAndFallback() {
   const changes = [];
   i18n.onChange((code) => changes.push(code));
   assert.equal(document.documentElement.lang, 'en');
-  assert.equal(document.title, 'jRadio — settings');
+  assert.equal(document.title, 'yiRadio — settings');
   assert.equal(node.textContent, 'Settings');
 
   const answer = (code, body) => {
@@ -101,6 +101,8 @@ async function verifyLoadingAndFallback() {
   const uk = i18n.setLanguage('uk');
   const markup = '<em>Налаштування</em>';
   answer('uk', {schema: 1, code: 'uk', strings: {
+    'brand.name': 'їРадіо',
+    'title.settings': 'їРадіо — налаштування',
     'nav.settings': markup,
     'sleep.minutes': '{n} хв',
     'update.sending': '{extra}%',
@@ -115,6 +117,8 @@ async function verifyLoadingAndFallback() {
   }});
   await uk;
   assert.equal(document.documentElement.lang, 'uk');
+  assert.equal(document.title, 'їРадіо — налаштування');
+  assert.equal(i18n.t('brand.name'), 'їРадіо');
   assert.equal(i18n.t('sleep.minutes', {n: 5}), '5 хв');
   assert.equal(i18n.t('update.files', {app: 'radio.bin', web: 'www.tar'}), 'www.tar, radio.bin: ');
   assert.equal(node.textContent, markup); // No interpretation as HTML.

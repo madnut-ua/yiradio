@@ -53,7 +53,7 @@ static bool append_text(char *out, size_t out_size, size_t *length, const char *
     for (const char *ch = text; *ch != '\0'; ++ch) {
         /* The WIFI: form separates its fields with these, so an SSID
          * containing one has to say it is not a separator. The setup AP names
-         * itself jradio-XXXX and needs none of it, but the name arrives as
+         * itself yiRadio-XXXX and needs none of it, but the name arrives as
          * text from the provisioning status, and a payload that quietly means
          * something else is worse than the few lines it takes to be right. */
         if (escape && (*ch == '\\' || *ch == ';' || *ch == ',' || *ch == ':' || *ch == '"')) {

@@ -21,9 +21,10 @@
   // key: [Russian, English]
   const DICT = {
     // The shell every page shares.
-    'title.player': ['jRadio — плеер', 'jRadio — player'],
-    'title.playlist': ['jRadio — станции', 'jRadio — stations'],
-    'title.settings': ['jRadio — настройки', 'jRadio — settings'],
+    'brand.name': ['їРадіо', 'yiRadio'],
+    'title.player': ['їРадіо — плеер', 'yiRadio — player'],
+    'title.playlist': ['їРадіо — станции', 'yiRadio — stations'],
+    'title.settings': ['їРадіо — настройки', 'yiRadio — settings'],
     'nav.player': ['Плеер', 'Player'],
     'nav.playlist': ['Станции', 'Stations'],
     'stations.lead': ['Станции, которые играет устройство: интернет-радио и, если в нём есть тюнер, FM.', 'The stations the device plays: internet radio and, when it has a tuner, FM.'],
@@ -49,7 +50,7 @@
     'socket.offline': ['Нет связи', 'No connection'],
 
     // The player page.
-    'player.home': ['jradio — главная', 'jradio — home'],
+    'player.home': ['їРадіо — главная', 'yiRadio — home'],
     'player.sources': ['Источники', 'Sources'],
     'player.playlist_editor': ['Станции', 'Stations'],
     'player.nothing_playing': ['Нет воспроизведения', 'Nothing playing'],
@@ -111,7 +112,7 @@
     'alarm.weekend': ['по выходным', 'weekends'],
 
     /* The remote control: its card on the settings page, and its own page. */
-    'title.remote': ['jRadio — пульт', 'jRadio — remote control'],
+    'title.remote': ['їРадіо — пульт', 'yiRadio — remote control'],
     'remote.title': ['Пульт', 'Remote control'],
     'note.remote': ['Любой инфракрасный пульт: на отдельной странице у каждой функции нажимаете «Обучить», затем кнопку на пульте. Таблица хранится на устройстве в remote.csv.',
                     'Any infrared remote: on its own page you press "Learn" beside each function, then the key on the remote. The table lives on the device in remote.csv.'],
@@ -198,10 +199,10 @@
        written in the markup, so every one of them is here: the parts, the
        signals, the values a part can be, the notes on a pin, and the report. */
     /* The flasher page, beside the editor on the flasher site. */
-    'title.flasher': ['jRadio — прошивка', 'jRadio — flasher'],
+    'title.flasher': ['їРадіо — прошивка', 'yiRadio — flasher'],
     'nav.flasher': ['Прошивка', 'Flasher'],
-    'fl.lead': ['jRadio на ESP32-S3 прямо из браузера: прошивка под ваш дисплей и вашу распайку, без установки ESP-IDF.',
-                'jRadio onto an ESP32-S3 from the browser: firmware for your display and your wiring, with no ESP-IDF to install.'],
+    'fl.lead': ['їРадіо на ESP32-S3 прямо из браузера: прошивка под ваш дисплей и вашу распайку, без установки ESP-IDF.',
+                'yiRadio onto an ESP32-S3 from the browser: firmware for your display and your wiring, with no ESP-IDF to install.'],
     'fl.unsupported': ['Этот браузер не умеет работать с последовательным портом. Откройте страницу в Chrome или Edge на компьютере — с телефона, из Firefox и Safari прошить нельзя.',
                        'This browser cannot use a serial port. Open the page in Chrome or Edge on a computer - phones, Firefox and Safari cannot flash.'],
     'fl.board': ['Распайка', 'Wiring'],
@@ -274,7 +275,7 @@
                        'Could not connect: check the network name and password. The radio went back to the networks that worked.'],
     'fl.wifi_refused': ['Радио не приняло запрос — попробуйте ещё раз.', 'The radio refused the request - try again.'],
     'fl.wifi_done': ['Готово: радио в сети «{ssid}». Веб-интерфейс:', 'Done: the radio is on "{ssid}". The web interface:'],
-    'fl.wrong_chip': ['Это не ESP32-S3, а {chip} — прошивка jRadio для него не подходит.', 'This is not an ESP32-S3 but {chip} - jRadio\'s firmware is not for it.'],
+    'fl.wrong_chip': ['Это не ESP32-S3, а {chip} — прошивка їРадіо для него не подходит.', 'This is not an ESP32-S3 but {chip} - yiRadio firmware is not for it.'],
     'fl.downloading': ['Загружаем файлы прошивки…', 'Fetching the firmware files…'],
     'fl.erasing': ['Стираем память и записываем…', 'Erasing and writing…'],
     'fl.writing': ['Записываем…', 'Writing…'],
@@ -288,9 +289,9 @@
     'fl.failed': ['Не получилось: {error}', 'It did not work: {error}'],
     'fl.done_firmware': ['Готово: прошивка {version} записана, плата перезагружена. Если это первая установка — запишите и файловую систему.',
                          'Done: firmware {version} is written and the board restarted. On a first install, write the file system too.'],
-    'fl.done_littlefs': ['Готово: файловая система записана. Радио поднимет точку доступа jradio-XXXX для настройки Wi-Fi — или восстановите резервную копию.',
-                         'Done: the file system is written. The radio opens a jradio-XXXX access point to set up Wi-Fi - or restore your backup.'],
-    'title.hardware': ['jRadio — оборудование', 'jRadio — hardware'],
+    'fl.done_littlefs': ['Готово: файловая система записана. Радио поднимет точку доступа yiRadio-XXXX для настройки Wi-Fi — или восстановите резервную копию.',
+                         'Done: the file system is written. The radio opens a yiRadio-XXXX access point to set up Wi-Fi - or restore your backup.'],
+    'title.hardware': ['їРадіо — оборудование', 'yiRadio — hardware'],
     'nav.hardware': ['Оборудование', 'Hardware'],
     'hw.lead': ['Что подключено к модулю и на какие выводы. Результат — распайка для страницы «Прошивка» или файл board_options.h для сборки прошивки.',
                 'What is wired to the module, and to which pins. The result is the wiring for the Flasher page, or a board_options.h to build the firmware with.'],
@@ -934,7 +935,7 @@
     'update.err_refused': ['Радио не приняло файл', 'The radio did not accept the file'],
     'update.err_not_firmware': ['Это не файл прошивки', 'This is not a firmware file'],
     'update.err_wrong_chip': ['Прошивка не для ESP32-S3', 'The firmware is not for the ESP32-S3'],
-    'update.err_not_jradio': ['Это прошивка не jradio', 'This is not a jradio firmware'],
+    'update.err_not_jradio': ['Это прошивка не їРадіо', 'This is not yiRadio firmware'],
     'update.err_no_mark': ['Эта версия старше обновления по сети — её ставят кабелем',
                            'This version predates updates over the network - flash it by cable'],
     'update.err_wrong_display': ['Прошивка для другого дисплея', 'The firmware is for another display'],
@@ -945,7 +946,7 @@
     'update.err_flash': ['Не удалось записать прошивку', 'Could not write the firmware'],
     'update.err_verify': ['Записанная прошивка не прошла проверку', 'The written firmware did not verify'],
     'update.err_mismatch': ['Прошивка и веб-интерфейс от разных версий', 'The firmware and the web interface are from different versions'],
-    'update.err_not_web': ['Это не архив веб-интерфейса jradio', 'This is not a jradio web interface archive'],
+    'update.err_not_web': ['Это не архив веб-интерфейса їРадіо', 'This is not a yiRadio web interface archive'],
     'update.err_write': ['Не удалось записать веб-интерфейс', 'Could not write the web interface'],
     'update.latest': ['Последняя', 'Latest'],
     'update.auto': ['Проверять обновления', 'Check for updates'],

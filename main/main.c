@@ -296,7 +296,7 @@ void app_main(void)
     } else {
         /* Wi-Fi joins before the UI publishes its copy, and the join takes
          * the DHCP host name from the published device name - unpublished,
-         * every boot went out as the default jradio-XXXX. */
+         * every boot went out as the default yiRadio-XXXX. */
         device_settings_publish(&boot_settings);
     }
     /* Before the board, and the only thing that is: this may not be a boot at

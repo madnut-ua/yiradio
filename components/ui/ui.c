@@ -1154,7 +1154,7 @@ static void ui_status_strip_create(lv_obj_t *screen, ui_status_strip_t *strip,
     strip->context = lv_label_create(screen);
     lv_obj_set_pos(strip->context, UI_STRIP_CONTEXT_X, 5);
     /* The face's own line, not the 14 px one's 19: on the 18 px panels a
-     * fixed 19 cut the bottom off "jRadio" and the screen names (2026-11-06). */
+     * fixed 19 cut the bottom off the wordmark and the screen names. */
     lv_obj_set_size(strip->context, UI_STRIP_CONTEXT_W, UI_FONT_BODY_LINE_H);
     lv_obj_set_style_text_font(strip->context, UI_FONT_BODY, 0);
     lv_label_set_long_mode(strip->context, LV_LABEL_LONG_DOT);
@@ -2579,6 +2579,9 @@ static void ui_status_strip_update(ui_status_strip_t *strip,
 {
     if (strip == NULL || strip->clock == NULL) return;
 
+    if (strip == &s_menu_strip || strip == &s_feed_strip) {
+        ui_set_label_text_if_changed(strip->context, ui_text(DEVICE_TEXT_BRAND));
+    }
     int hour = 0;
     int minute = 0;
     const bool have_time = device_clock_now(&hour, &minute);
@@ -3637,7 +3640,7 @@ static void ui_create_feed_screen(void)
     lv_obj_set_style_border_width(s_feed_screen, 0, 0);
     lv_obj_set_style_pad_all(s_feed_screen, 0, 0);
     lv_obj_set_style_text_font(s_feed_screen, UI_FONT_BODY, 0);
-    ui_status_strip_create(s_feed_screen, &s_feed_strip, "jRadio");
+    ui_status_strip_create(s_feed_screen, &s_feed_strip, ui_text(DEVICE_TEXT_BRAND));
 
     s_feed_title = lv_label_create(s_feed_screen);
     lv_obj_set_pos(s_feed_title, 0, UI_STRIP_H + 8);
@@ -3773,7 +3776,7 @@ static void ui_create_menu_screen(void)
      * cursor. */
     lv_obj_clear_flag(s_menu_screen, LV_OBJ_FLAG_SCROLLABLE);
 
-    ui_status_strip_create(s_menu_screen, &s_menu_strip, "jRadio");
+    ui_status_strip_create(s_menu_screen, &s_menu_strip, ui_text(DEVICE_TEXT_BRAND));
 
     for (uint8_t index = 0; index < UI_MENU_ITEM_COUNT; ++index) {
         s_menu_rows[index] = lv_label_create(s_menu_screen);
@@ -4693,7 +4696,7 @@ static void ui_update_settings_web_band(void)
                         s_device_settings.language, UI_SET_BAND_SHOW_SCHEME, mounted, text,
                         sizeof(text));
     ui_set_label_text_if_changed(s_settings_web_address, text);
-    /* The setup network's line - "join jradio-XXXX" - is wider than the slot
+    /* The setup network's line - "join yiRadio-XXXX" - is wider than the slot
      * beside the hint on a 320 px panel, and wrapped into a second line the
      * band cut in half: the network's name was the half that went (seen on
      * the 320x170 module 2026-10-31). The name is the one thing a visitor

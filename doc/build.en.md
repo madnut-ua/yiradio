@@ -59,7 +59,7 @@ cannot reach a serial port.
    interface. The password goes to the board only; the page keeps nothing.
 
    The old way still works: skip this step and the radio opens the
-   `jradio-XXXX` access point - see [First boot](usage.en.md#first-boot).
+   `yiRadio-XXXX` access point - see [First boot](usage.en.md#first-boot).
    Either of the board's two sockets will do; one cable is enough. For a
    radio flashed earlier the step works from the version that brought it:
    such a radio, already on a network, does not look for others (it would
@@ -99,7 +99,7 @@ If something is wrong:
    On Windows the port is `COM3` or similar. If esptool cannot connect, hold
    BOOT, tap RESET, release BOOT and try again.
 
-4. After the write the board reboots and opens the `jradio-XXXX` access point -
+4. After the write the board reboots and opens the `yiRadio-XXXX` access point -
    see [First boot](usage.en.md#first-boot).
 
 The ready-made image is built for the README board: an ST7796S 480×320

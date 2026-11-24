@@ -1197,7 +1197,7 @@ bool device_settings_set_device_name(device_settings_t *settings, const char *na
 void device_settings_default_name(const unsigned char mac[6], char *out, size_t size)
 {
     if (out == NULL || size == 0U) return;
-    snprintf(out, size, "jradio-%02X%02X", mac == NULL ? 0U : mac[4], mac == NULL ? 0U : mac[5]);
+    snprintf(out, size, "yiRadio-%02X%02X", mac == NULL ? 0U : mac[4], mac == NULL ? 0U : mac[5]);
 }
 
 /* а..я in code-point order, then ё. Without this the router shows the

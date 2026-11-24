@@ -300,6 +300,7 @@ typedef enum {
     DEVICE_TEXT_WEATHER_RAIN,
     DEVICE_TEXT_WEATHER_SKY,
 
+    DEVICE_TEXT_BRAND,
     DEVICE_TEXT_COUNT,
 } device_text_id_t;
 

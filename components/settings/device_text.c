@@ -95,6 +95,7 @@ static const device_text_entry_t k_text[] = {
     [DEVICE_TEXT_ON] = {"on", "on"},
     [DEVICE_TEXT_OFF] = {"off", "off"},
 
+    [DEVICE_TEXT_BRAND] = {"brand", "yiRadio"},
     [DEVICE_TEXT_ABOUT_TITLE] = {"about_title", "About"},
     [DEVICE_TEXT_ABOUT_FIRMWARE] = {"about_firmware", "Firmware"},
     [DEVICE_TEXT_ABOUT_BUILD] = {"about_build", "Build"},

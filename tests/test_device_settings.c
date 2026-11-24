@@ -466,13 +466,13 @@ static void test_the_clock_settings_persist_and_are_checked(void)
     assert(!device_settings_set_ntp_server(&settings, oversized));
 
     /* The device's own name: empty on a card that never had one, which is
-       the built-in "jradio-XXXX" from the MAC. Trimmed, kept across a reload,
+       the built-in "yiRadio-XXXX" from the MAC. Trimmed, kept across a reload,
        and emptied again by an empty field. A comma would cut the line. */
     assert(settings.device_name[0] == '\0');
     const unsigned char mac[6] = {0x68, 0xEE, 0x8F, 0x4D, 0xB6, 0x70};
     char built_in[DEVICE_NAME_MAX];
     device_settings_default_name(mac, built_in, sizeof(built_in));
-    assert(strcmp(built_in, "jradio-B670") == 0);
+    assert(strcmp(built_in, "yiRadio-B670") == 0);
     assert(device_settings_set_device_name(&settings, "  Кухня  "));
     assert(strcmp(settings.device_name, "Кухня") == 0);
     assert(device_settings_init_at(&reloaded, test_path));
@@ -490,8 +490,8 @@ static void test_the_clock_settings_persist_and_are_checked(void)
     char host[DEVICE_HOST_NAME_MAX];
     assert(device_settings_host_name("Радио на кухне", host, sizeof(host)));
     assert(strcmp(host, "Radio-na-kukhne") == 0);
-    assert(device_settings_host_name("jradio-B670", host, sizeof(host)));
-    assert(strcmp(host, "jradio-B670") == 0);
+    assert(device_settings_host_name(built_in, host, sizeof(host)));
+    assert(strcmp(host, "yiRadio-B670") == 0);
     assert(device_settings_host_name(" Ёлка_№1 (зал) ", host, sizeof(host)));
     assert(strcmp(host, "Elka-1-zal") == 0);
     assert(device_settings_host_name("Щука объём", host, sizeof(host)));

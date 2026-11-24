@@ -637,7 +637,7 @@
     const name = String(values.board_name || '').trim();
     const lines = [
       '#pragma once',
-      '/* board_options.h - the wiring of one board, for the jRadio firmware.',
+      '/* board_options.h - the wiring of one board, for the yiRadio firmware.',
       ` * Written by the wiring editor${name ? ` for "${name}"` : ''}; module ESP32-S3-WROOM-1 ${values.module === 'esp32s3_n16r8v' ? 'N16R8V (1.8 V memory)' : 'N16R8'}.`,
       ' * Put it at the root of the project in place of the one there and build. */',
       '#include "board_parts.h"',

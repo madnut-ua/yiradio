@@ -1,4 +1,4 @@
-# jRadio
+# yiRadio
 
 An audio player on the ESP32-S3: internet radio, music from a USB stick
 and an SD card, a media server on the home network, Yandex Music and
@@ -100,7 +100,7 @@ the waves Yandex picks for the account.
    [Building and flashing](doc/build.en.md); setting up the tools is in
    [Installing the toolchain](doc/toolchain.en.md).
 3. **Connect it to Wi-Fi.** On the first boot the device opens its own access
-   point, `jradio-XXXX`: join it from a phone, open `http://192.168.4.1` and
+   point, `yiRadio-XXXX`: join it from a phone, open `http://192.168.4.1` and
    pick your home network. Then see [How to use it](doc/usage.en.md).
 
 ## Worth knowing up front
@@ -157,6 +157,6 @@ of the entire LittleFS image overwrites the partition; back up first.
 
 ## Support
 
-If jRadio is useful to you, you can support its development:
+If yiRadio is useful to you, you can support its development:
 
-[![Support on Ko-fi](https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/de4thpunch)
+[![Support on Donatello](https://giphy.com/embed/bNHW6EGTxhPGJes8bK)](https://donatello.to/madnut)
