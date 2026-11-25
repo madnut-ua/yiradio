@@ -28,7 +28,7 @@
 ## Из браузера
 
 Прошивальщик — страница
-[jmper-ha.github.io/jradio](https://jmper-ha.github.io/jradio/). Нужен **Chrome
+[madnut-ua.github.io/yiradio](https://madnut-ua.github.io/yiradio/). Нужен **Chrome
 или Edge на компьютере**: с телефона, из Firefox и Safari к последовательному
 порту браузер не подключится.
 
@@ -83,7 +83,7 @@
 
 ## Готовый образ
 
-1. Скачайте из [релиза](https://github.com/jmper-ha/jradio/releases) файл
+1. Скачайте из [релиза](https://github.com/madnut-ua/yiradio/releases) файл
    `jradio-<версия>-full.bin` — в нём вся флеш-память целиком: загрузчик,
    прошивка и раздел данных.
 2. Установите `esptool`: `pip install esptool` (нужен Python 3).

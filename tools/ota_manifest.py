@@ -25,7 +25,7 @@ newer than itself. A tag with no section of its own stops the release here
 rather than shipping an update that cannot say what it changes.
 
 Usage:
-    ota_manifest.py --version v1.6.0 --builds builds --repo jmper-ha/jradio
+    ota_manifest.py --version v1.6.0 --builds builds --repo madnut-ua/yiradio
         --changelog-ru doc/changelog.md --changelog-en doc/changelog.en.md
         --out release-assets
 """

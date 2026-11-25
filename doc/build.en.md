@@ -28,7 +28,7 @@ What to know in either case:
 ## From the browser
 
 The flasher is the page
-[jmper-ha.github.io/jradio](https://jmper-ha.github.io/jradio/). It needs
+[madnut-ua.github.io/yiradio](https://madnut-ua.github.io/yiradio/). It needs
 **Chrome or Edge on a computer**: from a phone, Firefox or Safari the browser
 cannot reach a serial port.
 
@@ -87,7 +87,7 @@ If something is wrong:
 ## A ready-made image
 
 1. Download `jradio-<version>-full.bin` from a
-   [release](https://github.com/jmper-ha/jradio/releases) - it is the whole
+   [release](https://github.com/madnut-ua/yiradio/releases) - it is the whole
    flash: the bootloader, the firmware and the data partition.
 2. Install `esptool`: `pip install esptool` (Python 3 required).
 3. Connect the board's UART port to the computer and write the image:

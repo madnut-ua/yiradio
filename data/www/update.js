@@ -260,7 +260,7 @@
     }
     historyList.replaceChildren(...parts);
     if (changelogLink) {
-      changelogLink.href = 'https://github.com/jmper-ha/jradio/blob/main/doc/' +
+      changelogLink.href = 'https://github.com/madnut-ua/yiradio/blob/main/doc/' +
         (notesLanguage() === 'ru' ? 'changelog.md' : 'changelog.en.md');
     }
   }

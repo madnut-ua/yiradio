@@ -32,7 +32,7 @@ is called the wiring. The firmware reads it at every start. There are two
 ways to set it:
 
 - **In the editor on the site** - the Hardware tab at
-  [jmper-ha.github.io/jradio](https://jmper-ha.github.io/jradio/). Pins are
+  [madnut-ua.github.io/yiradio](https://madnut-ua.github.io/yiradio/). Pins are
   picked from a list or by clicking the module's picture, and the checks at
   the bottom will not let two signals share a pin or a part go without one.
   The wiring is written to the board together with the firmware, from the same

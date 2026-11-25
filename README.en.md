@@ -18,7 +18,7 @@ or from a browser - a phone or a computer on the same network.
   simple PCB will do.
 - **Flashed from the browser for your board.** The display, the pinout, what
   is fitted and what is not - set in the
-  [editor on the site](https://jmper-ha.github.io/jradio/) and written with the
+  [editor on the site](https://madnut-ua.github.io/yiradio/) and written with the
   firmware, nothing to install. For a build from source the same lives in
   [`board_options.h`](board_options.h). What is not on the board is not in the
   menu.
@@ -33,8 +33,8 @@ or from a browser - a phone or a computer on the same network.
   clock, a sleep timer, a clock and the weather on screen, a screensaver.
 - **Open source with a straightforward build.** ESP-IDF, VS Code, one build
   key. Ready-made firmware files are in the
-  [releases](https://github.com/jmper-ha/jradio/releases) and on the
-  [flasher site](https://jmper-ha.github.io/jradio/).
+  [releases](https://github.com/madnut-ua/yiradio/releases) and on the
+  [flasher site](https://madnut-ua.github.io/yiradio/).
 
 ## What it is made of
 
@@ -93,7 +93,7 @@ the waves Yandex picks for the account.
 
 1. **Build the board** after [Hardware](doc/hardware.en.md) - or start with the
    minimum: the module, a display, the DAC and an encoder.
-2. **Flash it.** The easiest is [from the browser](https://jmper-ha.github.io/jradio/):
+2. **Flash it.** The easiest is [from the browser](https://madnut-ua.github.io/yiradio/):
    describe the wiring in the editor and write the firmware - all it takes is
    Chrome or Edge on a computer. There is also a ready-made image for the
    README board and a build from source. All three are in
