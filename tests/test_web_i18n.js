@@ -163,22 +163,35 @@ async function verifyLocaleIndex() {
   ]);
 }
 
-function verifyFlasher() {
-  const window = {};
-  vm.runInNewContext(fs.readFileSync('flasher/i18n.js', 'utf8'), {window, document: {}});
+async function verifyFlasher() {
+  const packs = ['ru', 'uk'].map((code) =>
+    JSON.parse(fs.readFileSync(`flasher/locales/${code}.json`, 'utf8')));
+  const window = {
+    localStorage: {getItem: () => null},
+    fetch: (url) => jsonResponse(url === 'locales/index.json'
+      ? {schema: 1, locales: packs.map(({code, name}) => ({code, name}))}
+      : packs.find(({code}) => url === `locales/${code}.json`)),
+  };
+  const document = {addEventListener: (_, start) => { document.start = start; }, readyState: 'loading'};
+  vm.runInNewContext(fs.readFileSync('flasher/i18n.js', 'utf8'), {window, document});
   const i18n = window.jradioI18n;
-  assert.equal(i18n.language(), 'ru');
+  assert.equal(i18n.language(), 'en');
   for (const page of ['flasher', 'index']) {
     const html = fs.readFileSync(`flasher/${page}.html`, 'utf8');
-    for (const [, key] of html.matchAll(/\bdata-i18n(?:-aria|-title|-placeholder|-page|-attr)?="([^"]+)"/g)) {
-      for (const code of ['ru', 'en']) {
-        i18n.setLanguage(code);
-        assert.ok(i18n.t(key) && i18n.t(key) !== key, `${page} ${code}: ${key}`);
-      }
+    assert.match(html, /<html lang="en">/);
+    assert.doesNotMatch(html, /\p{Script=Cyrillic}/u);
+    for (const [, key] of html.matchAll(/\bdata-i18n(?:-aria|-title|-placeholder|-page)?="([^"]+)"/g)) {
+      assert.ok(i18n.t(key), `${page}: missing English label ${key}`);
     }
   }
-  i18n.setLanguage('uk');
-  assert.equal(i18n.language(), 'ru');
+  await document.start();
+  for (const {code, strings} of packs) {
+    await i18n.setLanguage(code);
+    assert.equal(i18n.language(), code);
+    for (const [key, text] of Object.entries(strings)) {
+      assert.equal(i18n.t(key), text, `${code}: invalid translation for ${key}`);
+    }
+  }
 }
 
 (async () => {
@@ -186,7 +199,7 @@ function verifyFlasher() {
   await verifySuppliedTranslations();
   await verifyLoadingAndFallback();
   await verifyLocaleIndex();
-  verifyFlasher();
+  await verifyFlasher();
   console.log('web i18n tests passed');
 })().catch((error) => {
   console.error(error);

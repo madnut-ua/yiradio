@@ -8,8 +8,8 @@
 # rather than in a release: the page fetches them from its own origin, and
 # release assets carry no CORS headers.
 #
-# The stylesheet, the theme switch and the dictionary stay in data/www/ - one
-# copy in git, shared with the device's own pages - and are copied in here.
+# The stylesheet and theme switch are shared with the device's own pages.
+# The flasher has its own translations, served as static Pages assets.
 name: flasher site
 
 on:
@@ -104,7 +104,8 @@ jobs:
           version="${GITHUB_REF_NAME}"
           case "$version" in v*) ;; *) version="$(git describe --tags --always)";; esac
           mkdir -p site/firmware
-          cp flasher/* site/
+          cp flasher/*.html flasher/*.js site/
+          python3 tools/pack_flasher_locales.py --source flasher/locales --out site/locales
           cp data/www/style.css data/www/theme.js site/
           displays=()
           for dir in builds/firmware-*; do

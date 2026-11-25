@@ -140,6 +140,20 @@ In **Settings → Firmware update**, select only `www.tar`. The radio restarts
 without replacing the application, Wi-Fi settings, or playlist. A cable flash
 of the entire LittleFS image overwrites the partition; back up first.
 
+### Browser flasher languages
+
+The standalone flasher and wiring editor share a language choice saved in
+the browser. Without a saved choice, they use the first supported browser
+language or fall back to built-in English. Ukrainian and Russian are shipped
+as separate packs in [flasher/locales](flasher/locales).
+
+To add a language, copy a pack to `flasher/locales/<code>.json`. Keep `schema`
+at `1`, set `code` to match the filename, and put the language's own name in
+`name`. In `strings`, translate the values without changing keys or
+`{placeholders}`. Omit entries that are not yet translated; English will
+appear in their place. GitHub Pages builds the language index and publishes
+the packs automatically. No JavaScript or firmware changes are required.
+
 ## Documentation
 
 | Page | About |

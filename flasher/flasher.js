@@ -116,7 +116,17 @@ function render() {
   $('fl-wifi-send').disabled = busy || wifi === null;
 }
 
-const status = (text) => { $('fl-status').textContent = text; };
+let flashMessage = ['fl.idle'];
+let wifiMessage = '';
+const messageText = (message) => Array.isArray(message) ? t(...message) : message;
+function paintStatuses() {
+  $('fl-status').textContent = messageText(flashMessage);
+  $('fl-wifi-status').textContent = messageText(wifiMessage);
+}
+function status(message) {
+  flashMessage = message;
+  $('fl-status').textContent = messageText(message);
+}
 const line = (text) => { $('fl-log').textContent += `${text}\n`; $('fl-log-box').hidden = false; };
 const logger = {
   log: (...parts) => line(parts.join(' ')),
@@ -145,13 +155,13 @@ async function write(parts, eraseAll, done, checkLayout) {
   let loader = null;
   let connected = false;
   try {
-    status(t('fl.pick_port'));
+    status(['fl.pick_port']);
     port = await navigator.serial.requestPort();
     const info = port.getInfo();
     line(`${t('fl.port')}: USB ${(info.usbVendorId || 0).toString(16)}:${(info.usbProductId || 0).toString(16)}`);
     await port.open({baudRate: 115200});
     loader = new ESPLoader(port, logger);
-    status(t('fl.connecting'));
+    status(['fl.connecting']);
     await loader.initialize();
     connected = true;
     const chip = loader.chipName || '';
@@ -176,14 +186,14 @@ async function write(parts, eraseAll, done, checkLayout) {
       if (change === 'moved') {
         if (!$('fl-layout-agree').checked) {
           $('fl-layout-box').hidden = false;
-          status(t('fl.layout_stop'));
+          status(['fl.layout_stop']);
           return;
         }
         parts = parts.concat(fl.littlefsParts(manifest));
-        done = t('fl.done_moved', {version: manifest.version || ''});
+        done = ['fl.done_moved', {version: manifest.version || ''}];
       }
     }
-    status(t('fl.downloading'));
+    status(['fl.downloading']);
     const files = [];
     for (const part of parts) {
       const file = await load(part);
@@ -193,10 +203,10 @@ async function write(parts, eraseAll, done, checkLayout) {
     progress.hidden = false;
     progress.value = 0;
     if (eraseAll) {
-      status(t('fl.erasing'));
+      status(['fl.erasing']);
       await stub.eraseFlash();
     }
-    status(t('fl.writing'));
+    status(['fl.writing']);
     const total = files.reduce((sum, file) => sum + file.data.length, 0);
     let before = 0;
     for (const piece of files.flatMap((file) => fl.pieces(file))) {
@@ -213,14 +223,14 @@ async function write(parts, eraseAll, done, checkLayout) {
     connected = false;
     flashedPort = port;
     status(done);
-    wifiStatus(t('fl.wifi_after_flash'));
+    wifiStatus(['fl.wifi_after_flash']);
   } catch (error) {
     const text = String(error && error.message ? error.message : error);
     line(`${t('fl.error')}: ${text}`);
-    if (/NotFoundError|No port selected/i.test(text)) status(t('fl.no_port'));
-    else if (/sync|Failed to connect|timed out/i.test(text)) status(t('fl.no_answer'));
-    else if (/lost|busy|not ready|NetworkError|Failed to open/i.test(text)) status(t('fl.port_busy'));
-    else status(t('fl.failed', {error: text}));
+    if (/NotFoundError|No port selected/i.test(text)) status(['fl.no_port']);
+    else if (/sync|Failed to connect|timed out/i.test(text)) status(['fl.no_answer']);
+    else if (/lost|busy|not ready|NetworkError|Failed to open/i.test(text)) status(['fl.port_busy']);
+    else status(['fl.failed', {error: text}]);
   } finally {
     /* A write that failed half way leaves the chip in its ROM loader, and a
        board that sits there looks dead: start it again whatever it now
@@ -254,13 +264,13 @@ function flashFirmware() {
   if (blockers().length > 0) return;
   const csv = hw.toCsv(wiring.values);
   const parts = fl.firmwareParts(manifest, String(wiring.values.display), fl.boardBlob(csv));
-  write(parts, $('fl-erase').checked, t('fl.done_firmware', {version: manifest.version || ''}),
+  write(parts, $('fl-erase').checked, ['fl.done_firmware', {version: manifest.version || ''}],
         true);
 }
 
 function flashLittlefs() {
   if (!$('fl-littlefs-agree').checked) return;
-  write(fl.littlefsParts(manifest), false, t('fl.done_littlefs'));
+  write(fl.littlefsParts(manifest), false, ['fl.done_littlefs']);
 }
 
 /* Wi-Fi over the cable, by Improv: see improv_core.js and components/improv.
@@ -269,8 +279,9 @@ function flashLittlefs() {
    done or fails - an open port is one nothing else on the machine can use. */
 
 /* A failure is red, the way the settings page marks one; progress is not. */
-function wifiStatus(text, failed) {
-  $('fl-wifi-status').textContent = text;
+function wifiStatus(message, failed) {
+  wifiMessage = message;
+  $('fl-wifi-status').textContent = messageText(message);
   $('fl-wifi-status').classList.toggle('is-error', failed === true);
 }
 
@@ -355,9 +366,9 @@ async function wifiStart() {
   $('fl-wifi-form').hidden = true;
   $('fl-wifi-link').hidden = true;
   try {
-    wifiStatus(t('fl.pick_port'));
+    wifiStatus(['fl.pick_port']);
     wifi = await wifiOpen();
-    wifiStatus(t('fl.wifi_waiting'));
+    wifiStatus(['fl.wifi_waiting']);
     // A board just written is still starting: ask once a second for a while.
     let info = null;
     for (let attempt = 0; attempt < 20 && info === null; attempt += 1) {
@@ -373,7 +384,7 @@ async function wifiStart() {
       const where = await wifiWait(isResult(im.COMMAND.state), 1000);
       if (where !== null) wifiShowLink(im.resultStrings(where.data).strings[0] || '');
     }
-    wifiStatus(t('fl.wifi_scanning'));
+    wifiStatus(['fl.wifi_scanning']);
     await wifi.writer.write(im.rpc(im.COMMAND.networks));
     const found = [];
     while (true) {
@@ -399,11 +410,11 @@ async function wifiStart() {
     $('fl-wifi-list-row').hidden = list.length === 0;
     $('fl-wifi-ssid-row').hidden = list.length > 0;
     $('fl-wifi-form').hidden = false;
-    wifiStatus(list.length > 0 ? t('fl.wifi_pick') : t('fl.wifi_type'));
+    wifiStatus([list.length > 0 ? 'fl.wifi_pick' : 'fl.wifi_type']);
   } catch (error) {
     const text = String(error && error.message ? error.message : error);
-    if (/NotFoundError|No port selected/i.test(text)) wifiStatus(t('fl.no_port'), true);
-    else if (/lost|busy|not ready|NetworkError|Failed to open|already open/i.test(text)) wifiStatus(t('fl.port_busy'), true);
+    if (/NotFoundError|No port selected/i.test(text)) wifiStatus(['fl.no_port'], true);
+    else if (/lost|busy|not ready|NetworkError|Failed to open|already open/i.test(text)) wifiStatus(['fl.port_busy'], true);
     else wifiStatus(text, true);
     await wifiClose();
   } finally {
@@ -421,7 +432,7 @@ async function wifiSend() {
   try {
     packet = im.wifiRequest(ssid, passwordField.value);
   } catch (error) {
-    wifiStatus(t(error.message === 'ssid' ? 'fl.wifi_bad_ssid' : 'fl.wifi_bad_password'), true);
+    wifiStatus([error.message === 'ssid' ? 'fl.wifi_bad_ssid' : 'fl.wifi_bad_password'], true);
     return;
   }
   // The password has done its job on this page, and goes back to dots.
@@ -431,22 +442,22 @@ async function wifiSend() {
   render();
   try {
     wifi.packets.length = 0;
-    wifiStatus(t('fl.wifi_joining', {ssid}));
+    wifiStatus(['fl.wifi_joining', {ssid}]);
     await wifi.writer.write(packet);
     packet.fill(0);
     const outcome = await wifiWait((p) => (p.type === im.TYPE.result && p.data[0] === im.COMMAND.wifi) ||
                                           (p.type === im.TYPE.error && p.data[0] !== im.ERROR.none),
                                    60000);
     if (outcome === null) {
-      wifiStatus(t('fl.wifi_no_answer'), true);
+      wifiStatus(['fl.wifi_no_answer'], true);
     } else if (outcome.type === im.TYPE.error) {
-      wifiStatus(t(outcome.data[0] === im.ERROR.unableToConnect ? 'fl.wifi_failed' : 'fl.wifi_refused'),
+      wifiStatus([outcome.data[0] === im.ERROR.unableToConnect ? 'fl.wifi_failed' : 'fl.wifi_refused'],
                  true);
     } else {
       const url = im.resultStrings(outcome.data).strings[0] || '';
       wifiShowLink(url);
       $('fl-wifi-form').hidden = true;
-      wifiStatus(t('fl.wifi_done', {ssid}));
+      wifiStatus(['fl.wifi_done', {ssid}]);
       await wifiClose();
     }
   } catch (error) {
@@ -484,23 +495,10 @@ $('fl-flash-littlefs').addEventListener('click', flashLittlefs);
 $('fl-littlefs-agree').addEventListener('change', render);
 $('fl-unsupported').hidden = fl.serialSupported(navigator);
 i18n.onChange(render);
+i18n.onChange(paintStatuses);
 // The editor on another tab can change the draft while this one is open.
 window.addEventListener('storage', (event) => { if (event.key === fl.DRAFT_KEY) render(); });
 window.addEventListener('focus', render);
-
-const languageButton = $('fl-language');
-languageButton.addEventListener('click', () => {
-  i18n.setLanguage(i18n.language() === 'ru' ? 'en' : 'ru');
-});
-// First visit: the browser's language, as on the editor.
-let chosen = null;
-try {
-  chosen = window.localStorage.getItem('jradio.language');
-} catch (error) {
-  chosen = null;
-}
-const browser = String(navigator.language || '').toLowerCase();
-if (chosen === null && browser !== '' && !browser.startsWith('ru')) i18n.setLanguage('en');
 
 render();
 fetch('manifest.json', {cache: 'no-store'})

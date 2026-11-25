@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark light">
   <meta name="theme-color" content="#0c0f13">
-  <title>їРадіо — прошивка</title>
+  <title>yiRadio — flasher</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3CradialGradient id='g' cx='50%25' cy='45%25' r='55%25'%3E%3Cstop offset='0%25' stop-color='%237bffb0'/%3E%3Cstop offset='55%25' stop-color='%2322e06a'/%3E%3Cstop offset='100%25' stop-color='%230a8f3c'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='%23121417'/%3E%3Ccircle cx='16' cy='16' r='11' fill='url(%23g)'/%3E%3Cpath d='M16 16 12.9 5.6a11 11 0 0 1 6.2 0Z' fill='%23103a22'/%3E%3Ccircle cx='16' cy='16' r='3.7' fill='%230d1a12'/%3E%3Ccircle cx='16' cy='16' r='12.3' fill='none' stroke='%238c96a3' stroke-width='1.4'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css">
   <script src="theme.js"></script>
@@ -16,7 +16,7 @@
     <div class="header-inner">
       <!-- The site is GitHub Pages under /jradio/, where "/" is nobody's page: the
            mark leads to the project instead. -->
-      <a class="brand" href="https://github.com/jmper-ha/jradio" data-i18n-aria="nav.project" aria-label="Проект на GitHub">
+      <a class="brand" href="https://github.com/jmper-ha/jradio" data-i18n-aria="nav.project" aria-label="The project on GitHub">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 32 32" focusable="false">
             <defs>
@@ -33,21 +33,22 @@
             <path class="eye-ticks" d="M16 1.6v2.2M30.4 16h-2.2M1.6 16h2.2"/>
           </svg>
         </span>
-        <span class="brand-word" data-i18n="brand.name">їРадіо</span>
+        <span class="brand-word" data-i18n="brand.name">yiRadio</span>
       </a>
 
-      <nav class="source-tabs" data-i18n-aria="nav.sections" aria-label="Разделы">
-        <a class="source-tab" href="index.html" data-i18n="nav.hardware">Оборудование</a>
-        <a class="source-tab is-active" href="flasher.html" aria-current="page" data-i18n="nav.flasher">Прошивка</a>
+      <nav class="source-tabs" data-i18n-aria="nav.sections" aria-label="Sections">
+        <a class="source-tab" href="index.html" data-i18n="nav.hardware">Hardware</a>
+        <a class="source-tab is-active" href="flasher.html" aria-current="page" data-i18n="nav.flasher">Flasher</a>
       </nav>
 
       <div class="header-actions">
         <!-- Only here: the device's own pages take their language from the
              device, but this site has no device to ask. -->
-        <button id="fl-language" class="icon-button language-toggle" type="button"
-                data-i18n="lang.other" data-i18n-aria="lang.toggle" aria-label="Switch to English">EN</button>
+        <select id="site-language" data-i18n-aria="lang.label" aria-label="Language" disabled>
+          <option value="en">English</option>
+        </select>
         <button id="theme-toggle" class="icon-button theme-toggle" type="button"
-                data-i18n-aria="theme.toggle" aria-label="Сменить тему">
+                data-i18n-aria="theme.toggle" aria-label="Switch theme">
           <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="M20 14.5A8 8 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/>
           </svg>
@@ -62,16 +63,16 @@
 
   <main class="page-shell">
     <div class="page-heading">
-      <h1><span data-i18n="nav.flasher">Прошивка</span> <small class="fl-version" id="fl-version"></small></h1>
-      <p data-i18n="fl.lead">їРадіо на ESP32-S3 прямо из браузера: прошивка под ваш дисплей и вашу распайку, без установки ESP-IDF.</p>
+      <h1><span data-i18n="nav.flasher">Flasher</span> <small class="fl-version" id="fl-version"></small></h1>
+      <p data-i18n="fl.lead">yiRadio onto an ESP32-S3 from the browser: firmware for your display and your wiring, with no ESP-IDF to install.</p>
     </div>
 
-    <p class="fl-warn" id="fl-unsupported" hidden data-i18n="fl.unsupported">Этот браузер не умеет работать с последовательным портом. Откройте страницу в Chrome или Edge на компьютере — с телефона, из Firefox и Safari прошить нельзя.</p>
+    <p class="fl-warn" id="fl-unsupported" hidden data-i18n="fl.unsupported">This browser cannot use a serial port. Open the page in Chrome or Edge on a computer - phones, Firefox and Safari cannot flash.</p>
 
     <section class="card" aria-labelledby="fl-board-title">
       <div class="card-head">
-        <h2 id="fl-board-title" data-i18n="fl.board">Распайка</h2>
-        <a class="secondary-button" href="index.html" data-i18n="fl.edit">Изменить</a>
+        <h2 id="fl-board-title" data-i18n="fl.board">Wiring</h2>
+        <a class="secondary-button" href="index.html" data-i18n="fl.edit">Edit</a>
       </div>
       <div class="card-body">
         <p class="field-note" id="fl-board-source"></p>
@@ -82,34 +83,34 @@
 
     <section class="card" aria-labelledby="fl-firmware-title">
       <div class="card-head">
-        <h2 id="fl-firmware-title" data-i18n="fl.firmware">1. Прошивка</h2>
+        <h2 id="fl-firmware-title" data-i18n="fl.firmware">1. Firmware</h2>
       </div>
       <div class="card-body">
-        <p data-i18n="fl.firmware_note">Программа и распайка. Wi-Fi, настройки, плейлист и иконки станций остаются на месте — эта кнопка для обновлений.</p>
+        <p data-i18n="fl.firmware_note">The program and the wiring. Wi-Fi, settings, the playlist and station icons stay as they are - this is the button for updates.</p>
         <div class="fl-actions">
-          <button class="primary-button" id="fl-flash-firmware" type="button" data-i18n="fl.flash_firmware">Записать прошивку</button>
-          <label class="field-note"><input id="fl-erase" type="checkbox"> <span data-i18n="fl.erase">стереть всю память (на плате была чужая прошивка)</span></label>
+          <button class="primary-button" id="fl-flash-firmware" type="button" data-i18n="fl.flash_firmware">Write the firmware</button>
+          <label class="field-note"><input id="fl-erase" type="checkbox"> <span data-i18n="fl.erase">erase the whole flash (the board had other firmware)</span></label>
         </div>
-        <p class="field-note" data-i18n="fl.erase_note">Стирание удаляет и файловую систему: после него запишите и её, кнопкой ниже.</p>
+        <p class="field-note" data-i18n="fl.erase_note">Erasing removes the file system too: write it afterwards with the button below.</p>
         <!-- Shown when the board's table is from before v1.6.1: see
              fl.layoutChange() in flasher_core.js. -->
         <div class="fl-warn" id="fl-layout-box" hidden>
-          <p data-i18n="fl.layout_warn">С версии 1.6.1 память радио размечена по-новому, и на этой плате разметка старая. После записи настройки, сети Wi-Fi, станции и их картинки на радио не сохранятся. Если радио работает, сначала скачайте в его веб-интерфейсе резервную копию (Настройки → Резервная копия) и экспорт станций (Станции → Экспорт). Прошивальщик запишет прошивку и файловую систему, после этого восстановите копию и станции.</p>
-          <label class="field-note"><input id="fl-layout-agree" type="checkbox"> <span data-i18n="fl.layout_agree">копию сохранил (или сохранять нечего) — записать прошивку и файловую систему</span></label>
+          <p data-i18n="fl.layout_warn">Since version 1.6.1 the radio's memory is laid out differently, and this board has the old layout. After writing, the settings, the Wi-Fi networks, the stations and their pictures on the radio will not be kept. If the radio works, first download a backup in its web interface (Settings → Backup) and an export of the stations (Stations → Export). The flasher writes the firmware and the file system; then restore the backup and the stations.</p>
+          <label class="field-note"><input id="fl-layout-agree" type="checkbox"> <span data-i18n="fl.layout_agree">backup taken (or nothing to keep) - write the firmware and the file system</span></label>
         </div>
       </div>
     </section>
 
     <section class="card" aria-labelledby="fl-littlefs-title">
       <div class="card-head">
-        <h2 id="fl-littlefs-title" data-i18n="fl.littlefs">2. Файловая система</h2>
+        <h2 id="fl-littlefs-title" data-i18n="fl.littlefs">2. File system</h2>
       </div>
       <div class="card-body">
-        <p data-i18n="fl.littlefs_note">Веб-интерфейс и начальные настройки. Нужна при первой установке — без неё у радио нет веб-страниц — и когда новая версия меняет веб-интерфейс.</p>
-        <p class="fl-warn" data-i18n="fl.littlefs_warn">Запись стирает сохранённые сети Wi-Fi, настройки, плейлист и иконки станций. На работающем радио сначала сделайте резервную копию (Настройки → Резервная копия), а после записи восстановите её.</p>
+        <p data-i18n="fl.littlefs_note">The web interface and the initial settings. Needed on a first install - without it the radio has no web pages - and when a new version changes the web interface.</p>
+        <p class="fl-warn" data-i18n="fl.littlefs_warn">Writing it erases the saved Wi-Fi networks, the settings, the playlist and the station icons. On a working radio take a backup first (Settings - Backup) and restore it afterwards.</p>
         <div class="fl-actions">
-          <label class="field-note"><input id="fl-littlefs-agree" type="checkbox"> <span data-i18n="fl.littlefs_agree">понимаю, что данные на радио будут стёрты</span></label>
-          <button class="secondary-button" id="fl-flash-littlefs" type="button" disabled data-i18n="fl.flash_littlefs">Записать файловую систему</button>
+          <label class="field-note"><input id="fl-littlefs-agree" type="checkbox"> <span data-i18n="fl.littlefs_agree">I understand the data on the radio will be erased</span></label>
+          <button class="secondary-button" id="fl-flash-littlefs" type="button" disabled data-i18n="fl.flash_littlefs">Write the file system</button>
         </div>
       </div>
     </section>
@@ -119,22 +120,22 @@
         <h2 id="fl-wifi-title" data-i18n="fl.wifi">3. Wi-Fi</h2>
       </div>
       <div class="card-body">
-        <p data-i18n="fl.wifi_note">Подключите радио к домашней сети по тому же кабелю — без точки доступа и без телефона. Пароль уходит только на плату и нигде на этой странице не сохраняется. Подходит и для радио, прошитого раньше, если на нём версия с поддержкой этой функции.</p>
+        <p data-i18n="fl.wifi_note">Connect the radio to your home network over the same cable - no access point, no phone. The password goes to the board only and is kept nowhere on this page. Works for a radio flashed earlier too, if its version has this feature.</p>
         <div class="fl-actions">
-          <button class="secondary-button" id="fl-wifi-connect" type="button" data-i18n="fl.wifi_connect">Подключиться к радио</button>
+          <button class="secondary-button" id="fl-wifi-connect" type="button" data-i18n="fl.wifi_connect">Connect to the radio</button>
         </div>
         <div id="fl-wifi-form" hidden>
           <p class="field-note" id="fl-wifi-device"></p>
           <div class="fl-wifi-row" id="fl-wifi-list-row" hidden>
-            <label for="fl-wifi-list" data-i18n="fl.wifi_network">Сеть</label>
+            <label for="fl-wifi-list" data-i18n="fl.wifi_network">Network</label>
             <select id="fl-wifi-list"></select>
           </div>
           <div class="fl-wifi-row" id="fl-wifi-ssid-row">
-            <label for="fl-wifi-ssid" data-i18n="fl.wifi_ssid">Имя сети</label>
+            <label for="fl-wifi-ssid" data-i18n="fl.wifi_ssid">Network name</label>
             <input id="fl-wifi-ssid" type="text" maxlength="32" autocomplete="off" spellcheck="false">
           </div>
           <div class="fl-wifi-row">
-            <label for="fl-wifi-password" data-i18n="fl.wifi_password">Пароль</label>
+            <label for="fl-wifi-password" data-i18n="fl.wifi_password">Password</label>
             <div class="password-field fl-wifi-secret">
               <input id="fl-wifi-password" type="password" maxlength="64" autocomplete="off" spellcheck="false">
               <!-- The eye: open while the password shows, struck through while
@@ -150,7 +151,7 @@
             </div>
           </div>
           <div class="fl-actions">
-            <button class="primary-button" id="fl-wifi-send" type="button" data-i18n="fl.wifi_send">Подключиться к сети</button>
+            <button class="primary-button" id="fl-wifi-send" type="button" data-i18n="fl.wifi_send">Connect to the network</button>
           </div>
         </div>
         <p id="fl-wifi-status" class="field-note" role="status" aria-live="polite"></p>
@@ -160,18 +161,18 @@
 
     <section class="card" aria-labelledby="fl-progress-title">
       <div class="card-head">
-        <h2 id="fl-progress-title" data-i18n="fl.progress">Ход записи</h2>
+        <h2 id="fl-progress-title" data-i18n="fl.progress">Progress</h2>
       </div>
       <div class="card-body">
-        <p id="fl-status" class="field-note" role="status" aria-live="polite" data-i18n="fl.idle">Подключите плату к компьютеру кабелем к её UART-порту и нажмите одну из кнопок.</p>
+        <p id="fl-status" class="field-note" role="status" aria-live="polite">Connect the board to the computer by its UART port and press one of the buttons.</p>
         <progress id="fl-progress" max="100" value="0" hidden></progress>
-        <details id="fl-log-box" hidden><summary class="field-note" data-i18n="fl.log">Журнал</summary><pre id="fl-log" class="hw-csv"></pre></details>
-        <p class="field-note" data-i18n="fl.port_help">Порт не появляется — поставьте драйвер CP210x или CH340; плата не отвечает — зажмите BOOT, коротко нажмите RESET, отпустите BOOT и попробуйте снова. На Linux, если перед этим порт открывали idf.py, esptool или монитор порта, переподключите кабель: они оставляют порт в настройке, на которой Chrome сразу его теряет.</p>
+        <details id="fl-log-box" hidden><summary class="field-note" data-i18n="fl.log">Log</summary><pre id="fl-log" class="hw-csv"></pre></details>
+        <p class="field-note" data-i18n="fl.port_help">No port shows up - install the CP210x or CH340 driver; the board does not answer - hold BOOT, tap RESET, let go of BOOT and try again. On Linux, if idf.py, esptool or a serial monitor had the port open before, reconnect the cable: they leave the port set up in a way that makes Chrome lose it at once.</p>
       </div>
     </section>
   </main>
 
-  <noscript><p class="noscript-message">Для прошивальщика требуется JavaScript. / JavaScript is required for the flasher.</p></noscript>
+  <noscript><p class="noscript-message">JavaScript is required for the flasher.</p></noscript>
   <script src="hardware_core.js"></script>
   <script src="flasher_core.js"></script>
   <script src="improv_core.js"></script>
