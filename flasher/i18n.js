@@ -318,7 +318,9 @@
     "hw.err.power_on_vdd_spi": "Peripheral power on GPIO {gpio}: pins 47 and 48 are powered from VDD_SPI, which deep sleep switches off - the switch would float and the periphery stay powered. Use another pin",
     "hw.err.pin_1v8": "\"{key}\" on GPIO {gpio}: on the V modules this pin swings 1.8 V, not 3.3 V - a 3.3 V part may not read it",
     "hw.err.spi_not_iomux": "\"{key}\" on GPIO {gpio}: not one of SPI2's IOMUX pins, 40 MHz to the panel may not hold",
-    "lang.label": "Language"
+    "lang.label": "Language",
+    "common.show": "Show",
+    "common.hide": "Hide"
   };
 
   const STORAGE_KEY = 'jradio.language';
