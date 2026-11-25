@@ -6,7 +6,7 @@
 
 The device needs Wi-Fi. The simplest is to give it the network while
 flashing, over the same cable: on the
-[flasher site](https://jmper-ha.github.io/jradio/) that is step "3. Wi-Fi",
+[flasher site](https://madnut-ua.github.io/yiradio/) that is step "3. Wi-Fi",
 described in [Building and flashing](build.en.md#from-the-browser). A running
 radio can change networks the same way, plugged into a computer.
 

@@ -407,15 +407,16 @@ function makeDocument() {
   body.setAttribute('data-i18n-page', 'title.hardware');
   const ids = ['hw-parts', 'hw-svg', 'hw-hint', 'hw-hint-stack', 'hw-hint-picking', 'hw-legend', 'hw-report', 'hw-csv', 'hw-status',
                'hw-download', 'hw-copy', 'hw-import', 'hw-import-apply', 'hw-reset', 'hw-import-status',
-               'hw-language'];
+               'site-language'];
   for (const id of ids) {
     const element = new Element(id === 'hw-svg' ? 'svg' : 'div');
     element.id = id;
     body.append(element);
   }
   // The markup's own keys, for the two elements the language test reads.
-  body.querySelector('#hw-language').setAttribute('data-i18n', 'lang.other');
-  body.querySelector('#hw-language').setAttribute('data-i18n-aria', 'lang.toggle');
+  const picker = body.querySelector('#site-language');
+  picker.disabled = true;
+  picker.setAttribute('data-i18n-aria', 'lang.label');
   body.querySelector('#hw-download').setAttribute('data-i18n', 'hw.download');
   const document = {
     body,
@@ -431,23 +432,24 @@ function makeDocument() {
   return document;
 }
 
-function loadPage(browserLanguage) {
+function loadPage({languages, storage = {}, fetch, warnings = []} = {}) {
   const document = makeDocument();
-  const storage = {};
   const window = {
     localStorage: {
       getItem: (key) => (Object.hasOwn(storage, key) ? storage[key] : null),
       setItem: (key, value) => { storage[key] = String(value); },
     },
     document,
-    navigator: browserLanguage === undefined ? {} : {language: browserLanguage},
+    navigator: {languages},
+    fetch,
     URL: {createObjectURL: () => 'blob:x', revokeObjectURL: () => {}},
     Blob: function Blob() {},
   };
   window.window = window;
   window.self = window;
   const context = vm.createContext({window, document, self: window, navigator: window.navigator,
-                                    URL: window.URL, Blob: window.Blob, console});
+                                    URL: window.URL, Blob: window.Blob,
+                                    console: {warn: (...args) => warnings.push(args)}});
   for (const file of ['i18n.js', 'hardware_core.js', 'hardware.js']) {
     vm.runInContext(fs.readFileSync(path.join(FLASHER, file), 'utf8'), context, {filename: file});
   }
@@ -728,53 +730,101 @@ function test_every_label_the_page_needs_is_in_the_dictionary() {
   const t = window.jradioI18n.t;
   for (const field of hw.FIELDS) {
     if (field.fixed !== undefined) continue;
-    assert.notStrictEqual(t(`hw.f.${field.key}`), `hw.f.${field.key}`, `label for ${field.key}`);
+    assert.ok(t(`hw.f.${field.key}`), `label for ${field.key}`);
     // A key with no row of its own has no option words either.
     if (field.hidden) continue;
     /* A bus a device sits on is named by its kind and number, not looked up. */
     if (field.kind === 'choice' && !field.bus) {
       for (const option of field.options) {
-        assert.notStrictEqual(t(`hw.opt.${option}`), `hw.opt.${option}`, `option ${option}`);
+        assert.ok(t(`hw.opt.${option}`), `option ${option}`);
       }
     }
   }
   for (const device of hw.DEVICES) {
-    assert.notStrictEqual(t(`hw.dev.${device}`), `hw.dev.${device}`, `device ${device}`);
+    assert.ok(t(`hw.dev.${device}`), `device ${device}`);
   }
 
   for (const code of ['pin_conflict', 'pin_missing', 'pin_not_on_header', 'pin_psram', 'pin_console', 'pin_usb',
                       'usb_pin_fixed', 'bus_unwired', 'bad_value', 'sleep_not_rtc', 'ir_not_rtc', 'spi_not_iomux']) {
-    assert.notStrictEqual(t(`hw.err.${code}`), `hw.err.${code}`, `report ${code}`);
+    assert.ok(t(`hw.err.${code}`), `report ${code}`);
   }
   for (const code of ['pin_psram', 'pin_console', 'pin_usb', 'pin_strapping', 'pin_jtag']) {
-    assert.notStrictEqual(t(`hw.note.${code}`), `hw.note.${code}`, `note ${code}`);
+    assert.ok(t(`hw.note.${code}`), `note ${code}`);
   }
 }
 
 test_the_readme_board_is_clean();
-/* The site has no device to take a language from: a switch, and on a first
- * visit the browser's language, which a press then overrides for good. */
-function test_the_language_switch_and_the_first_visit() {
-  {
-    const {document, window, storage} = loadPage();
-    const button = document.getElementById('hw-language');
-    assert.equal(window.jradioI18n.language(), 'ru');
-    assert.equal(button.textContent, 'EN');
-    assert.equal(document.getElementById('hw-download').textContent, 'Скачать');
-    button.click();
-    assert.equal(window.jradioI18n.language(), 'en');
-    assert.equal(document.documentElement.lang, 'en');
-    assert.equal(button.textContent, 'RU');
-    assert.equal(button.getAttribute('aria-label'), 'Переключить на русский');
-    assert.equal(document.getElementById('hw-download').textContent, 'Download');
-    assert.equal(storage['jradio.language'], 'en');
-    button.click();
-    assert.equal(window.jradioI18n.language(), 'ru');
+async function test_the_language_switch_and_the_first_visit() {
+  const [uk, ru] = ['uk', 'ru'].map((code) =>
+    JSON.parse(fs.readFileSync(path.join(FLASHER, 'locales', `${code}.json`), 'utf8')));
+  const response = (data) => ({ok: true, json: async () => data});
+  const packs = {
+    'locales/index.json': {schema: 1, locales: [uk, ru].map(({code, name}) => ({code, name}))},
+    'locales/uk.json': uk,
+    'locales/ru.json': ru,
+  };
+  const fetch = async (url) => {
+    assert.ok(Object.hasOwn(packs, url), `unexpected URL ${url}`);
+    return response(packs[url]);
+  };
+  const settle = () => new Promise(setImmediate);
+  const {document, window, storage} = loadPage({languages: ['de', 'uk-UA'], fetch});
+  const picker = document.getElementById('site-language');
+  const download = document.getElementById('hw-download');
+  assert.equal(download.textContent, 'Download');
+  await settle();
+  assert.equal(document.documentElement.lang, 'uk');
+  assert.equal(download.textContent, uk.strings['hw.download']);
+  assert.equal(picker.getAttribute('aria-label'), uk.strings['lang.label']);
+  assert.equal(picker.disabled, false);
+  assert.equal(storage['jradio.language'], undefined);
+  const csv = document.getElementById('hw-csv').value;
+  picker.value = 'en';
+  picker.emit('change');
+  assert.equal(download.textContent, 'Download');
+  assert.equal(document.getElementById('hw-csv').value, csv);
+  assert.equal(storage['jradio.language'], 'en');
+
+  const saved = loadPage({languages: ['uk-UA'], storage, fetch});
+  const auto = loadPage({languages: ['ru-RU'], fetch});
+  const unsupported = loadPage({languages: ['de'], fetch});
+  await settle();
+  assert.equal(saved.document.documentElement.lang, 'en');
+  assert.equal(auto.document.documentElement.lang, 'ru');
+  assert.equal(unsupported.document.documentElement.lang, 'en');
+
+  const partial = loadPage({languages: ['uk'], fetch: async (url) => url.endsWith('/uk.json')
+    ? response({...uk, strings: {'hw.download': uk.strings['hw.download'], 'fl.wifi_joining': '{wrong}'}})
+    : fetch(url)});
+  await settle();
+  assert.equal(partial.window.jradioI18n.language(), 'uk');
+  assert.equal(partial.window.jradioI18n.t('lang.label'), 'Language');
+  assert.equal(partial.window.jradioI18n.t('fl.wifi_joining', {ssid: 'WiFi'}),
+               window.jradioI18n.t('fl.wifi_joining', {ssid: 'WiFi'}));
+
+  for (const [failedPath, failure] of [
+    ['locales/index.json', {ok: false, status: 404}],
+    ['locales/uk.json', {ok: false, status: 404}],
+    ['locales/uk.json', response({schema: 2, code: 'uk', strings: {}})],
+  ]) {
+    const warnings = [];
+    const broken = loadPage({languages: ['uk'], warnings, fetch: async (url) =>
+      url === failedPath ? failure : fetch(url)});
+    await settle();
+    assert.equal(broken.document.getElementById('hw-download').textContent, 'Download');
+    assert.equal(warnings.length, 1);
   }
-  // A browser in English opens the page in English...
-  assert.equal(loadPage('en-US').window.jradioI18n.language(), 'en');
-  // ...a Russian one in Russian.
-  assert.equal(loadPage('ru-RU').window.jradioI18n.language(), 'ru');
+
+  let finish;
+  const race = loadPage({fetch: (url) => url === 'locales/uk.json'
+    ? new Promise((resolve) => { finish = resolve; }) : fetch(url)});
+  await settle();
+  const pending = race.window.jradioI18n.setLanguage('uk', true);
+  await race.window.jradioI18n.setLanguage('ru', true);
+  finish(response(uk));
+  await pending;
+  assert.equal(race.document.documentElement.lang, 'ru');
+  assert.equal(race.storage['jradio.language'], 'ru');
 }
 
 test_the_cases_shared_with_the_firmware();
@@ -793,5 +843,6 @@ test_the_header_is_the_devkit();
 test_the_touch_card_goes_with_the_display();
 test_the_page_builds_every_part_and_follows_the_clicks();
 test_every_label_the_page_needs_is_in_the_dictionary();
-test_the_language_switch_and_the_first_visit();
-console.log('web hardware tests passed');
+test_the_language_switch_and_the_first_visit()
+  .then(() => console.log('web hardware tests passed'))
+  .catch((error) => { console.error(error); process.exitCode = 1; });
